@@ -14,7 +14,9 @@
     "reset": "npm run clean && npm install && npm run build && npm test",
     "local": "node dist/env/local/local.js --seneca.log.warn",
     "local-debug": "node dist/env/local/local.js --seneca.log.debug",
-    "web": "node dist/env/web/web.js"
+    "web": "node dist/env/web/web.js",
+    "model-check": "aontu relations model/ontology.aon && aontu hash model/model.aon",
+    "model-breaking": "aontu breaking --against git#HEAD model/model.aon"
   },
   "author": "",
   "license": "UNLICENSED",

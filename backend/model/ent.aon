@@ -15,40 +15,155 @@ sys: login: {
 }
 
 
-## Example application entity. Uncomment (and the zone shape line) to add
-## your first entity; the owner_id field gives per-user isolation via the
-## @seneca/owner plugin (see src/env/shared/basic.ts).
+## Application entities. `cag` = conf-agenda; every entity specific to this
+## application lives under it (PLATFORM.md 1.2 - never `sys`, and not a
+## generic word like `conf` that reads as "config").
 
-# app: &: $.main.shape.ent
-#
-# app: thing: {
-#   field: {
-#     id: {
-#       label: 'ID'
-#       kind: String
-#     }
-#     title: {
-#       label: 'Title'
-#       kind: String
-#       valid: 'Min(1).Max(999)'
-#     }
-#     owner_id: {
-#       label: 'Owner'
-#       kind: String
-#       ## Server-managed: @seneca/owner injects it AFTER validation runs,
-#       ## so without Skip every create fails as 'owner_id is required'.
-#       valid: Skip
-#     }
-#     t_c: {
-#       label: 'Created'
-#       kind: Number
-#       valid: Skip
-#     }
-#     t_m: {
-#       label: 'Modified'
-#       kind: Number
-#       valid: Skip
-#     }
-#   }
-#   valid: '$$': 'Open'
-# }
+cag: &: $.main.shape.ent
+
+
+## The recursive occasion entity, inherited from metsitaba/fixture-srv's
+## core/fixture - see docs/decisions/fixture-model-inheritance.md for the
+## field-by-field mapping and every deliberate departure.
+##
+## A conference IS a fixture; a talk, workshop, panel or break is a fixture
+## INSIDE it, via parent_id. Days are not an entity: either a derived
+## grouping by local date, or an ordinary intermediate fixture one level
+## deeper. The grid, validation and clone all walk the tree and do not care
+## how deep it is.
+
+cag: fixture: {
+  ux: { view: 'custom' }
+  field: {
+    id: { label: 'ID' kind: String }
+
+    ## Tenancy and tree position. All four are server-managed, so all four
+    ## carry Skip: they are filled AFTER validation runs.
+    org_id: { label: 'Org' kind: String ref: 'sys/org' valid: Skip }
+    parent_id: { label: 'Parent' kind: String ref: 'cag/fixture' valid: Skip }
+    top_id: { label: 'Top' kind: String ref: 'cag/fixture' valid: Skip }
+
+    room_id: { label: 'Room' kind: String ref: 'cag/room' valid: Skip }
+    track_id: { label: 'Track' kind: String ref: 'cag/track' valid: Skip }
+
+    ## Kind codes constrain the SHAPE of the tree, not just the value:
+    ## top kinds have no parent and are the only kinds that may; `day` sits
+    ## directly under a top kind; segments sit under a top or a `day` and
+    ## contain nothing. Enforced at save time as `bad-parent-kind`.
+    ## Top-level: con web mep sem gen | Grouping: day
+    ## Segments:  key tak lgt wrk pan brk mea soc reg
+    kind: { label: 'Kind' kind: String valid: Skip }
+
+    slug: { label: 'Slug' kind: String valid: Skip }
+    title: { label: 'Title' kind: String valid: 'Min(1).Max(300)' }
+    desc: { label: 'Abstract' kind: String valid: Skip }
+
+    ## t_ prefix: date/time (fixture-srv convention).
+    ## UTC epoch MILLISECONDS - upstream used seconds.
+    ## No t_tzo: an offset is derived and DST-dependent, and storing one is
+    ## how events drift an hour. The zone NAME is authoritative.
+    t_start: { label: 'Start' kind: Number valid: Skip }
+    t_end: { label: 'End' kind: Number valid: Skip }
+    t_tzn: { label: 'Timezone' kind: String valid: Skip }
+
+    ## p_ prefix: place. Venue lives on the fixture and inherits down the
+    ## tree; cag/room covers rooms WITHIN a venue.
+    p_name: { label: 'Venue' kind: String valid: Skip }
+    p_lat: { label: 'Latitude' kind: Number valid: Skip }
+    p_lng: { label: 'Longitude' kind: Number valid: Skip }
+    p_gc: { label: 'Geocode' kind: String valid: Skip }
+    p_web: { label: 'Venue site' kind: String valid: Skip }
+
+    ## w_ prefix: web links.
+    w_site: { label: 'Site' kind: String valid: Skip }
+    w_video: { label: 'Video' kind: String valid: Skip }
+    w_deck: { label: 'Slides' kind: String valid: Skip }
+
+    ## draft | confirmed | cancelled. Effective status is computed along the
+    ## ancestor chain, most restrictive wins - never read this field alone.
+    status: { label: 'Status' kind: String valid: Skip }
+    private: { label: 'Private' kind: Boolean valid: Skip }
+    embed: { label: 'Embed' kind: Object valid: Skip }
+
+    t_c: { label: 'Created' kind: Number valid: Skip }
+    t_m: { label: 'Modified' kind: Number valid: Skip }
+  }
+  valid: '$$': 'Open'
+}
+
+
+cag: room: {
+  field: {
+    id: { label: 'ID' kind: String }
+    org_id: { label: 'Org' kind: String ref: 'sys/org' valid: Skip }
+    name: { label: 'Name' kind: String valid: 'Min(1).Max(200)' }
+    capacity: { label: 'Capacity' kind: Number valid: Skip }
+    floor: { label: 'Floor' kind: String valid: Skip }
+    access: { label: 'Accessibility' kind: String valid: Skip }
+    ## Column order in the agenda grid.
+    order: { label: 'Order' kind: Number valid: Skip }
+    t_c: { label: 'Created' kind: Number valid: Skip }
+    t_m: { label: 'Modified' kind: Number valid: Skip }
+  }
+  valid: '$$': 'Open'
+}
+
+
+cag: track: {
+  field: {
+    id: { label: 'ID' kind: String }
+    org_id: { label: 'Org' kind: String ref: 'sys/org' valid: Skip }
+    name: { label: 'Name' kind: String valid: 'Min(1).Max(200)' }
+    ## Per-track accent, organiser data rather than theme. Must pass WCAG AA
+    ## against both theme modes at validation time (`bad-color-contrast`).
+    color: { label: 'Colour' kind: String valid: Skip }
+    desc: { label: 'Description' kind: String valid: Skip }
+    order: { label: 'Order' kind: Number valid: Skip }
+    t_c: { label: 'Created' kind: Number valid: Skip }
+    t_m: { label: 'Modified' kind: Number valid: Skip }
+  }
+  valid: '$$': 'Open'
+}
+
+
+## Org-scoped, NOT fixture-scoped: a speaker at the 2026 and 2027 editions is
+## one person with one bio and one email. cag/appearance ties them to a
+## segment. email is never public (C6) - stripped structurally, not by field
+## selection.
+
+cag: speaker: {
+  field: {
+    id: { label: 'ID' kind: String }
+    org_id: { label: 'Org' kind: String ref: 'sys/org' valid: Skip }
+    name: { label: 'Name' kind: String valid: 'Min(1).Max(200)' }
+    email: { label: 'Email' kind: String valid: Skip }
+    bio: { label: 'Bio' kind: String valid: Skip }
+    photo: { label: 'Photo' kind: String valid: Skip }
+    org_name: { label: 'Organisation' kind: String valid: Skip }
+    w_site: { label: 'Site' kind: String valid: Skip }
+    t_c: { label: 'Created' kind: Number valid: Skip }
+    t_m: { label: 'Modified' kind: Number valid: Skip }
+  }
+  valid: '$$': 'Open'
+}
+
+
+## The join: one speaker appearing on one segment fixture, carrying role and
+## invitation state. `presents` / `presentedBy` in the ontology.
+
+cag: appearance: {
+  field: {
+    id: { label: 'ID' kind: String }
+    org_id: { label: 'Org' kind: String ref: 'sys/org' valid: Skip }
+    fixture_id: { label: 'Segment' kind: String ref: 'cag/fixture' valid: Skip }
+    speaker_id: { label: 'Speaker' kind: String ref: 'cag/speaker' valid: Skip }
+    ## speaker | host | panellist | mentor
+    role: { label: 'Role' kind: String valid: Skip }
+    ## none | sent | accepted | declined | tentative | cancelled
+    invite: { label: 'Invitation' kind: String valid: Skip }
+    order: { label: 'Order' kind: Number valid: Skip }
+    t_c: { label: 'Created' kind: Number valid: Skip }
+    t_m: { label: 'Modified' kind: Number valid: Skip }
+  }
+  valid: '$$': 'Open'
+}

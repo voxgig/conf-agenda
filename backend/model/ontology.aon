@@ -1,0 +1,54 @@
+# The ENTITY GRAPH (SPEC 8.2). This file is not part of the entity model the
+# generator reads - it is checked on its own with `aontu relations`, and it
+# constrains DATA: the edges come from fixture documents, not from type
+# declarations. Declaring `cag/fixture contains cag/fixture` here would be a
+# type-level self-loop and `acyclic` would (correctly) reject it.
+#
+# std/system is served from the aontu engine itself - no filesystem, no
+# package resolution. It is marked EXPERIMENTAL upstream.
+
+@"std/system"
+
+
+## What the far end of each relation must satisfy. `target` is a MEET, not
+## merely the absence of a conflict: a target key the far end lacks would
+## otherwise unify happily and leave a hole. That is the whole point for
+## Speaker - a record missing an email unifies fine and the gap is then
+## discovered at invitation time, in front of a real person.
+
+Speaker: type({
+  name: string
+  email: string
+})
+
+Room: type({
+  name: string
+})
+
+Fixture: type({
+  title: string
+})
+
+
+relations: {
+
+  ## Fixtures nest: conference > (optional day fixtures) > segments.
+  ## acyclic is what stops a tree becoming a ring. clone:fixture walks the
+  ## tree and would recurse forever on one; the report names every entity
+  ## the cycle runs through.
+  ##
+  ## This does NOT run on every save. The runtime pair is the
+  ## `fixture-cycle` rule (SPEC 16.1) plus a save-time guard that walks the
+  ## new ancestor chain BEFORE storing. Both exist; neither substitutes for
+  ## the other.
+  contains: $.std.Relation & { inverse: containedBy, acyclic: true }
+
+  ## A segment fixture presents speakers, via appearances.
+  presents: $.std.Relation & { inverse: presentedBy, target: $.Speaker }
+
+  ## A segment fixture occupies a room for an interval.
+  occupies: $.std.Relation & { target: $.Room }
+
+  ## A calendar link mirrors exactly one segment fixture into one account.
+  mirrors: $.std.Relation & { target: $.Fixture }
+}

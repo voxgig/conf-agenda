@@ -13,6 +13,13 @@ flowchart TB
   subgraph services[Services]
   end
   subgraph data[Entities]
+    subgraph zone_cag[zone cag]
+      cag_appearance[appearance]
+      cag_fixture[fixture]
+      cag_room[room]
+      cag_speaker[speaker]
+      cag_track[track]
+    end
     subgraph zone_sys[zone sys]
       sys_login[login]
       sys_user[user]
