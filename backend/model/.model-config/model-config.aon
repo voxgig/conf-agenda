@@ -1,0 +1,29 @@
+
+@"@voxgig/model/model/.model-config/model-config.aon"
+
+## Code-generation actions. Each loads a plain-JS script under build/ that
+## runs during model-build and emits the Lambda deployment templates.
+## order.action sets their execution order.
+
+sys: model: action: {
+  srv_yml: {
+    load: 'build/srv_yml'
+  }
+  srv_handler: {
+    load: 'build/srv_handler'
+  }
+  res_yml: {
+    load: 'build/res_yml'
+  }
+  env_gen: {
+    load: 'build/env_gen'
+  }
+  doc_gen: {
+    load: 'build/doc_gen'
+  }
+  api_gen: {
+    load: 'build/api_gen'
+  }
+}
+
+sys: model: order: action: 'srv_yml,srv_handler,res_yml,env_gen,doc_gen,api_gen'

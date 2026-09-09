@@ -1,0 +1,113 @@
+{
+  "main": {
+    "api": {
+      "active": true,
+      "prefix": "/api",
+      "version": "v1"
+    },
+    "conf": {
+      "core": {
+        "name": "conf-agenda",
+        "short": "conf-agenda",
+        "token": "conf-agenda-auth"
+      },
+      "port": {
+        "backend": 50500,
+        "frontend": 50501,
+        "repl": 50502
+      }
+    },
+    "ent": {
+      "sys": {
+        "login": {
+          "field": {
+            "id": {
+              "kind": "String"
+            }
+          },
+          "id": {
+            "field": "id"
+          },
+          "valid": {
+            "$$": "Open"
+          }
+        },
+        "user": {
+          "field": {
+            "id": {
+              "kind": "String"
+            }
+          },
+          "id": {
+            "field": "id"
+          },
+          "valid": {
+            "$$": "Open"
+          }
+        }
+      }
+    },
+    "env": {
+      "local": {
+        "active": true
+      }
+    },
+    "msg": {
+      "aim": {}
+    },
+    "shape": {
+      "ent": {
+        "field": {
+          "id": {
+            "kind": "String"
+          }
+        },
+        "id": {
+          "field": "id"
+        }
+      }
+    },
+    "srv": {},
+    "theme": {
+      "mode": "light",
+      "modes": {
+        "dark": {
+          "accent-bg": "#1f6feb44",
+          "bg": "#0d1117",
+          "border": "#30363d",
+          "font": "15px/1.5 system-ui, sans-serif",
+          "muted": "#8b949e",
+          "primary": "#58a6ff",
+          "primary-dark": "#388bfd",
+          "radius": "6px",
+          "shadow-card": "0 6px 24px rgba(0,0,0,.55)",
+          "surface": "#161b22",
+          "text": "#e6edf3",
+          "topbar-bg": "#010409",
+          "topbar-fg": "#e6edf3"
+        },
+        "light": {
+          "accent-bg": "#e7f0ff",
+          "bg": "#f5f7fa",
+          "border": "#e3e8ee",
+          "font": "15px/1.5 system-ui, sans-serif",
+          "muted": "#8b949e",
+          "primary": "#1f6feb",
+          "primary-dark": "#1a5fd0",
+          "radius": "6px",
+          "shadow-card": "0 6px 24px rgba(13,27,42,.10)",
+          "surface": "#ffffff",
+          "text": "#1c2733",
+          "topbar-bg": "#0d1b2a",
+          "topbar-fg": "#e6edf3"
+        }
+      }
+    }
+  },
+  "sys": {},
+  "voxgig": {
+    "build": {
+      "version": "2"
+    }
+  }
+}

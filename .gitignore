@@ -1,0 +1,13 @@
+node_modules
+dist
+dist-test
+*.log
+*.tsbuildinfo
+.DS_Store
+
+# jostraca build metadata (written during model-build generation)
+**/.jostraca/
+
+# voxgig-model: model-config.aon is the hand-authored source (build actions);
+# model-config.json is compiled from it by model-build.
+**/.model-config/model-config.json

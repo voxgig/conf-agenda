@@ -1,0 +1,12 @@
+
+core: name: 'conf-agenda'
+core: short: 'conf-agenda'
+core: token: 'conf-agenda-auth'
+
+port: &: number
+
+port: {
+  backend: 50500
+  frontend: 50501
+  repl: 50502
+}

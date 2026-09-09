@@ -1,0 +1,54 @@
+
+sys: &: $.main.shape.ent
+
+
+## Base system entities (used by the user/owner plugins).
+
+sys: user: {
+  field: {}
+  valid: '$$': 'Open'
+}
+
+sys: login: {
+  field: {}
+  valid: '$$': 'Open'
+}
+
+
+## Example application entity. Uncomment (and the zone shape line) to add
+## your first entity; the owner_id field gives per-user isolation via the
+## @seneca/owner plugin (see src/env/shared/basic.ts).
+
+# app: &: $.main.shape.ent
+#
+# app: thing: {
+#   field: {
+#     id: {
+#       label: 'ID'
+#       kind: String
+#     }
+#     title: {
+#       label: 'Title'
+#       kind: String
+#       valid: 'Min(1).Max(999)'
+#     }
+#     owner_id: {
+#       label: 'Owner'
+#       kind: String
+#       ## Server-managed: @seneca/owner injects it AFTER validation runs,
+#       ## so without Skip every create fails as 'owner_id is required'.
+#       valid: Skip
+#     }
+#     t_c: {
+#       label: 'Created'
+#       kind: Number
+#       valid: Skip
+#     }
+#     t_m: {
+#       label: 'Modified'
+#       kind: Number
+#       valid: Skip
+#     }
+#   }
+#   valid: '$$': 'Open'
+# }
