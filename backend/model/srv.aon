@@ -1,0 +1,16 @@
+
+&: $.sys.shape.srv.std_ts
+
+
+## Example service definition. Uncomment to add the example 'thing'
+## service (see also msg.aon and src/srv/).
+
+# thing: {
+#   in: {
+#     aim: thing: {}
+#     aim: web: on: thing: '$': allow: true
+#   }
+#   user: required: true
+#   api: web: path: { area: 'private/', suffix: '' }
+#   env: lambda: active: true
+# }

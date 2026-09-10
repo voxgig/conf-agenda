@@ -1,0 +1,41 @@
+
+## Design theme (UI), controlled by the model. Each mode is a set of design
+## tokens (colors, fonts, radius, effects) emitted as CSS variables
+## (--vg-<token>) by @voxgig/build into web/src/theme.css. Override tokens
+## per project in web/src/custom.css; add modes via the `theme:modes` hook.
+
+mode: 'light'          # default mode
+
+modes: {
+  light: {
+    primary:       '#1f6feb'
+    'primary-dark': '#1a5fd0'
+    bg:            '#f5f7fa'
+    surface:       '#ffffff'
+    text:          '#1c2733'
+    muted:         '#8b949e'
+    border:        '#e3e8ee'
+    'topbar-bg':   '#0d1b2a'
+    'topbar-fg':   '#e6edf3'
+    'accent-bg':   '#e7f0ff'
+    font:          '15px/1.5 system-ui, sans-serif'
+    radius:        '6px'
+    'shadow-card': '0 6px 24px rgba(13,27,42,.10)'
+  }
+
+  dark: {
+    primary:       '#58a6ff'
+    'primary-dark': '#388bfd'
+    bg:            '#0d1117'
+    surface:       '#161b22'
+    text:          '#e6edf3'
+    muted:         '#8b949e'
+    border:        '#30363d'
+    'topbar-bg':   '#010409'
+    'topbar-fg':   '#e6edf3'
+    'accent-bg':   '#1f6feb44'
+    font:          '15px/1.5 system-ui, sans-serif'
+    radius:        '6px'
+    'shadow-card': '0 6px 24px rgba(0,0,0,.55)'
+  }
+}

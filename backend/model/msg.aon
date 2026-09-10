@@ -1,0 +1,26 @@
+
+## Seneca message patterns.
+
+aim: {}
+
+
+## Example service messages. Uncomment to add messages for the example
+## 'thing' service. Each message maps by convention to an action file in
+## src/srv/thing/ (save:item -> save_item.ts); add a message only when its
+## action file exists.
+
+# aim: thing: {
+#   get: info: {}
+#   save: item: {}
+# }
+
+
+## Gateway (web) routing to web_ action files. aim:web is the only
+## namespace the gateway accepts from a browser.
+
+# aim: web: {
+#   get: info: {}
+#   on: thing: {
+#     save: item: { '$': { file: './web_save_item' }}
+#   }
+# }

@@ -1,0 +1,2181 @@
+openapi: 3.1.0
+info:
+  title: conf-agenda API
+  version: v1
+  description: 'Strict-JSON REST API, generated from the model. Uniform entity paths: <zone>/<name>[/<id>].'
+servers:
+  - url: /api
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API access key (create one under Settings & security)
+  schemas:
+    Error:
+      type: object
+      additionalProperties: false
+      properties:
+        error:
+          type: object
+          additionalProperties: true
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: array
+              items:
+                type: object
+          required:
+            - code
+      required:
+        - error
+    CagAppearance:
+      type: object
+      additionalProperties: false
+      properties:
+        fixture_id:
+          type: string
+          title: Segment
+          description: Reference to cag/fixture
+        id:
+          type: string
+          title: ID
+          readOnly: true
+        invite:
+          type: string
+          title: Invitation
+        order:
+          type: number
+          title: Order
+        org_id:
+          type: string
+          title: Org
+          description: Reference to sys/org
+        role:
+          type: string
+          title: Role
+        speaker_id:
+          type: string
+          title: Speaker
+          description: Reference to cag/speaker
+        t_c:
+          type: number
+          title: Created
+          readOnly: true
+        t_m:
+          type: number
+          title: Modified
+          readOnly: true
+    CagAppearanceCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        fixture_id:
+          type: string
+          title: Segment
+          description: Reference to cag/fixture
+        invite:
+          type: string
+          title: Invitation
+        order:
+          type: number
+          title: Order
+        org_id:
+          type: string
+          title: Org
+          description: Reference to sys/org
+        role:
+          type: string
+          title: Role
+        speaker_id:
+          type: string
+          title: Speaker
+          description: Reference to cag/speaker
+    CagAppearanceUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        fixture_id:
+          type: string
+          title: Segment
+          description: Reference to cag/fixture
+        invite:
+          type: string
+          title: Invitation
+        order:
+          type: number
+          title: Order
+        org_id:
+          type: string
+          title: Org
+          description: Reference to sys/org
+        role:
+          type: string
+          title: Role
+        speaker_id:
+          type: string
+          title: Speaker
+          description: Reference to cag/speaker
+    CagFixture:
+      type: object
+      additionalProperties: false
+      properties:
+        desc:
+          type: string
+          title: Abstract
+        embed:
+          type: string
+          title: Embed
+        id:
+          type: string
+          title: ID
+          readOnly: true
+        kind:
+          type: string
+          title: Kind
+        org_id:
+          type: string
+          title: Org
+          description: Reference to sys/org
+        p_gc:
+          type: string
+          title: Geocode
+        p_lat:
+          type: number
+          title: Latitude
+        p_lng:
+          type: number
+          title: Longitude
+        p_name:
+          type: string
+          title: Venue
+        p_web:
+          type: string
+          title: Venue site
+        parent_id:
+          type: string
+          title: Parent
+          description: Reference to cag/fixture
+        private:
+          type: boolean
+          title: Private
+        room_id:
+          type: string
+          title: Room
+          description: Reference to cag/room
+        slug:
+          type: string
+          title: Slug
+        status:
+          type: string
+          title: Status
+        t_c:
+          type: number
+          title: Created
+          readOnly: true
+        t_end:
+          type: number
+          title: End
+        t_m:
+          type: number
+          title: Modified
+          readOnly: true
+        t_start:
+          type: number
+          title: Start
+        t_tzn:
+          type: string
+          title: Timezone
+        title:
+          type: string
+          title: Title
+        top_id:
+          type: string
+          title: Top
+          description: Reference to cag/fixture
+        track_id:
+          type: string
+          title: Track
+          description: Reference to cag/track
+        w_deck:
+          type: string
+          title: Slides
+        w_site:
+          type: string
+          title: Site
+        w_video:
+          type: string
+          title: Video
+      required:
+        - title
+    CagFixtureCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        desc:
+          type: string
+          title: Abstract
+        embed:
+          type: string
+          title: Embed
+        kind:
+          type: string
+          title: Kind
+        org_id:
+          type: string
+          title: Org
+          description: Reference to sys/org
+        p_gc:
+          type: string
+          title: Geocode
+        p_lat:
+          type: number
+          title: Latitude
+        p_lng:
+          type: number
+          title: Longitude
+        p_name:
+          type: string
+          title: Venue
+        p_web:
+          type: string
+          title: Venue site
+        parent_id:
+          type: string
+          title: Parent
+          description: Reference to cag/fixture
+        private:
+          type: boolean
+          title: Private
+        room_id:
+          type: string
+          title: Room
+          description: Reference to cag/room
+        slug:
+          type: string
+          title: Slug
+        status:
+          type: string
+          title: Status
+        t_end:
+          type: number
+          title: End
+        t_start:
+          type: number
+          title: Start
+        t_tzn:
+          type: string
+          title: Timezone
+        title:
+          type: string
+          title: Title
+        top_id:
+          type: string
+          title: Top
+          description: Reference to cag/fixture
+        track_id:
+          type: string
+          title: Track
+          description: Reference to cag/track
+        w_deck:
+          type: string
+          title: Slides
+        w_site:
+          type: string
+          title: Site
+        w_video:
+          type: string
+          title: Video
+      required:
+        - title
+    CagFixtureUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        desc:
+          type: string
+          title: Abstract
+        embed:
+          type: string
+          title: Embed
+        kind:
+          type: string
+          title: Kind
+        org_id:
+          type: string
+          title: Org
+          description: Reference to sys/org
+        p_gc:
+          type: string
+          title: Geocode
+        p_lat:
+          type: number
+          title: Latitude
+        p_lng:
+          type: number
+          title: Longitude
+        p_name:
+          type: string
+          title: Venue
+        p_web:
+          type: string
+          title: Venue site
+        parent_id:
+          type: string
+          title: Parent
+          description: Reference to cag/fixture
+        private:
+          type: boolean
+          title: Private
+        room_id:
+          type: string
+          title: Room
+          description: Reference to cag/room
+        slug:
+          type: string
+          title: Slug
+        status:
+          type: string
+          title: Status
+        t_end:
+          type: number
+          title: End
+        t_start:
+          type: number
+          title: Start
+        t_tzn:
+          type: string
+          title: Timezone
+        title:
+          type: string
+          title: Title
+        top_id:
+          type: string
+          title: Top
+          description: Reference to cag/fixture
+        track_id:
+          type: string
+          title: Track
+          description: Reference to cag/track
+        w_deck:
+          type: string
+          title: Slides
+        w_site:
+          type: string
+          title: Site
+        w_video:
+          type: string
+          title: Video
+    CagRoom:
+      type: object
+      additionalProperties: false
+      properties:
+        access:
+          type: string
+          title: Accessibility
+        capacity:
+          type: number
+          title: Capacity
+        floor:
+          type: string
+          title: Floor
+        id:
+          type: string
+          title: ID
+          readOnly: true
+        name:
+          type: string
+          title: Name
+        order:
+          type: number
+          title: Order
+        org_id:
+          type: string
+          title: Org
+          description: Reference to sys/org
+        t_c:
+          type: number
+          title: Created
+          readOnly: true
+        t_m:
+          type: number
+          title: Modified
+          readOnly: true
+      required:
+        - name
+    CagRoomCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        access:
+          type: string
+          title: Accessibility
+        capacity:
+          type: number
+          title: Capacity
+        floor:
+          type: string
+          title: Floor
+        name:
+          type: string
+          title: Name
+        order:
+          type: number
+          title: Order
+        org_id:
+          type: string
+          title: Org
+          description: Reference to sys/org
+      required:
+        - name
+    CagRoomUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        access:
+          type: string
+          title: Accessibility
+        capacity:
+          type: number
+          title: Capacity
+        floor:
+          type: string
+          title: Floor
+        name:
+          type: string
+          title: Name
+        order:
+          type: number
+          title: Order
+        org_id:
+          type: string
+          title: Org
+          description: Reference to sys/org
+    CagSpeaker:
+      type: object
+      additionalProperties: false
+      properties:
+        bio:
+          type: string
+          title: Bio
+        email:
+          type: string
+          title: Email
+        id:
+          type: string
+          title: ID
+          readOnly: true
+        name:
+          type: string
+          title: Name
+        org_id:
+          type: string
+          title: Org
+          description: Reference to sys/org
+        org_name:
+          type: string
+          title: Organisation
+        photo:
+          type: string
+          title: Photo
+        t_c:
+          type: number
+          title: Created
+          readOnly: true
+        t_m:
+          type: number
+          title: Modified
+          readOnly: true
+        w_site:
+          type: string
+          title: Site
+      required:
+        - name
+    CagSpeakerCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        bio:
+          type: string
+          title: Bio
+        email:
+          type: string
+          title: Email
+        name:
+          type: string
+          title: Name
+        org_id:
+          type: string
+          title: Org
+          description: Reference to sys/org
+        org_name:
+          type: string
+          title: Organisation
+        photo:
+          type: string
+          title: Photo
+        w_site:
+          type: string
+          title: Site
+      required:
+        - name
+    CagSpeakerUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        bio:
+          type: string
+          title: Bio
+        email:
+          type: string
+          title: Email
+        name:
+          type: string
+          title: Name
+        org_id:
+          type: string
+          title: Org
+          description: Reference to sys/org
+        org_name:
+          type: string
+          title: Organisation
+        photo:
+          type: string
+          title: Photo
+        w_site:
+          type: string
+          title: Site
+    CagTrack:
+      type: object
+      additionalProperties: false
+      properties:
+        color:
+          type: string
+          title: Colour
+        desc:
+          type: string
+          title: Description
+        id:
+          type: string
+          title: ID
+          readOnly: true
+        name:
+          type: string
+          title: Name
+        order:
+          type: number
+          title: Order
+        org_id:
+          type: string
+          title: Org
+          description: Reference to sys/org
+        t_c:
+          type: number
+          title: Created
+          readOnly: true
+        t_m:
+          type: number
+          title: Modified
+          readOnly: true
+      required:
+        - name
+    CagTrackCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        color:
+          type: string
+          title: Colour
+        desc:
+          type: string
+          title: Description
+        name:
+          type: string
+          title: Name
+        order:
+          type: number
+          title: Order
+        org_id:
+          type: string
+          title: Org
+          description: Reference to sys/org
+      required:
+        - name
+    CagTrackUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        color:
+          type: string
+          title: Colour
+        desc:
+          type: string
+          title: Description
+        name:
+          type: string
+          title: Name
+        order:
+          type: number
+          title: Order
+        org_id:
+          type: string
+          title: Org
+          description: Reference to sys/org
+paths:
+  /v1/cag/appearance:
+    get:
+      operationId: list_cag_appearance
+      summary: List appearance entities
+      tags:
+        - cag/appearance
+      parameters:
+        - name: fixture_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by fixture_id
+        - name: id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by id
+        - name: invite
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by invite
+        - name: order
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by order
+        - name: org_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by org_id
+        - name: role
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by role
+        - name: speaker_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by speaker_id
+        - name: t_c
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by t_c
+        - name: t_m
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by t_m
+      responses:
+        '200':
+          description: Matching appearance entities
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CagAppearance'
+                required:
+                  - items
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: create_cag_appearance
+      summary: Create a appearance
+      tags:
+        - cag/appearance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CagAppearanceCreate'
+      responses:
+        '201':
+          description: The created appearance
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  item:
+                    $ref: '#/components/schemas/CagAppearance'
+                required:
+                  - item
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/cag/appearance/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: load_cag_appearance
+      summary: Load one appearance
+      tags:
+        - cag/appearance
+      responses:
+        '200':
+          description: The appearance
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  item:
+                    $ref: '#/components/schemas/CagAppearance'
+                required:
+                  - item
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      operationId: update_cag_appearance
+      summary: Update a appearance (partial)
+      tags:
+        - cag/appearance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CagAppearanceUpdate'
+      responses:
+        '200':
+          description: The updated appearance
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  item:
+                    $ref: '#/components/schemas/CagAppearance'
+                required:
+                  - item
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: remove_cag_appearance
+      summary: Remove a appearance
+      tags:
+        - cag/appearance
+      responses:
+        '200':
+          description: Removed
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  ok:
+                    type: boolean
+                  id:
+                    type: string
+                required:
+                  - ok
+                  - id
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/cag/fixture:
+    get:
+      operationId: list_cag_fixture
+      summary: List fixture entities
+      tags:
+        - cag/fixture
+      parameters:
+        - name: desc
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by desc
+        - name: embed
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by embed
+        - name: id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by id
+        - name: kind
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by kind
+        - name: org_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by org_id
+        - name: p_gc
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by p_gc
+        - name: p_lat
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by p_lat
+        - name: p_lng
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by p_lng
+        - name: p_name
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by p_name
+        - name: p_web
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by p_web
+        - name: parent_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by parent_id
+        - name: private
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Filter by private
+        - name: room_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by room_id
+        - name: slug
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by slug
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by status
+        - name: t_c
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by t_c
+        - name: t_end
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by t_end
+        - name: t_m
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by t_m
+        - name: t_start
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by t_start
+        - name: t_tzn
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by t_tzn
+        - name: title
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by title
+        - name: top_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by top_id
+        - name: track_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by track_id
+        - name: w_deck
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by w_deck
+        - name: w_site
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by w_site
+        - name: w_video
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by w_video
+      responses:
+        '200':
+          description: Matching fixture entities
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CagFixture'
+                required:
+                  - items
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: create_cag_fixture
+      summary: Create a fixture
+      tags:
+        - cag/fixture
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CagFixtureCreate'
+      responses:
+        '201':
+          description: The created fixture
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  item:
+                    $ref: '#/components/schemas/CagFixture'
+                required:
+                  - item
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/cag/fixture/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: load_cag_fixture
+      summary: Load one fixture
+      tags:
+        - cag/fixture
+      responses:
+        '200':
+          description: The fixture
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  item:
+                    $ref: '#/components/schemas/CagFixture'
+                required:
+                  - item
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      operationId: update_cag_fixture
+      summary: Update a fixture (partial)
+      tags:
+        - cag/fixture
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CagFixtureUpdate'
+      responses:
+        '200':
+          description: The updated fixture
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  item:
+                    $ref: '#/components/schemas/CagFixture'
+                required:
+                  - item
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: remove_cag_fixture
+      summary: Remove a fixture
+      tags:
+        - cag/fixture
+      responses:
+        '200':
+          description: Removed
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  ok:
+                    type: boolean
+                  id:
+                    type: string
+                required:
+                  - ok
+                  - id
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/cag/room:
+    get:
+      operationId: list_cag_room
+      summary: List room entities
+      tags:
+        - cag/room
+      parameters:
+        - name: access
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by access
+        - name: capacity
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by capacity
+        - name: floor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by floor
+        - name: id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by id
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by name
+        - name: order
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by order
+        - name: org_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by org_id
+        - name: t_c
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by t_c
+        - name: t_m
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by t_m
+      responses:
+        '200':
+          description: Matching room entities
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CagRoom'
+                required:
+                  - items
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: create_cag_room
+      summary: Create a room
+      tags:
+        - cag/room
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CagRoomCreate'
+      responses:
+        '201':
+          description: The created room
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  item:
+                    $ref: '#/components/schemas/CagRoom'
+                required:
+                  - item
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/cag/room/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: load_cag_room
+      summary: Load one room
+      tags:
+        - cag/room
+      responses:
+        '200':
+          description: The room
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  item:
+                    $ref: '#/components/schemas/CagRoom'
+                required:
+                  - item
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      operationId: update_cag_room
+      summary: Update a room (partial)
+      tags:
+        - cag/room
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CagRoomUpdate'
+      responses:
+        '200':
+          description: The updated room
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  item:
+                    $ref: '#/components/schemas/CagRoom'
+                required:
+                  - item
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: remove_cag_room
+      summary: Remove a room
+      tags:
+        - cag/room
+      responses:
+        '200':
+          description: Removed
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  ok:
+                    type: boolean
+                  id:
+                    type: string
+                required:
+                  - ok
+                  - id
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/cag/speaker:
+    get:
+      operationId: list_cag_speaker
+      summary: List speaker entities
+      tags:
+        - cag/speaker
+      parameters:
+        - name: bio
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by bio
+        - name: email
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by email
+        - name: id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by id
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by name
+        - name: org_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by org_id
+        - name: org_name
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by org_name
+        - name: photo
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by photo
+        - name: t_c
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by t_c
+        - name: t_m
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by t_m
+        - name: w_site
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by w_site
+      responses:
+        '200':
+          description: Matching speaker entities
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CagSpeaker'
+                required:
+                  - items
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: create_cag_speaker
+      summary: Create a speaker
+      tags:
+        - cag/speaker
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CagSpeakerCreate'
+      responses:
+        '201':
+          description: The created speaker
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  item:
+                    $ref: '#/components/schemas/CagSpeaker'
+                required:
+                  - item
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/cag/speaker/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: load_cag_speaker
+      summary: Load one speaker
+      tags:
+        - cag/speaker
+      responses:
+        '200':
+          description: The speaker
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  item:
+                    $ref: '#/components/schemas/CagSpeaker'
+                required:
+                  - item
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      operationId: update_cag_speaker
+      summary: Update a speaker (partial)
+      tags:
+        - cag/speaker
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CagSpeakerUpdate'
+      responses:
+        '200':
+          description: The updated speaker
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  item:
+                    $ref: '#/components/schemas/CagSpeaker'
+                required:
+                  - item
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: remove_cag_speaker
+      summary: Remove a speaker
+      tags:
+        - cag/speaker
+      responses:
+        '200':
+          description: Removed
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  ok:
+                    type: boolean
+                  id:
+                    type: string
+                required:
+                  - ok
+                  - id
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/cag/track:
+    get:
+      operationId: list_cag_track
+      summary: List track entities
+      tags:
+        - cag/track
+      parameters:
+        - name: color
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by color
+        - name: desc
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by desc
+        - name: id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by id
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by name
+        - name: order
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by order
+        - name: org_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by org_id
+        - name: t_c
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by t_c
+        - name: t_m
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by t_m
+      responses:
+        '200':
+          description: Matching track entities
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CagTrack'
+                required:
+                  - items
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: create_cag_track
+      summary: Create a track
+      tags:
+        - cag/track
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CagTrackCreate'
+      responses:
+        '201':
+          description: The created track
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  item:
+                    $ref: '#/components/schemas/CagTrack'
+                required:
+                  - item
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/cag/track/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: load_cag_track
+      summary: Load one track
+      tags:
+        - cag/track
+      responses:
+        '200':
+          description: The track
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  item:
+                    $ref: '#/components/schemas/CagTrack'
+                required:
+                  - item
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      operationId: update_cag_track
+      summary: Update a track (partial)
+      tags:
+        - cag/track
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CagTrackUpdate'
+      responses:
+        '200':
+          description: The updated track
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  item:
+                    $ref: '#/components/schemas/CagTrack'
+                required:
+                  - item
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: remove_cag_track
+      summary: Remove a track
+      tags:
+        - cag/track
+      responses:
+        '200':
+          description: Removed
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  ok:
+                    type: boolean
+                  id:
+                    type: string
+                required:
+                  - ok
+                  - id
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

@@ -1,0 +1,52 @@
+{
+  "name": "conf-agenda-backend",
+  "version": "0.0.1",
+  "description": "conf-agenda backend",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --enable-source-maps --test-force-exit --test \"dist-test/unit/**/*.test.js\"",
+    "test-some": "node --enable-source-maps --test-force-exit --test-name-pattern=\"$npm_config_pattern\" --test \"dist-test/unit/**/*.test.js\"",
+    "model": "voxgig-model model/model.aon --watch",
+    "model-build": "voxgig-model model/model.aon",
+    "watch": "tsc --build src test -w",
+    "build": "npm run model-build && tsc --build src && tsc --build test",
+    "clean": "rm -rf dist dist-test node_modules yarn.lock package-lock.json",
+    "reset": "npm run clean && npm install && npm run build && npm test",
+    "local": "node dist/env/local/local.js --seneca.log.warn",
+    "local-debug": "node dist/env/local/local.js --seneca.log.debug",
+    "web": "node dist/env/web/web.js",
+    "model-check": "aontu relations model/ontology.aon && aontu hash model/model.aon",
+    "model-breaking": "aontu breaking --against git#HEAD model/model.aon"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@seneca/entity-util": "3.2.0",
+    "@seneca/gateway": "1.3.0",
+    "@seneca/gateway-auth": "1.1.0",
+    "@seneca/gateway-express": "1.0.0",
+    "@seneca/gateway-lambda": "1.1.0",
+    "@seneca/owner": "6.4.0",
+    "@seneca/reload": "0.5.0",
+    "@seneca/repl": "9.1.0",
+    "@seneca/user": "6.4.0",
+    "@voxgig/model": "11.0.0",
+    "@voxgig/system": "1.15.0",
+    "@voxgig/util": "^0.5.4",
+    "cookie-parser": "1.4.7",
+    "express": "5.2.1",
+    "seneca": "4.0.0-rc5",
+    "seneca-entity": "28.1.0",
+    "seneca-promisify": "3.7.2",
+    "uuid": "^11.1.1"
+  },
+  "devDependencies": {
+    "@hapi/code": "^9.0.3",
+    "@tsconfig/node16": "16.1.8",
+    "@types/cookie-parser": "1.4.10",
+    "@types/express": "5.0.6",
+    "@types/node": "^26.1.1",
+    "@voxgig/build": "4.16.0",
+    "typescript": "7.0.2"
+  }
+}

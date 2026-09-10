@@ -1,0 +1,32 @@
+
+@"@voxgig/model/model/sys.aon"
+
+voxgig: build: version: '2'
+
+
+## Entity shape.
+main: shape: ent: {
+  id: {
+    field: 'id'
+  }
+  field: &: {
+    kind: *'String' | string
+  }
+  field: {
+    id: kind: *'String' | string
+  }
+}
+
+
+main: msg: @"msg.aon"          # Seneca Messages
+main: srv: @"srv.aon"          # Services
+main: conf: @"conf.aon"        # Configuration
+main: ent: @"ent.aon"          # Entities
+main: env: @"env.aon"          # Target environments
+main: theme: @"theme.aon"      # Design theme (UI)
+main: api: @"api.aon"          # REST API (strict JSON)
+
+
+main: srv: &: options: {
+  debug: true
+}
