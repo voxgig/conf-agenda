@@ -1,0 +1,63 @@
+{
+  "_readme": "See README.md. Times are UTC epoch ms; Europe/Dublin is GMT (UTC+0) in November, so wall time equals UTC here and the fixture stays readable. Exactly one deliberate clash, and one deliberate half-open near-miss.",
+
+  "cag/room": [
+    { "id": "room_a", "org_id": "org_tiny", "name": "Room A", "capacity": 120, "order": 1 },
+    { "id": "room_b", "org_id": "org_tiny", "name": "Room B", "capacity": 60, "order": 2 }
+  ],
+
+  "cag/track": [
+    { "id": "trk_platform", "org_id": "org_tiny", "name": "Platform", "color": "#e70042", "order": 1 }
+  ],
+
+  "cag/speaker": [
+    { "id": "spk_ada", "org_id": "org_tiny", "name": "Ada Byrne", "email": "ada@example.invalid", "bio": "Platform engineer." },
+    { "id": "spk_tomas", "org_id": "org_tiny", "name": "Tomas Quinn", "email": "tomas@example.invalid", "bio": "Frontend engineer." },
+    { "id": "spk_mina", "org_id": "org_tiny", "name": "Mina Kovac", "email": "mina@example.invalid", "bio": "Database engineer." }
+  ],
+
+  "cag/fixture": [
+    {
+      "id": "conf_tiny", "org_id": "org_tiny", "parent_id": null, "top_id": "conf_tiny",
+      "kind": "con", "slug": "tiny-conf-2027", "title": "Tiny Conf 2027",
+      "desc": "The smallest conference that still exercises the model.",
+      "t_start": 1825230600000, "t_end": 1825261200000, "t_tzn": "Europe/Dublin",
+      "p_name": "Tiny Venue, Dublin",
+      "status": "confirmed", "private": false
+    },
+    {
+      "id": "seg_keynote", "org_id": "org_tiny", "parent_id": "conf_tiny", "top_id": "conf_tiny",
+      "room_id": "room_a", "track_id": "trk_platform",
+      "kind": "key", "title": "Opening Keynote",
+      "t_start": 1825232400000, "t_end": 1825236000000,
+      "status": "confirmed", "private": false
+    },
+    {
+      "id": "seg_buses", "org_id": "org_tiny", "parent_id": "conf_tiny", "top_id": "conf_tiny",
+      "room_id": "room_a", "track_id": "trk_platform",
+      "kind": "tak", "title": "Message Buses in the Browser",
+      "t_start": 1825236000000, "t_end": 1825239600000,
+      "status": "confirmed", "private": false
+    },
+    {
+      "id": "seg_d1edge", "org_id": "org_tiny", "parent_id": "conf_tiny", "top_id": "conf_tiny",
+      "room_id": "room_a", "track_id": "trk_platform",
+      "kind": "tak", "title": "D1 at the Edge",
+      "t_start": 1825237800000, "t_end": 1825241400000,
+      "status": "confirmed", "private": false
+    },
+    {
+      "id": "seg_coffee", "org_id": "org_tiny", "parent_id": "conf_tiny", "top_id": "conf_tiny",
+      "room_id": "room_b",
+      "kind": "brk", "title": "Coffee",
+      "t_start": 1825239600000, "t_end": 1825241400000,
+      "status": "confirmed", "private": false
+    }
+  ],
+
+  "cag/appearance": [
+    { "id": "app_keynote_ada", "org_id": "org_tiny", "fixture_id": "seg_keynote", "speaker_id": "spk_ada", "role": "speaker", "invite": "none", "order": 1 },
+    { "id": "app_buses_tomas", "org_id": "org_tiny", "fixture_id": "seg_buses", "speaker_id": "spk_tomas", "role": "speaker", "invite": "none", "order": 1 },
+    { "id": "app_d1edge_mina", "org_id": "org_tiny", "fixture_id": "seg_d1edge", "speaker_id": "spk_mina", "role": "speaker", "invite": "none", "order": 1 }
+  ]
+}

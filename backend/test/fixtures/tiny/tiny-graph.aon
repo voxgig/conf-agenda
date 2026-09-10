@@ -1,0 +1,75 @@
+# The tiny fixture as an ENTITY GRAPH, for `aontu relations`.
+#
+# Separate from tiny.json on purpose: tiny.json is the row data a store loads,
+# this is the edge set the relation properties are checked over. See
+# docs/decisions/ontology-mechanism.md for why edges live in data rather than
+# in the type declarations.
+#
+# Pulls the relation declarations from the model so they cannot drift.
+
+@"../../../model/ontology.aon"
+
+
+## The conference and its four segments. Flat by design - tiny has no `day`
+## fixture; test/fixtures/nodeconf is the one that exercises nesting.
+
+conf_tiny: id(cag/fixture/conf_tiny) & {
+  title: 'Tiny Conf 2027'
+  contains: [&: refer()
+    cag/fixture/seg_keynote
+    cag/fixture/seg_buses
+    cag/fixture/seg_d1edge
+    cag/fixture/seg_coffee
+  ]
+}
+
+seg_keynote: id(cag/fixture/seg_keynote) & {
+  title: 'Opening Keynote'
+  containedBy: [&: refer(), cag/fixture/conf_tiny]
+  occupies: [&: refer(), cag/room/room_a]
+  presents: [&: refer(), cag/speaker/spk_ada]
+}
+
+seg_buses: id(cag/fixture/seg_buses) & {
+  title: 'Message Buses in the Browser'
+  containedBy: [&: refer(), cag/fixture/conf_tiny]
+  occupies: [&: refer(), cag/room/room_a]
+  presents: [&: refer(), cag/speaker/spk_tomas]
+}
+
+seg_d1edge: id(cag/fixture/seg_d1edge) & {
+  title: 'D1 at the Edge'
+  containedBy: [&: refer(), cag/fixture/conf_tiny]
+  occupies: [&: refer(), cag/room/room_a]
+  presents: [&: refer(), cag/speaker/spk_mina]
+}
+
+seg_coffee: id(cag/fixture/seg_coffee) & {
+  title: 'Coffee'
+  containedBy: [&: refer(), cag/fixture/conf_tiny]
+  occupies: [&: refer(), cag/room/room_b]
+}
+
+
+## Rooms and speakers. These carry the fields the relations' `target` schemas
+## require - a speaker without an email fails HERE, at build, rather than at
+## invitation time in front of a real person.
+
+room_a: id(cag/room/room_a) & { name: 'Room A' }
+room_b: id(cag/room/room_b) & { name: 'Room B' }
+
+spk_ada: id(cag/speaker/spk_ada) & {
+  name: 'Ada Byrne'
+  email: 'ada@example.invalid'
+  presentedBy: [&: refer(), cag/fixture/seg_keynote]
+}
+spk_tomas: id(cag/speaker/spk_tomas) & {
+  name: 'Tomas Quinn'
+  email: 'tomas@example.invalid'
+  presentedBy: [&: refer(), cag/fixture/seg_buses]
+}
+spk_mina: id(cag/speaker/spk_mina) & {
+  name: 'Mina Kovac'
+  email: 'mina@example.invalid'
+  presentedBy: [&: refer(), cag/fixture/seg_d1edge]
+}
