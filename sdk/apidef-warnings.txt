@@ -1,0 +1,779 @@
+{
+  point: "warning"
+  err: {
+    shape: true
+    name: "ShapeError"
+    code: "shape"
+    gname: "Model: "
+    desc: null
+    props: [
+      {
+        path: ""
+        what: "type"
+        type: "object"
+        value: "openapi.yaml/model/api.aontu"
+      }
+    ]
+    err: [
+      {
+        key: null
+        type: "object"
+        node: {
+          t: "object"
+          v: {
+            name: {
+              t: "string"
+              v: ""
+              f: ""
+              n: 0
+              c: null
+              r: true
+              p: false
+              d: 1
+              k: [
+              ]
+              e: true
+              u: {
+              }
+              a: [
+              ]
+              b: [
+              ]
+              m: {
+              }
+            }
+            def: {
+              t: "string"
+              v: ""
+              f: ""
+              n: 0
+              c: null
+              r: true
+              p: false
+              d: 1
+              k: [
+              ]
+              e: true
+              u: {
+              }
+              a: [
+              ]
+              b: [
+              ]
+              m: {
+              }
+            }
+            main: {
+              t: "object"
+              v: {
+                kit: {
+                  t: "object"
+                  v: {
+                  }
+                  f: null
+                  n: 0
+                  c: {
+                    t: "any"
+                    v: null
+                    f: null
+                    n: 0
+                    c: null
+                    r: false
+                    p: false
+                    d: 3
+                    k: [
+                    ]
+                    e: true
+                    u: {
+                      tset: true
+                    }
+                    a: [
+                    ]
+                    b: [
+                    ]
+                    m: {
+                    }
+                    Above: null
+                    After: null
+                    Any: null
+                    Before: null
+                    Below: null
+                    Catch: null
+                    Check: null
+                    Child: null
+                    Closed: null
+                    Coerce: null
+                    DateTime: null
+                    Default: null
+                    Define: null
+                    Describe: null
+                    Empty: null
+                    Email: null
+                    Exact: null
+                    Extend: null
+                    Fault: null
+                    Func: null
+                    Ignore: null
+                    Integer: null
+                    Ip: null
+                    Ipv4: null
+                    Ipv6: null
+                    Len: null
+                    Max: null
+                    Min: null
+                    Never: null
+                    Nullable: null
+                    Omit: null
+                    Open: null
+                    Optional: null
+                    Partial: null
+                    Pick: null
+                    Refer: null
+                    Rename: null
+                    Required: null
+                    Rest: null
+                    Skip: null
+                    Transform: null
+                    Type: null
+                    Url: null
+                    Uuid: null
+                    String: null
+                    Number: null
+                    Boolean: null
+                    Object: null
+                    Array: null
+                    Function: null
+                    Symbol: null
+                    Date: null
+                  }
+                  r: false
+                  p: false
+                  d: 2
+                  k: [
+                  ]
+                  e: true
+                  u: {
+                  }
+                  a: [
+                  ]
+                  b: [
+                  ]
+                  m: {
+                  }
+                }
+                def: {
+                  t: "object"
+                  v: {
+                  }
+                  f: null
+                  n: 0
+                  c: {
+                    t: "any"
+                    v: null
+                    f: null
+                    n: 0
+                    c: null
+                    r: false
+                    p: false
+                    d: 3
+                    k: [
+                    ]
+                    e: true
+                    u: {
+                      tset: true
+                    }
+                    a: [
+                    ]
+                    b: [
+                    ]
+                    m: {
+                    }
+                    Above: null
+                    After: null
+                    Any: null
+                    Before: null
+                    Below: null
+                    Catch: null
+                    Check: null
+                    Child: null
+                    Closed: null
+                    Coerce: null
+                    DateTime: null
+                    Default: null
+                    Define: null
+                    Describe: null
+                    Empty: null
+                    Email: null
+                    Exact: null
+                    Extend: null
+                    Fault: null
+                    Func: null
+                    Ignore: null
+                    Integer: null
+                    Ip: null
+                    Ipv4: null
+                    Ipv6: null
+                    Len: null
+                    Max: null
+                    Min: null
+                    Never: null
+                    Nullable: null
+                    Omit: null
+                    Open: null
+                    Optional: null
+                    Partial: null
+                    Pick: null
+                    Refer: null
+                    Rename: null
+                    Required: null
+                    Rest: null
+                    Skip: null
+                    Transform: null
+                    Type: null
+                    Url: null
+                    Uuid: null
+                    String: null
+                    Number: null
+                    Boolean: null
+                    Object: null
+                    Array: null
+                    Function: null
+                    Symbol: null
+                    Date: null
+                  }
+                  r: false
+                  p: false
+                  d: 2
+                  k: [
+                  ]
+                  e: true
+                  u: {
+                  }
+                  a: [
+                  ]
+                  b: [
+                  ]
+                  m: {
+                  }
+                }
+                api: {
+                  t: "object"
+                  v: {
+                    guide: {
+                      t: "object"
+                      v: {
+                      }
+                      f: null
+                      n: 0
+                      c: {
+                        t: "any"
+                        v: null
+                        f: null
+                        n: 0
+                        c: null
+                        r: false
+                        p: false
+                        d: 4
+                        k: [
+                        ]
+                        e: true
+                        u: {
+                          tset: true
+                        }
+                        a: [
+                        ]
+                        b: [
+                        ]
+                        m: {
+                        }
+                        Above: null
+                        After: null
+                        Any: null
+                        Before: null
+                        Below: null
+                        Catch: null
+                        Check: null
+                        Child: null
+                        Closed: null
+                        Coerce: null
+                        DateTime: null
+                        Default: null
+                        Define: null
+                        Describe: null
+                        Empty: null
+                        Email: null
+                        Exact: null
+                        Extend: null
+                        Fault: null
+                        Func: null
+                        Ignore: null
+                        Integer: null
+                        Ip: null
+                        Ipv4: null
+                        Ipv6: null
+                        Len: null
+                        Max: null
+                        Min: null
+                        Never: null
+                        Nullable: null
+                        Omit: null
+                        Open: null
+                        Optional: null
+                        Partial: null
+                        Pick: null
+                        Refer: null
+                        Rename: null
+                        Required: null
+                        Rest: null
+                        Skip: null
+                        Transform: null
+                        Type: null
+                        Url: null
+                        Uuid: null
+                        String: null
+                        Number: null
+                        Boolean: null
+                        Object: null
+                        Array: null
+                        Function: null
+                        Symbol: null
+                        Date: null
+                      }
+                      r: false
+                      p: false
+                      d: 3
+                      k: [
+                      ]
+                      e: true
+                      u: {
+                      }
+                      a: [
+                      ]
+                      b: [
+                      ]
+                      m: {
+                      }
+                    }
+                    entity: {
+                      t: "object"
+                      v: {
+                      }
+                      f: null
+                      n: 0
+                      c: {
+                        t: "any"
+                        v: null
+                        f: null
+                        n: 0
+                        c: null
+                        r: false
+                        p: false
+                        d: 4
+                        k: [
+                        ]
+                        e: true
+                        u: {
+                          tset: true
+                        }
+                        a: [
+                        ]
+                        b: [
+                        ]
+                        m: {
+                        }
+                        Above: null
+                        After: null
+                        Any: null
+                        Before: null
+                        Below: null
+                        Catch: null
+                        Check: null
+                        Child: null
+                        Closed: null
+                        Coerce: null
+                        DateTime: null
+                        Default: null
+                        Define: null
+                        Describe: null
+                        Empty: null
+                        Email: null
+                        Exact: null
+                        Extend: null
+                        Fault: null
+                        Func: null
+                        Ignore: null
+                        Integer: null
+                        Ip: null
+                        Ipv4: null
+                        Ipv6: null
+                        Len: null
+                        Max: null
+                        Min: null
+                        Never: null
+                        Nullable: null
+                        Omit: null
+                        Open: null
+                        Optional: null
+                        Partial: null
+                        Pick: null
+                        Refer: null
+                        Rename: null
+                        Required: null
+                        Rest: null
+                        Skip: null
+                        Transform: null
+                        Type: null
+                        Url: null
+                        Uuid: null
+                        String: null
+                        Number: null
+                        Boolean: null
+                        Object: null
+                        Array: null
+                        Function: null
+                        Symbol: null
+                        Date: null
+                      }
+                      r: false
+                      p: false
+                      d: 3
+                      k: [
+                      ]
+                      e: true
+                      u: {
+                      }
+                      a: [
+                      ]
+                      b: [
+                      ]
+                      m: {
+                      }
+                    }
+                  }
+                  f: null
+                  n: 2
+                  c: null
+                  r: false
+                  p: false
+                  d: 2
+                  k: [
+                    "guide"
+                    "entity"
+                  ]
+                  e: true
+                  u: {
+                  }
+                  a: [
+                  ]
+                  b: [
+                  ]
+                  m: {
+                  }
+                }
+                custom: {
+                  t: "object"
+                  v: {
+                    plurals: {
+                      t: "object"
+                      v: {
+                      }
+                      f: null
+                      n: 0
+                      c: {
+                        t: "any"
+                        v: null
+                        f: null
+                        n: 0
+                        c: null
+                        r: false
+                        p: false
+                        d: 4
+                        k: [
+                        ]
+                        e: true
+                        u: {
+                          tset: true
+                        }
+                        a: [
+                        ]
+                        b: [
+                        ]
+                        m: {
+                        }
+                        Above: null
+                        After: null
+                        Any: null
+                        Before: null
+                        Below: null
+                        Catch: null
+                        Check: null
+                        Child: null
+                        Closed: null
+                        Coerce: null
+                        DateTime: null
+                        Default: null
+                        Define: null
+                        Describe: null
+                        Empty: null
+                        Email: null
+                        Exact: null
+                        Extend: null
+                        Fault: null
+                        Func: null
+                        Ignore: null
+                        Integer: null
+                        Ip: null
+                        Ipv4: null
+                        Ipv6: null
+                        Len: null
+                        Max: null
+                        Min: null
+                        Never: null
+                        Nullable: null
+                        Omit: null
+                        Open: null
+                        Optional: null
+                        Partial: null
+                        Pick: null
+                        Refer: null
+                        Rename: null
+                        Required: null
+                        Rest: null
+                        Skip: null
+                        Transform: null
+                        Type: null
+                        Url: null
+                        Uuid: null
+                        String: null
+                        Number: null
+                        Boolean: null
+                        Object: null
+                        Array: null
+                        Function: null
+                        Symbol: null
+                        Date: null
+                      }
+                      r: false
+                      p: false
+                      d: 3
+                      k: [
+                      ]
+                      e: true
+                      u: {
+                      }
+                      a: [
+                      ]
+                      b: [
+                      ]
+                      m: {
+                      }
+                    }
+                  }
+                  f: null
+                  n: 1
+                  c: null
+                  r: false
+                  p: false
+                  d: 2
+                  k: [
+                    "plurals"
+                  ]
+                  e: true
+                  u: {
+                  }
+                  a: [
+                  ]
+                  b: [
+                  ]
+                  m: {
+                  }
+                }
+              }
+              f: null
+              n: 4
+              c: null
+              r: false
+              p: false
+              d: 1
+              k: [
+                "kit"
+                "def"
+                "api"
+                "custom"
+              ]
+              e: true
+              u: {
+              }
+              a: [
+              ]
+              b: [
+              ]
+              m: {
+              }
+            }
+          }
+          f: null
+          n: 3
+          c: {
+            t: "any"
+            v: null
+            f: null
+            n: 0
+            c: null
+            r: false
+            p: false
+            d: 1
+            k: [
+            ]
+            e: true
+            u: {
+              tset: true
+            }
+            a: [
+            ]
+            b: [
+            ]
+            m: {
+            }
+            Above: null
+            After: null
+            Any: null
+            Before: null
+            Below: null
+            Catch: null
+            Check: null
+            Child: null
+            Closed: null
+            Coerce: null
+            DateTime: null
+            Default: null
+            Define: null
+            Describe: null
+            Empty: null
+            Email: null
+            Exact: null
+            Extend: null
+            Fault: null
+            Func: null
+            Ignore: null
+            Integer: null
+            Ip: null
+            Ipv4: null
+            Ipv6: null
+            Len: null
+            Max: null
+            Min: null
+            Never: null
+            Nullable: null
+            Omit: null
+            Open: null
+            Optional: null
+            Partial: null
+            Pick: null
+            Refer: null
+            Rename: null
+            Required: null
+            Rest: null
+            Skip: null
+            Transform: null
+            Type: null
+            Url: null
+            Uuid: null
+            String: null
+            Number: null
+            Boolean: null
+            Object: null
+            Array: null
+            Function: null
+            Symbol: null
+            Date: null
+          }
+          r: false
+          p: false
+          d: 0
+          k: [
+            "name"
+            "def"
+            "main"
+          ]
+          e: true
+          u: {
+          }
+          a: [
+          ]
+          b: [
+          ]
+          m: {
+          }
+          Above: null
+          After: null
+          Any: null
+          Before: null
+          Below: null
+          Catch: null
+          Check: null
+          Child: null
+          Closed: null
+          Coerce: null
+          DateTime: null
+          Default: null
+          Define: null
+          Describe: null
+          Empty: null
+          Email: null
+          Exact: null
+          Extend: null
+          Fault: null
+          Func: null
+          Ignore: null
+          Integer: null
+          Ip: null
+          Ipv4: null
+          Ipv6: null
+          Len: null
+          Max: null
+          Min: null
+          Never: null
+          Nullable: null
+          Omit: null
+          Open: null
+          Optional: null
+          Partial: null
+          Pick: null
+          Refer: null
+          Rename: null
+          Required: null
+          Rest: null
+          Skip: null
+          Transform: null
+          Type: null
+          Url: null
+          Uuid: null
+          String: null
+          Number: null
+          Boolean: null
+          Object: null
+          Array: null
+          Function: null
+          Symbol: null
+          Date: null
+        }
+        value: "openapi.yaml/model/api.aontu"
+        path: ""
+        pathArr: [
+        ]
+        why: "type"
+        check: "none"
+        args: {
+        }
+        mark: 1020
+        text: "Validation failed for string \"openapi.yaml/model/api.aontu\" because the string is not of type object."
+        use: {
+        }
+      }
+    ]
+    message: "Model: Validation failed for string \"openapi.yaml/model/api.aontu\" because the string is not of type object."
+  }
+
+  note: "!! BUILD FAILED !! Model: Validation failed for string \"openapi.yaml/model/api.aontu\" because the string is not of type object."
+}
