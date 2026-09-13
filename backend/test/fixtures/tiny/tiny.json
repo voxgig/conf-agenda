@@ -18,7 +18,7 @@
 
   "cag/fixture": [
     {
-      "id": "conf_tiny", "org_id": "org_tiny", "parent_id": null, "top_id": "conf_tiny",
+      "id": "conf_tiny", "org_id": "org_tiny", "top_id": "conf_tiny",
       "kind": "con", "slug": "tiny-conf-2027", "title": "Tiny Conf 2027",
       "desc": "The smallest conference that still exercises the model.",
       "t_start": 1825230600000, "t_end": 1825261200000, "t_tzn": "Europe/Dublin",

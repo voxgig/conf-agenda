@@ -40,6 +40,10 @@ cag: fixture: {
     ## Tenancy and tree position. All four are server-managed, so all four
     ## carry Skip: they are filled AFTER validation runs.
     org_id: { label: 'Org' kind: String ref: 'sys/org' valid: Skip }
+    ## A top fixture has NO parent_id - the field is ABSENT, not null. SPEC
+    ## 8.1's sketch comments "null = top", but the entity validator built from
+    ## this model rejects an explicit null in a String field, so absence is the
+    ## representation. Tree code tests `null == parent_id`, which covers both.
     parent_id: { label: 'Parent' kind: String ref: 'cag/fixture' valid: Skip }
     top_id: { label: 'Top' kind: String ref: 'cag/fixture' valid: Skip }
 

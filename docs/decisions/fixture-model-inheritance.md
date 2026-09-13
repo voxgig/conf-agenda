@@ -79,7 +79,15 @@ directly under a top kind; segments sit under a top or a `day` and contain nothi
 `ent.aon`, where the API validator, the SDKs, the generated forms and the agent tools all inherit
 it. Only the relational and temporal rules (SPEC §16) stay as code.
 
-## Open question — the `p_` (place) family
+**7. A top fixture's `parent_id` is absent, not null.** SPEC §8.1's sketch comments `# null =
+top`, and fixture-srv allowed null explicitly (`Joi.string().allow(null)`). The entity validator
+built from this model rejects an explicit null in a `kind: String` field, so a top fixture simply
+does not carry the key. Found by seeding the `tiny` fixture into a real store, which failed with
+*"Validation failed for property parent_id with value null because the value is not of type
+string"*. All tree code tests `null == parent_id`, which is true for both absent and null, so
+nothing downstream cares which it is.
+
+## Resolved — the `p_` (place) family
 
 Upstream carries venue geo on the fixture itself: `p_lat`, `p_lng`, `p_gc`, `p_web`, `p_name`.
 
@@ -97,5 +105,5 @@ Three options, none settled:
 3. **Nothing at S1** — the `tiny` and `nodeconf` fixtures are single-venue, and the grid does not
    need it. Add when a real multi-venue conference appears.
 
-*Leaning: option 1.* It is what upstream did, it satisfies the inheritance sentence, and it costs
-five nullable fields on one entity rather than a new entity and a new join.
+**Decided: option 1** (2026-09-09). It is what upstream did, it satisfies the inheritance
+sentence, and it costs five nullable fields on one entity rather than a new entity and a new join.
