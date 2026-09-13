@@ -29,6 +29,16 @@ message maps to the action file named after its last pattern pair.
 | `aim:web,on:auth,create:apikey` | `web_create_apikey.ts` |
 | `aim:web,on:auth,list:apikey` | `web_list_apikey.ts` |
 | `aim:web,on:auth,revoke:apikey` | `web_revoke_apikey.ts` |
+| `aim:web,on:cag,list:room` | `web_list_room.ts` |
+| `aim:web,on:cag,load:room` | `web_load_room.ts` |
+| `aim:web,on:cag,list:track` | `web_list_track.ts` |
+| `aim:web,on:cag,load:track` | `web_load_track.ts` |
+| `aim:web,on:cag,list:speaker` | `web_list_speaker.ts` |
+| `aim:web,on:cag,load:speaker` | `web_load_speaker.ts` |
+| `aim:web,on:cag,list:appearance` | `web_list_appearance.ts` |
+| `aim:web,on:cag,load:appearance` | `web_load_appearance.ts` |
+| `aim:web,on:cag,list:snapshot` | `web_list_snapshot.ts` |
+| `aim:web,on:cag,load:snapshot` | `web_load_snapshot.ts` |
 
 ## Flow
 
@@ -55,6 +65,16 @@ flowchart LR
   srv --> web_create_apikey["aim:web,on:auth,create:apikey<br>web_create_apikey.ts"]
   srv --> web_list_apikey["aim:web,on:auth,list:apikey<br>web_list_apikey.ts"]
   srv --> web_revoke_apikey["aim:web,on:auth,revoke:apikey<br>web_revoke_apikey.ts"]
+  srv --> web_list_room["aim:web,on:cag,list:room<br>web_list_room.ts"]
+  srv --> web_load_room["aim:web,on:cag,load:room<br>web_load_room.ts"]
+  srv --> web_list_track["aim:web,on:cag,list:track<br>web_list_track.ts"]
+  srv --> web_load_track["aim:web,on:cag,load:track<br>web_load_track.ts"]
+  srv --> web_list_speaker["aim:web,on:cag,list:speaker<br>web_list_speaker.ts"]
+  srv --> web_load_speaker["aim:web,on:cag,load:speaker<br>web_load_speaker.ts"]
+  srv --> web_list_appearance["aim:web,on:cag,list:appearance<br>web_list_appearance.ts"]
+  srv --> web_load_appearance["aim:web,on:cag,load:appearance<br>web_load_appearance.ts"]
+  srv --> web_list_snapshot["aim:web,on:cag,list:snapshot<br>web_list_snapshot.ts"]
+  srv --> web_load_snapshot["aim:web,on:cag,load:snapshot<br>web_load_snapshot.ts"]
 ```
 
 Message params are validated from the model (gubu); see

@@ -775,6 +775,261 @@
             "revoke": "apikey"
           }
         ]
+      },
+      {
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "list": "room"
+          }
+        ]
+      },
+      {
+        "params": {
+          "id": "String"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "load": "room"
+          }
+        ]
+      },
+      {
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "list": "track"
+          }
+        ]
+      },
+      {
+        "params": {
+          "id": "String"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "load": "track"
+          }
+        ]
+      },
+      {
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "list": "speaker"
+          }
+        ]
+      },
+      {
+        "params": {
+          "id": "String"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "load": "speaker"
+          }
+        ]
+      },
+      {
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "list": "appearance"
+          }
+        ]
+      },
+      {
+        "params": {
+          "id": "String"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "load": "appearance"
+          }
+        ]
+      },
+      {
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "list": "snapshot"
+          }
+        ]
+      },
+      {
+        "params": {
+          "id": "String"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "load": "snapshot"
+          }
+        ]
+      },
+      {
+        "file": "./web_list_room",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "list": "room"
+          }
+        ]
+      },
+      {
+        "file": "./web_load_room",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "load": "room"
+          }
+        ]
+      },
+      {
+        "file": "./web_list_track",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "list": "track"
+          }
+        ]
+      },
+      {
+        "file": "./web_load_track",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "load": "track"
+          }
+        ]
+      },
+      {
+        "file": "./web_list_speaker",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "list": "speaker"
+          }
+        ]
+      },
+      {
+        "file": "./web_load_speaker",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "load": "speaker"
+          }
+        ]
+      },
+      {
+        "file": "./web_list_appearance",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "list": "appearance"
+          }
+        ]
+      },
+      {
+        "file": "./web_load_appearance",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "load": "appearance"
+          }
+        ]
+      },
+      {
+        "file": "./web_list_snapshot",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "list": "snapshot"
+          }
+        ]
+      },
+      {
+        "file": "./web_load_snapshot",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "load": "snapshot"
+          }
+        ]
       }
     ],
     "shape": {
