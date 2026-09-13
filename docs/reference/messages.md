@@ -53,6 +53,16 @@ flowchart LR
 | `aim:web,on:auth,create:apikey` | `src/srv/auth/web_create_apikey.ts` |
 | `aim:web,on:auth,list:apikey` | `src/srv/auth/web_list_apikey.ts` |
 | `aim:web,on:auth,revoke:apikey` | `src/srv/auth/web_revoke_apikey.ts` |
+| `aim:web,on:cag,list:room` | `src/srv/auth/web_list_room.ts` |
+| `aim:web,on:cag,load:room` | `src/srv/auth/web_load_room.ts` |
+| `aim:web,on:cag,list:track` | `src/srv/auth/web_list_track.ts` |
+| `aim:web,on:cag,load:track` | `src/srv/auth/web_load_track.ts` |
+| `aim:web,on:cag,list:speaker` | `src/srv/auth/web_list_speaker.ts` |
+| `aim:web,on:cag,load:speaker` | `src/srv/auth/web_load_speaker.ts` |
+| `aim:web,on:cag,list:appearance` | `src/srv/auth/web_list_appearance.ts` |
+| `aim:web,on:cag,load:appearance` | `src/srv/auth/web_load_appearance.ts` |
+| `aim:web,on:cag,list:snapshot` | `src/srv/auth/web_list_snapshot.ts` |
+| `aim:web,on:cag,load:snapshot` | `src/srv/auth/web_load_snapshot.ts` |
 
 ## Service: cag
 
@@ -61,6 +71,16 @@ flowchart LR
 | `aim:cag,validate:fixture` | `src/srv/cag/validate_fixture.ts` |
 | `aim:cag,publish:fixture` | `src/srv/cag/publish_fixture.ts` |
 | `aim:cag,load:tree` | `src/srv/cag/load_tree.ts` |
+| `aim:cag,list:room` | `src/srv/cag/list_room.ts` |
+| `aim:cag,load:room` | `src/srv/cag/load_room.ts` |
+| `aim:cag,list:track` | `src/srv/cag/list_track.ts` |
+| `aim:cag,load:track` | `src/srv/cag/load_track.ts` |
+| `aim:cag,list:speaker` | `src/srv/cag/list_speaker.ts` |
+| `aim:cag,load:speaker` | `src/srv/cag/load_speaker.ts` |
+| `aim:cag,list:appearance` | `src/srv/cag/list_appearance.ts` |
+| `aim:cag,load:appearance` | `src/srv/cag/load_appearance.ts` |
+| `aim:cag,list:snapshot` | `src/srv/cag/list_snapshot.ts` |
+| `aim:cag,load:snapshot` | `src/srv/cag/load_snapshot.ts` |
 | `aim:web,on:cag,load:tree` | `src/srv/cag/web_load_tree.ts` |
 | `aim:web,on:auth,signin:user` | `src/srv/cag/web_signin_user.ts` |
 | `aim:web,on:auth,signout:user` | `src/srv/cag/web_signout_user.ts` |
@@ -71,3 +91,13 @@ flowchart LR
 | `aim:web,on:auth,create:apikey` | `src/srv/cag/web_create_apikey.ts` |
 | `aim:web,on:auth,list:apikey` | `src/srv/cag/web_list_apikey.ts` |
 | `aim:web,on:auth,revoke:apikey` | `src/srv/cag/web_revoke_apikey.ts` |
+| `aim:web,on:cag,list:room` | `src/srv/cag/web_list_room.ts` |
+| `aim:web,on:cag,load:room` | `src/srv/cag/web_load_room.ts` |
+| `aim:web,on:cag,list:track` | `src/srv/cag/web_list_track.ts` |
+| `aim:web,on:cag,load:track` | `src/srv/cag/web_load_track.ts` |
+| `aim:web,on:cag,list:speaker` | `src/srv/cag/web_list_speaker.ts` |
+| `aim:web,on:cag,load:speaker` | `src/srv/cag/web_load_speaker.ts` |
+| `aim:web,on:cag,list:appearance` | `src/srv/cag/web_list_appearance.ts` |
+| `aim:web,on:cag,load:appearance` | `src/srv/cag/web_load_appearance.ts` |
+| `aim:web,on:cag,list:snapshot` | `src/srv/cag/web_list_snapshot.ts` |
+| `aim:web,on:cag,load:snapshot` | `src/srv/cag/web_load_snapshot.ts` |

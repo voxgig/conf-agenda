@@ -8,24 +8,68 @@
 
 import { bus } from './bus.js'
 
-// ---- generic entity CRUD ------------------------------------------------
+// ---- entity reads ------------------------------------------------------
+//
+// NOT a generic entity surface. SPEC 9 and PLATFORM 1.2 forbid anything
+// shaped like on:ent,cmd:save with an open canon-plus-item payload - that is
+// the surface the tenant-from-payload flaw rode in on. Instead each entity has
+// its OWN message, with the entity named by the pattern:
+//
+//   aim:web,on:cag,list:room   ->  aim:cag,list:room
+//
+// The canon is therefore not something the browser can choose. `ent` is
+// mapped to a verb+noun pair here, so the generated admin components keep
+// working unchanged.
+//
+// todo-app made the same move: its msg.aon declares per-entity semantic
+// messages and routes the entity work through a concern. The generated
+// src/srv/ent service is left undeclared and unreachable.
+
+// canon -> the noun half of its message pair. An entity absent from this map
+// has no browser surface at all, which is the default rather than an
+// oversight: adding one is a deliberate act in msg.aon AND here.
+const READABLE = {
+  'cag/room': 'room',
+  'cag/track': 'track',
+  'cag/speaker': 'speaker',
+  'cag/appearance': 'appearance',
+  'cag/snapshot': 'snapshot',
+}
+
+function nounOf(ent) {
+  return READABLE[ent]
+}
 
 async function list(ent, q) {
-  const r = await bus.post({ aim: 'web', on: 'ent', cmd: 'list', ent, q: q || {} })
+  const noun = nounOf(ent)
+  if (!noun) return []
+  const r = await bus.post({ aim: 'web', on: 'cag', list: noun, q: q || {} })
   return (r && r.ok && r.list) || []
 }
 
 async function load(ent, id) {
-  const r = await bus.post({ aim: 'web', on: 'ent', cmd: 'load', ent, id })
+  const noun = nounOf(ent)
+  if (!noun) return null
+  const r = await bus.post({ aim: 'web', on: 'cag', load: noun, id })
   return r && r.ok ? r.item : null
 }
 
-async function save(ent, item) {
-  return bus.post({ aim: 'web', on: 'ent', cmd: 'save', ent, item })
+// Writes are STAGE 2. They arrive as per-field intent messages - `update:speaker`
+// with exactly the editable fields (SPEC 9) - not as a generic save, so the
+// shape is a real decision rather than a stopgap. Until then, say so plainly
+// rather than failing in a way that looks like a bug.
+const NOT_YET = {
+  ok: false,
+  why: 'read-only-stage-1',
+  message: 'Editing arrives in Stage 2, as per-entity intent messages.',
 }
 
-async function remove(ent, id) {
-  return bus.post({ aim: 'web', on: 'ent', cmd: 'remove', ent, id })
+async function save() {
+  return NOT_YET
+}
+
+async function remove() {
+  return NOT_YET
 }
 
 // Users, for reference pickers (read-only, public fields).

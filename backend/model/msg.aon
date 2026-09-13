@@ -76,4 +76,35 @@
   { pat: [{aim: web}, {on: auth}, {revoke: apikey}], file: './web_revoke_apikey' }
 
 
+  # ---- per-entity reads --------------------------------------------------
+  # One message per entity and verb, with the entity named by the PATTERN
+  # rather than carried as data - never a generic canon-plus-item surface
+  # (SPEC 9, PLATFORM 1.2). Same shape todo-app uses.
+  #
+  # READ ONLY at Stage 1. Writes arrive at Stage 2 as per-field intents
+  # (update:speaker with exactly the editable fields), which is a shape
+  # decision this stage does not need to make.
+
+  { pat: [{aim: cag}, {list: room}] }
+  { pat: [{aim: cag}, {load: room}], params: { id: 'String' } }
+  { pat: [{aim: cag}, {list: track}] }
+  { pat: [{aim: cag}, {load: track}], params: { id: 'String' } }
+  { pat: [{aim: cag}, {list: speaker}] }
+  { pat: [{aim: cag}, {load: speaker}], params: { id: 'String' } }
+  { pat: [{aim: cag}, {list: appearance}] }
+  { pat: [{aim: cag}, {load: appearance}], params: { id: 'String' } }
+  { pat: [{aim: cag}, {list: snapshot}] }
+  { pat: [{aim: cag}, {load: snapshot}], params: { id: 'String' } }
+
+  { pat: [{aim: web}, {on: cag}, {list: room}], file: './web_list_room' }
+  { pat: [{aim: web}, {on: cag}, {load: room}], file: './web_load_room' }
+  { pat: [{aim: web}, {on: cag}, {list: track}], file: './web_list_track' }
+  { pat: [{aim: web}, {on: cag}, {load: track}], file: './web_load_track' }
+  { pat: [{aim: web}, {on: cag}, {list: speaker}], file: './web_list_speaker' }
+  { pat: [{aim: web}, {on: cag}, {load: speaker}], file: './web_load_speaker' }
+  { pat: [{aim: web}, {on: cag}, {list: appearance}], file: './web_list_appearance' }
+  { pat: [{aim: web}, {on: cag}, {load: appearance}], file: './web_load_appearance' }
+  { pat: [{aim: web}, {on: cag}, {list: snapshot}], file: './web_list_snapshot' }
+  { pat: [{aim: web}, {on: cag}, {load: snapshot}], file: './web_load_snapshot' }
+
 ]

@@ -68,26 +68,50 @@ apart.
 Also removed `aim:web,get:info`: it was declared with no action file, which PLATFORM.md §1.2
 forbids ("only declare messages whose files exist").
 
-## The generic entity admin does not work, and that is the real cost
+## RESOLVED: the generic entity admin, without a generic surface
 
-With auth wired, the SPA signs in and the **custom Fixture view renders** — it uses
-`aim:web,on:cag,load:tree`, a semantic message of our own.
+Closed with **option 3** from the three below — per-entity messages, and the generated
+`web/src/api.js` repointed at them. `api.js` turned out to be **create-once**, not regenerated
+(verified with a marker that survived `model-build`), so the edit is safe.
 
-The other entity screens do not. The generated `web/src/api.js` reaches for
-`aim:web,on:ent,cmd:list|load|save|remove`, which this project deliberately does not declare, so
-Room, Speaker, Track, Appearance and Snapshot fail.
-
-SPEC §19.3 lists "generic entity admin plus a read-only grid" for Stage 1, so this is a real gap
-rather than a deferred nicety. Three ways to close it:
+The three options were:
 
 1. **Declare the generic ent surface** — fastest, and forbidden by SPEC §9 / PLATFORM §1.2. It is
    the surface the tenant-from-payload flaw rode in on. No.
-2. **Generate per-entity intent messages** (`update:speaker` with exactly the editable fields) —
-   what the spec actually wants, and the `@voxgig/build` delta PLATFORM §1.2 anticipates. Does not
-   exist yet.
-3. **Hand-write per-entity messages** for room/track/speaker/appearance and point the admin at
-   them. Real work, and `api.js` is generated, so the patch would need re-applying on every build
-   until (2) lands.
+2. **Generate per-entity intent messages** — what the spec ultimately wants, and the
+   `@voxgig/build` delta PLATFORM §1.2 anticipates. Does not exist yet.
+3. **Hand-write per-entity messages.** ✅
 
-Leaning (3) for Stage 1, scoped to read-only list/load, because the organiser needs to *see* rooms
-and speakers before Stage 2 makes them editable.
+### The shape
+
+```
+aim:web,on:cag,list:room  ->  aim:cag,list:room
+```
+
+The entity is named by the **pattern**, never carried as data, so the browser cannot choose a canon
+— the surface to do so simply does not exist. A test asserts `aim:cag,cmd:list` and
+`aim:web,on:ent,cmd:list` both resolve to nothing. Same shape todo-app uses.
+
+`api.js` maps canon → noun through a `READABLE` table. An entity absent from that table has **no
+browser surface at all**, which is the default rather than an oversight — adding one is a
+deliberate act in both `msg.aon` and `api.js`. `cag/fixture` is deliberately absent: it is read
+through `load:tree`, which resolves effective status down the ancestor chain, and a raw
+`list:fixture` would bypass that.
+
+### Read-only at Stage 1
+
+List and load only. Writes arrive at Stage 2 as the per-field intents §9 specifies (`update:speaker`
+with exactly the editable fields), which is a shape decision this stage does not need to make.
+`save`/`remove` return `{ ok: false, why: 'read-only-stage-1' }` with a message saying so, rather
+than failing in a way that looks like a bug.
+
+### One thing corrected on the way
+
+The first version stripped `email` from every read. That was wrong. C6 — "speaker emails are never
+public" — is about the **public** path, and is enforced there structurally: `buildAgenda` never
+picks the field up, so it cannot reach `agenda.json`, the embed, the feeds or an ejected bundle.
+
+These reads are authenticated and org-scoped. The organiser **owns** those addresses and needs
+them, not least because SPEC §16.2's `speaker-no-email` warning is unactionable if the app cannot
+show which speaker is missing one. Stripping there looked cautious and quietly broke a rule. A test
+now pins that the admin *does* see them, beside the tests pinning that the public path does not.
