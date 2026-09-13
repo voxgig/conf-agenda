@@ -1,0 +1,32 @@
+{
+  "name": "@voxgig/conf-agenda-embed",
+  "version": "0.0.1",
+  "description": "The <conf-agenda> embeddable web component",
+  "author": "voxgig",
+  "license": "MIT",
+  "repository": "voxgig/conf-agenda",
+  "main": "dist/conf-agenda.umd.cjs",
+  "module": "dist/conf-agenda.mjs",
+  "source": "src/conf-agenda.js",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "watch": "vite build -w",
+    "view": "serve",
+    "size": "node tool/size-check.mjs",
+    "test": "npm run build && npm run size && node --test test/render.test.mjs",
+    "clean": "rm -rf dist node_modules package-lock.json",
+    "reset": "npm run clean && npm install"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0",
+    "serve": "^14.2.6",
+    "vite": "^8.1.4"
+  },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "dist",
+    "src"
+  ]
+}

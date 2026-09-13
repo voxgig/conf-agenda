@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "conference": {
+    "desc": "The smallest conference that still exercises the model.",
+    "slug": "tiny-conf-2027",
+    "t_end": 1825261200000,
+    "t_start": 1825230600000,
+    "t_tzn": "Europe/Dublin",
+    "title": "Tiny Conf 2027",
+    "venue": "Tiny Venue, Dublin"
+  },
+  "rooms": [
+    {
+      "capacity": 120,
+      "id": "room_a",
+      "name": "Room A",
+      "order": 1
+    },
+    {
+      "capacity": 60,
+      "id": "room_b",
+      "name": "Room B",
+      "order": 2
+    }
+  ],
+  "tracks": [
+    {
+      "color": "#e70042",
+      "id": "trk_platform",
+      "name": "Platform",
+      "order": 1
+    }
+  ],
+  "speakers": [
+    {
+      "bio": "Platform engineer.",
+      "id": "spk_ada",
+      "name": "Ada Byrne"
+    },
+    {
+      "bio": "Database engineer.",
+      "id": "spk_mina",
+      "name": "Mina Kovac"
+    },
+    {
+      "bio": "Frontend engineer.",
+      "id": "spk_tomas",
+      "name": "Tomas Quinn"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "seg_buses",
+      "kind": "tak",
+      "room": "room_a",
+      "speakers": [
+        "spk_tomas"
+      ],
+      "status": "confirmed",
+      "t_end": 1825239600000,
+      "t_start": 1825236000000,
+      "title": "Message Buses in the Browser",
+      "track": "trk_platform"
+    },
+    {
+      "id": "seg_coffee",
+      "kind": "brk",
+      "room": "room_b",
+      "speakers": [],
+      "status": "confirmed",
+      "t_end": 1825241400000,
+      "t_start": 1825239600000,
+      "title": "Coffee"
+    },
+    {
+      "id": "seg_d1edge",
+      "kind": "tak",
+      "room": "room_a",
+      "speakers": [
+        "spk_mina"
+      ],
+      "status": "confirmed",
+      "t_end": 1825243200000,
+      "t_start": 1825239600000,
+      "title": "D1 at the Edge",
+      "track": "trk_platform"
+    },
+    {
+      "id": "seg_keynote",
+      "kind": "key",
+      "room": "room_a",
+      "speakers": [
+        "spk_ada"
+      ],
+      "status": "confirmed",
+      "t_end": 1825236000000,
+      "t_start": 1825232400000,
+      "title": "Opening Keynote",
+      "track": "trk_platform"
+    }
+  ]
+}

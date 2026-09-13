@@ -1,0 +1,98 @@
+/* Tokens are the documented, stable styling surface (SPEC 11.1). They pierce
+   shadow DOM, so an organiser restyles the embed from their own stylesheet
+   without forking it:
+
+     conf-agenda { --ca-primary: #e70042; --ca-bg: transparent; }
+
+   Internal class names are NOT an API and may change. Use the tokens, or the
+   ::part() surface below. */
+:host {
+  --ca-bg: transparent;
+  --ca-fg: #1a1d23;
+  --ca-muted: #5d6675;
+  --ca-surface: #ffffff;
+  --ca-border: #d7dce4;
+  --ca-primary: #0274b4;
+  --ca-radius: 6px;
+  --ca-font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ca-mono: ui-monospace, Menlo, Consolas, monospace;
+
+  display: block;
+  background: var(--ca-bg);
+  color: var(--ca-fg);
+  font-family: var(--ca-font);
+  font-size: 14px;
+  line-height: 1.4;
+  container-type: inline-size;
+}
+
+/* theme="auto" follows the host page's preference; theme="dark"/"light" pin it. */
+@media (prefers-color-scheme: dark) {
+  :host([theme='auto']), :host(:not([theme])) {
+    --ca-fg: #e6edf3;
+    --ca-muted: #8b95a7;
+    --ca-surface: #1a2029;
+    --ca-border: #2a3040;
+    --ca-primary: #00c6d8;
+  }
+}
+:host([theme='dark']) {
+  --ca-fg: #e6edf3;
+  --ca-muted: #8b95a7;
+  --ca-surface: #1a2029;
+  --ca-border: #2a3040;
+  --ca-primary: #00c6d8;
+}
+
+.wrap { overflow-x: auto; }
+
+table { border-collapse: collapse; width: 100%; min-width: 480px; }
+
+caption {
+  text-align: left;
+  padding: 0 0 10px;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+th, td {
+  border: 1px solid var(--ca-border);
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+thead th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ca-muted); }
+
+th[scope='row'] {
+  font-family: var(--ca-mono);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ca-muted);
+  white-space: nowrap;
+  width: 1%;
+}
+
+td.empty { background: transparent; }
+
+.session { background: var(--ca-surface); border-radius: var(--ca-radius); padding: 2px 0; }
+.title { font-weight: 600; }
+.meta { color: var(--ca-muted); font-size: 12px; }
+
+/* Cancelled sessions stay visible and keep their slot (SPEC 9.1). Colour is
+   never the sole carrier of meaning - the strike-through and the word
+   "Cancelled" both say it. */
+.session.cancelled .title { text-decoration: line-through; color: var(--ca-muted); }
+.badge {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ca-muted);
+}
+
+.note { padding: 14px; border: 1px solid var(--ca-border); border-radius: var(--ca-radius); }
+.note a { color: var(--ca-primary); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .session { transition: none; }
+}
