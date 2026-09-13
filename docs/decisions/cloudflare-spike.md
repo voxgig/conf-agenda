@@ -1,0 +1,141 @@
+# Cloudflare spike — Seneca 4 on Workers
+
+*Diátaxis: explanation — a decision record. PLATFORM.md §6 points here.*
+
+**Date:** 2026-09-09 · **Verdict: POSITIVE. Seneca 4 runs on Cloudflare Workers.**
+
+> **This reverses an earlier negative verdict.** The first pass concluded Seneca could not run on
+> Workers at all. That was wrong, and the error was mine — see "What I got wrong" below, which is
+> the part worth reading twice.
+
+The decisive prior art is **`Rarfael/night-sky-logbook`** — a Seneca app deployed live on
+Cloudflare Workers (plus Azure Functions and AWS Lambda) from one codebase, with a detailed
+writeup at `docs/reports/multi-cloud-deployment-report.md`. Read that report before doing any of
+this work; it is worth more than this file.
+
+## The pattern that works
+
+**Construct Seneca per request, and `close()` it in a `finally`.**
+
+```js
+export default {
+  async fetch(request, env, ctx) {
+    const seneca = await getSeneca('auth', env)
+    try {
+      const handler = seneca.export('gateway-cloudflare/handler')
+      return await handler(request, { env, execCtx: ctx })
+    } finally {
+      await seneca.close()   // not optional
+    }
+  },
+}
+```
+
+`close()` is load-bearing. Seneca's `GateExecutor` starts a `setInterval` that only clears once its
+work queue empties. An instance that is built and discarded without closing leaves that interval
+behind, and it **hangs the next `Seneca()` construction in the same warm isolate** — the constructor
+call itself never returns. That is the root cause, found by the night-sky-logbook author with
+checkpoint logging against a live deployed Worker and confirmed via `wrangler tail`.
+
+Verified independently here — clean isolate, 10 consecutive requests, `wrangler dev --local`:
+
+```
+ 1: {"req":1,"buildMs":154,"actMs":2}      6: {"req":6,"buildMs":136,"actMs":0}
+ 2: {"req":2,"buildMs":141,"actMs":1}      7: {"req":7,"buildMs":136,"actMs":1}
+ 3: {"req":3,"buildMs":139,"actMs":1}      8: {"req":8,"buildMs":135,"actMs":1}
+ 4: {"req":4,"buildMs":139,"actMs":2}      9: {"req":9,"buildMs":137,"actMs":1}
+ 5: {"req":5,"buildMs":141,"actMs":1}     10: {"req":10,"buildMs":134,"actMs":1}
+```
+
+**The cost: ~135-155ms per request** to construct Seneca, load plugins and reach `ready()`. Message
+dispatch itself is 0-2ms. That is a real latency floor on every Seneca-backed request and it should
+be budgeted for (§17), but it is a cost, not a blocker.
+
+## What does not work, and why
+
+**Module-scope construction is genuinely impossible.** Building Seneca at the top of the file — the
+natural place, and what `@seneca/gateway-cloudflare`'s README Quick Example currently shows — fails:
+
+```
+Disallowed operation called within global scope. Asynchronous I/O ..., setting a timeout,
+and generating random values are not allowed within global scope.
+```
+
+Seneca sets timers and generates random ids during construction; Workers bans both in global scope.
+Reusing one instance across requests hits a different Workers restriction (I/O context). So
+per-request construction is not a workaround — it is the only available option, which is exactly
+why `close()` matters.
+
+## What I got wrong
+
+Worth recording, because the failure was methodological rather than technical.
+
+I tested three placements — module scope, cached across requests, fresh per request — and saw all
+three fail. The third *should* have worked. It failed because I never called `close()`, and my one
+`fresh-close` variant ran in an isolate already poisoned by earlier unclosed instances. **I never
+tested close-from-a-clean-isolate**, and concluded "impossible" from three contaminated results.
+
+I also inferred that `senecajs/SenecaCloudflareGateway` had "never been run inside a Worker" from
+the absence of a `wrangler.toml` or workerd test in the repo. That inference was wrong: the plugin
+was built for night-sky-logbook and is deployed live there. The repo simply does not carry the
+integration test.
+
+## The rest of the work — known, documented, not free
+
+night-sky-logbook §3 lists five fixes needed before a bundled Worker survives its first request.
+conf-agenda will hit the same ones, and one of them matters more here than it did there:
+
+1. **Pass plugin functions, not name strings.** `.use('gateway', opts)` makes `use-plugin` resolve
+   the name via `module.require`, which does not exist in a bundle → `module.require is not a
+   function`. Use `.use(Gateway, opts)`. Apply selectively — statically importing Node-only stores
+   pulls their native addons into the bundle.
+2. **No `__dirname` evaluated at import time.** Does not exist in a bundled ESM Worker; guard it.
+3. **`@voxgig/system`'s `useSrvs()` scans the filesystem** (`fs.existsSync` + string-form `.use()`
+   on a computed path) to load handler files. A Worker has neither. night-sky-logbook replaced it
+   with a hand-written handler map feeding `System.messages(seneca, opts, (actpath) =>
+   handlerMap[actpath]())`. **This one is directly load-bearing for conf-agenda**, which is
+   generated by `@voxgig/build` and will inherit the same loader. Trade-off: handlers become a
+   maintained list, one line each.
+4. **Per-cloud imports go inside their branch**, not at file top — the bundler cannot prove an
+   unused cloud's SDK is unreachable and will include it (`document is not defined` from Azure's
+   browser build).
+5. **`@seneca/reload` defaults to `active: true`** and monkey-patches `Module.prototype.require` on
+   every construction. Turn it off for Workers. (Not the hang's cause — verified separately — but a
+   real footgun.)
+
+## Existing senecajs Cloudflare packages
+
+**PLATFORM.md §3.1 is out of date.** It records `@seneca/gateway-cloudflare` and `@seneca/d1-store`
+as "does not exist — build it" (checked 2026-08-28). The repos it names
+(`seneca-gateway-cloudflare`, `seneca-d1-store`) are 1KB LICENSE+README stubs created 2026-08-31.
+The real work is under CamelCase names the check missed:
+
+| Repo | Pushed | State |
+|---|---|---|
+| `senecajs/SenecaCloudflareGateway` | 2026-08-14 | **Real and deployed** (via night-sky-logbook). `@seneca/gateway-cloudflare` v0.0.1, not on npm. |
+| `senecajs/SenecaCloudflareKVStore` | 2026-08-17 | Real source |
+| `senecajs/SenecaCloudflareR2Store` | 2026-08-17 | Real source |
+| `senecajs/SenecaCloudflareD1Store` | 2026-06-12 | **Template only** — `dist/` still contains OpensearchStore |
+| `senecajs/SenecaCloudflareDOStore` | 2026-08-17 | **Template only** — same |
+
+Two build notes from vendoring the gateway source into this spike, worth checking rather than
+treating as defects: `import Cookie from 'cookie'` fails to bundle against `cookie` v1+/v2 (ESM,
+named exports, no default) — pinning `cookie@0.6.0` fixes it, and night-sky-logbook presumably
+resolves an older version; and `module.exports =` alongside ESM `export` in one file makes esbuild
+flag the mixed module form.
+
+## Recommendation
+
+1. **Cloudflare stays the target.** No fallback needed. PLATFORM.md §6's Containers/VM fallback can
+   be left as the contingency it was written as.
+2. **Do not rebuild the gateway.** `SenecaCloudflareGateway` works and is deployed. Contribute to
+   it: a `wrangler.toml` + workerd integration test, and a README fix — its Quick Example shows the
+   module-scope pattern that cannot work, which is what sent this spike down the wrong path.
+3. **`@seneca/d1-store` is still greenfield.** `SenecaCloudflareD1Store` is an unconverted template.
+   Still on conf-agenda's plate, still repo-manager's only dependency at their S4.
+4. **Budget ~140ms per request** for Seneca construction on the app/API path. The public agenda
+   path is served from a KV snapshot and does not pay it.
+5. **Correct PLATFORM.md §3.1** and resolve the duplicate repo pairs so nobody builds this twice.
+6. **Talk to the night-sky-logbook author before starting.** They have solved every one of these
+   problems already and the handler-map issue (fix 3) is unsolved for `@voxgig/build`-generated
+   apps generally, which is a shared platform concern rather than a conf-agenda one.
