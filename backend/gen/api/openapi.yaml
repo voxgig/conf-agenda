@@ -456,6 +456,90 @@ components:
           type: string
           title: Org
           description: Reference to sys/org
+    CagSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        agenda_json:
+          type: string
+          title: Agenda
+        id:
+          type: string
+          title: ID
+          readOnly: true
+        org_id:
+          type: string
+          title: Org
+          description: Reference to sys/org
+        published_at:
+          type: number
+          title: Published
+        schema_version:
+          type: number
+          title: Schema
+        slug:
+          type: string
+          title: Slug
+        t_c:
+          type: number
+          title: Created
+          readOnly: true
+        t_m:
+          type: number
+          title: Modified
+          readOnly: true
+        top_id:
+          type: string
+          title: Conference
+          description: Reference to cag/fixture
+    CagSnapshotCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        agenda_json:
+          type: string
+          title: Agenda
+        org_id:
+          type: string
+          title: Org
+          description: Reference to sys/org
+        published_at:
+          type: number
+          title: Published
+        schema_version:
+          type: number
+          title: Schema
+        slug:
+          type: string
+          title: Slug
+        top_id:
+          type: string
+          title: Conference
+          description: Reference to cag/fixture
+    CagSnapshotUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        agenda_json:
+          type: string
+          title: Agenda
+        org_id:
+          type: string
+          title: Org
+          description: Reference to sys/org
+        published_at:
+          type: number
+          title: Published
+        schema_version:
+          type: number
+          title: Schema
+        slug:
+          type: string
+          title: Slug
+        top_id:
+          type: string
+          title: Conference
+          description: Reference to cag/fixture
     CagSpeaker:
       type: object
       additionalProperties: false
@@ -1559,6 +1643,296 @@ paths:
       summary: Remove a room
       tags:
         - cag/room
+      responses:
+        '200':
+          description: Removed
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  ok:
+                    type: boolean
+                  id:
+                    type: string
+                required:
+                  - ok
+                  - id
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/cag/snapshot:
+    get:
+      operationId: list_cag_snapshot
+      summary: List snapshot entities
+      tags:
+        - cag/snapshot
+      parameters:
+        - name: agenda_json
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by agenda_json
+        - name: id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by id
+        - name: org_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by org_id
+        - name: published_at
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by published_at
+        - name: schema_version
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by schema_version
+        - name: slug
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by slug
+        - name: t_c
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by t_c
+        - name: t_m
+          in: query
+          required: false
+          schema:
+            type: number
+          description: Filter by t_m
+        - name: top_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by top_id
+      responses:
+        '200':
+          description: Matching snapshot entities
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CagSnapshot'
+                required:
+                  - items
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: create_cag_snapshot
+      summary: Create a snapshot
+      tags:
+        - cag/snapshot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CagSnapshotCreate'
+      responses:
+        '201':
+          description: The created snapshot
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  item:
+                    $ref: '#/components/schemas/CagSnapshot'
+                required:
+                  - item
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/cag/snapshot/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: load_cag_snapshot
+      summary: Load one snapshot
+      tags:
+        - cag/snapshot
+      responses:
+        '200':
+          description: The snapshot
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  item:
+                    $ref: '#/components/schemas/CagSnapshot'
+                required:
+                  - item
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      operationId: update_cag_snapshot
+      summary: Update a snapshot (partial)
+      tags:
+        - cag/snapshot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CagSnapshotUpdate'
+      responses:
+        '200':
+          description: The updated snapshot
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  item:
+                    $ref: '#/components/schemas/CagSnapshot'
+                required:
+                  - item
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: remove_cag_snapshot
+      summary: Remove a snapshot
+      tags:
+        - cag/snapshot
       responses:
         '200':
           description: Removed

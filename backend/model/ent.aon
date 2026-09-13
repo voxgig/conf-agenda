@@ -171,3 +171,35 @@ cag: appearance: {
   }
   valid: '$$': 'Open'
 }
+
+
+## The published snapshot. Everything public reads THIS - nothing public ever
+## reaches the live entity rows (SPEC 9.1). Locally this is an ordinary entity;
+## at Stage 4 the same write moves to Cloudflare KV. One deployment seam, no
+## application change.
+##
+## id is '<org_id>:<slug>', so the public read is a load by id.
+
+cag: snapshot: {
+  field: {
+    id: { label: 'ID' kind: String }
+    org_id: { label: 'Org' kind: String ref: 'sys/org' valid: Skip }
+    top_id: { label: 'Conference' kind: String ref: 'cag/fixture' valid: Skip }
+    slug: { label: 'Slug' kind: String valid: Skip }
+    schema_version: { label: 'Schema' kind: Number valid: Skip }
+    ## When this snapshot was written. Deliberately OUTSIDE the agenda payload:
+    ## agenda.json must be byte-identical for identical input (SPEC 17), and a
+    ## publish timestamp inside it would change on every publish.
+    published_at: { label: 'Published' kind: Number valid: Skip }
+    ## Stored as a STRING, not an object. The snapshot is a frozen document:
+    ## SPEC 17 requires agenda.json to be byte-identical for identical input,
+    ## and bytes are what a string preserves - an object round-tripped through
+    ## a store can come back with a different key order. It is also what
+    ## Cloudflare KV holds natively, so Stage 4 moves the write without
+    ## reshaping the data.
+    agenda_json: { label: 'Agenda' kind: String valid: Skip }
+    t_c: { label: 'Created' kind: Number valid: Skip }
+    t_m: { label: 'Modified' kind: Number valid: Skip }
+  }
+  valid: '$$': 'Open'
+}

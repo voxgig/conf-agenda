@@ -23,4 +23,16 @@
   { pat: [{aim: cag}, {validate: fixture}]
     params: { fixture_id: 'String' } }
 
+  { pat: [{aim: cag}, {publish: fixture}]
+    params: { fixture_id: 'String' } }
+
+
+  # ---- agenda service ----------------------------------------------------
+  # The public read path. aim:agenda,get:agenda is the ONE unauthenticated
+  # message (SPEC 9.1): the embed runs on a third party's page and cannot
+  # carry credentials.
+
+  { pat: [{aim: agenda}, {get: agenda}]
+    params: { org_id: 'String', slug: 'String' } }
+
 ]

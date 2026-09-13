@@ -61,6 +61,17 @@ erDiagram
     Number t_c
     Number t_m
   }
+  cag_snapshot {
+    String agenda_json
+    String id
+    String org_id FK
+    Number published_at
+    Number schema_version
+    String slug
+    Number t_c
+    Number t_m
+    String top_id FK
+  }
   cag_speaker {
     String bio
     String email
@@ -98,6 +109,8 @@ erDiagram
   cag_fixture ||--o{ cag_fixture : "top_id"
   cag_track ||--o{ cag_fixture : "track_id"
   sys_org ||--o{ cag_room : "org_id"
+  sys_org ||--o{ cag_snapshot : "org_id"
+  cag_fixture ||--o{ cag_snapshot : "top_id"
   sys_org ||--o{ cag_speaker : "org_id"
   sys_org ||--o{ cag_track : "org_id"
 ```
@@ -111,6 +124,7 @@ erDiagram
 | `cag/appearance` | fixture_id, id, invite, order, org_id, role, speaker_id, t_c, t_m | fixture_id → cag/fixture<br>org_id → sys/org<br>speaker_id → cag/speaker | generic admin |
 | `cag/fixture` | desc, embed, id, kind, org_id, p_gc, p_lat, p_lng, p_name, p_web, parent_id, private, room_id, slug, status, t_c, t_end, t_m, t_start, t_tzn, title, top_id, track_id, w_deck, w_site, w_video | org_id → sys/org<br>parent_id → cag/fixture<br>room_id → cag/room<br>top_id → cag/fixture<br>track_id → cag/track | custom view |
 | `cag/room` | access, capacity, floor, id, name, order, org_id, t_c, t_m | org_id → sys/org | generic admin |
+| `cag/snapshot` | agenda_json, id, org_id, published_at, schema_version, slug, t_c, t_m, top_id | org_id → sys/org<br>top_id → cag/fixture | generic admin |
 | `cag/speaker` | bio, email, id, name, org_id, org_name, photo, t_c, t_m, w_site | org_id → sys/org | generic admin |
 | `cag/track` | color, desc, id, name, order, org_id, t_c, t_m | org_id → sys/org | generic admin |
 | `sys/login` | id | — | generic admin |

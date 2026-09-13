@@ -11,14 +11,17 @@ derived from the model.*
 flowchart TB
   client([Clients]) -->|aim:*| gateway{{gateway}}
   subgraph services[Services]
+    srv_agenda[agenda]
     srv_cag[cag]
   end
+  gateway --> srv_agenda
   gateway --> srv_cag
   subgraph data[Entities]
     subgraph zone_cag[zone cag]
       cag_appearance[appearance]
       cag_fixture[fixture]
       cag_room[room]
+      cag_snapshot[snapshot]
       cag_speaker[speaker]
       cag_track[track]
     end
@@ -27,6 +30,7 @@ flowchart TB
       sys_user[user]
     end
   end
+  srv_agenda --> data
   srv_cag --> data
 ```
 
