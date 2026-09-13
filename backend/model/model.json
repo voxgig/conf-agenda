@@ -477,6 +477,9 @@
     "env": {
       "local": {
         "active": true
+      },
+      "web": {
+        "active": true
       }
     },
     "msg": [
@@ -503,6 +506,33 @@
           },
           {
             "publish": "fixture"
+          }
+        ]
+      },
+      {
+        "params": {
+          "fixture_id": "Skip(String)"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "load": "tree"
+          }
+        ]
+      },
+      {
+        "file": "./web_load_tree",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "load": "tree"
           }
         ]
       },
@@ -576,6 +606,57 @@
           "required": false
         }
       },
+      "auth": {
+        "api": {
+          "web": {
+            "active": true,
+            "cors": {
+              "active": false
+            },
+            "method": "POST",
+            "path": {
+              "area": "public/",
+              "prefix": "/api/",
+              "suffix": ""
+            }
+          }
+        },
+        "deps": {},
+        "env": {
+          "lambda": {
+            "active": true,
+            "handler": {
+              "path": {
+                "prefix": "dist/handler/lambda/",
+                "suffix": ".handler"
+              }
+            },
+            "kind": "standard",
+            "timeout": 30
+          }
+        },
+        "in": {
+          "aim": {
+            "auth": {},
+            "web": {
+              "on": {
+                "auth": {
+                  "$": {
+                    "allow": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "options": {
+          "debug": true
+        },
+        "out": {},
+        "user": {
+          "required": false
+        }
+      },
       "cag": {
         "api": {
           "web": {
@@ -607,7 +688,16 @@
         },
         "in": {
           "aim": {
-            "cag": {}
+            "cag": {},
+            "web": {
+              "on": {
+                "cag": {
+                  "$": {
+                    "allow": true
+                  }
+                }
+              }
+            }
           }
         },
         "options": {

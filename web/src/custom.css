@@ -1,0 +1,30 @@
+/* Project CSS customisation (CREATE-ONCE — never overwritten). Override the
+   theme variables (defined in style.css) to restyle the whole app, and add
+   any rules you like. */
+
+:root {
+  /* e.g. --vg-primary: #7c3aed; --vg-topbar-bg: #111827; */
+}
+
+/* --- agenda grid (custom view for cag/fixture) ------------------------- */
+.vg-grid { border-collapse: collapse; width: 100%; }
+.vg-grid th, .vg-grid td { border: 1px solid var(--vg-border, #d7dce4); padding: 6px 8px;
+  text-align: left; vertical-align: top; }
+.vg-grid thead th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.vg-grid th[scope='row'] { font-family: ui-monospace, monospace; font-size: 12px;
+  font-weight: 400; white-space: nowrap; width: 1%; }
+.vg-grid td.vg-focus { outline: 2px solid var(--vg-primary, #0274b4); outline-offset: -2px; }
+.vg-grid td.vg-cancelled .vg-strong { text-decoration: line-through; opacity: .7; }
+.vg-strong { font-weight: 600; }
+.vg-badge { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; opacity: .75; }
+.vg-scroll { overflow-x: auto; }
+.vg-detail:empty { display: none; }
+.vg-detail { margin-top: 12px; padding: 10px 12px;
+  border: 1px solid var(--vg-border, #d7dce4); border-radius: 6px; }
+.vg-bar { margin: 8px 0; padding: 8px; border: 1px solid var(--vg-border, #d7dce4); }
+.vg-bar input { width: 100%; padding: 6px; }
+.vg-bar ul { list-style: none; padding: 0; margin: 6px 0 0; }
+.vg-help { margin: 8px 0; font-size: 13px; }
+/* Visually hidden, still announced - the live region for j/k moves. */
+.vg-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);
+  white-space: nowrap; }

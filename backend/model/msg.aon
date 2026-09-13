@@ -26,6 +26,21 @@
   { pat: [{aim: cag}, {publish: fixture}]
     params: { fixture_id: 'String' } }
 
+  # The organiser's read. NOT the public snapshot: the app must show drafts,
+  # which agenda.json deliberately never contains.
+  { pat: [{aim: cag}, {load: tree}]
+    params: { fixture_id: 'Skip(String)' } }
+
+
+  # ---- browser surface ---------------------------------------------------
+  # aim:web is the ONLY namespace the gateway accepts from a browser. Each
+  # entry is a declared proxy to a real service message; a proxy shares its
+  # LAST pattern pair with the message it forwards to, so it names its own
+  # action file (PLATFORM 1.4).
+
+  { pat: [{aim: web}, {on: cag}, {load: tree}]
+    file: './web_load_tree' }
+
 
   # ---- agenda service ----------------------------------------------------
   # The public read path. aim:agenda,get:agenda is the ONE unauthenticated

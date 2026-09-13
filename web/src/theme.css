@@ -1,0 +1,35 @@
+/* AUTO-GENERATED from the model theme (main.theme) — do not edit.
+   Override tokens in custom.css; add modes via the theme:modes hook. */
+
+:root,
+:root[data-theme-mode="light"] {
+  --vg-accent-bg: #e7f0ff;
+  --vg-bg: #f5f7fa;
+  --vg-border: #e3e8ee;
+  --vg-font: 15px/1.5 system-ui, sans-serif;
+  --vg-muted: #8b949e;
+  --vg-primary: #1f6feb;
+  --vg-primary-dark: #1a5fd0;
+  --vg-radius: 6px;
+  --vg-shadow-card: 0 6px 24px rgba(13,27,42,.10);
+  --vg-surface: #ffffff;
+  --vg-text: #1c2733;
+  --vg-topbar-bg: #0d1b2a;
+  --vg-topbar-fg: #e6edf3;
+}
+
+:root[data-theme-mode="dark"] {
+  --vg-accent-bg: #1f6feb44;
+  --vg-bg: #0d1117;
+  --vg-border: #30363d;
+  --vg-font: 15px/1.5 system-ui, sans-serif;
+  --vg-muted: #8b949e;
+  --vg-primary: #58a6ff;
+  --vg-primary-dark: #388bfd;
+  --vg-radius: 6px;
+  --vg-shadow-card: 0 6px 24px rgba(0,0,0,.55);
+  --vg-surface: #161b22;
+  --vg-text: #e6edf3;
+  --vg-topbar-bg: #010409;
+  --vg-topbar-fg: #e6edf3;
+}
