@@ -13,4 +13,12 @@ flowchart LR
   client([Clients / SPA])
   gateway{{gateway}}
   client -->|aim:* messages| gateway
+  cag[srv cag]
+  gateway -->|aim:cag| cag
 ```
+
+## Service: cag
+
+| Message | Action file |
+|---|---|
+| `aim:cag,validate:fixture` | `src/srv/cag/validate_fixture.ts` |

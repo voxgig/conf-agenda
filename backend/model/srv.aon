@@ -2,6 +2,16 @@
 &: $.sys.shape.srv.std_ts
 
 
+cag: {
+  in: {
+    aim: cag: {}
+  }
+  user: required: true
+  api: web: path: { area: 'private/', suffix: '' }
+  env: lambda: active: true
+}
+
+
 ## Example service definition. Uncomment to add the example 'thing'
 ## service (see also msg.aon and src/srv/).
 

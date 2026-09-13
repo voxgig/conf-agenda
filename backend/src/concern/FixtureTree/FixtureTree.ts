@@ -78,6 +78,32 @@ function FixtureTree(this: any, options: Options) {
       return { ok: true, ...eff }
     })
 
+    // The whole tree under one fixture, with effective values already
+    // resolved - ONE store load for the lot. Resolving per segment would be a
+    // whole-org load each, which is O(n^2) rows for a real programme; SPEC 17
+    // budgets a 200-session conference at under 500ms.
+    .message('resolve:tree', { fixture_id: String }, async function (this: any, msg: any) {
+      const { nodes, self } = await loadNodes.call(this, msg.fixture_id)
+      if (null == self) return { ok: false, why: 'not-found' }
+
+      const wanted = [
+        nodes.find((n) => n.id === msg.fixture_id) as TreeNode,
+        ...subtreeOf(nodes, msg.fixture_id),
+      ]
+
+      const resolved = wanted.map((n) => {
+        const eff = effectiveOf(nodes, n.id)
+        return {
+          ...(nodes.find((x) => x.id === n.id) as any),
+          effective_status: eff.status,
+          effective_private: eff.private,
+          broken_chain: eff.broken,
+        }
+      })
+
+      return { ok: true, top_id: topIdOf(nodes, msg.fixture_id), nodes: resolved }
+    })
+
     .message('list:ancestors', { fixture_id: String }, async function (this: any, msg: any) {
       const { nodes, self } = await loadNodes.call(this, msg.fixture_id)
       if (null == self) return { ok: false, why: 'not-found' }

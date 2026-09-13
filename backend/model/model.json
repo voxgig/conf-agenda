@@ -423,9 +423,21 @@
         "active": true
       }
     },
-    "msg": {
-      "aim": {}
-    },
+    "msg": [
+      {
+        "params": {
+          "fixture_id": "String"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "validate": "fixture"
+          }
+        ]
+      }
+    ],
     "shape": {
       "ent": {
         "field": {
@@ -438,7 +450,50 @@
         }
       }
     },
-    "srv": {},
+    "srv": {
+      "cag": {
+        "api": {
+          "web": {
+            "active": true,
+            "cors": {
+              "active": false
+            },
+            "method": "POST",
+            "path": {
+              "area": "private/",
+              "prefix": "/api/",
+              "suffix": ""
+            }
+          }
+        },
+        "deps": {},
+        "env": {
+          "lambda": {
+            "active": true,
+            "handler": {
+              "path": {
+                "prefix": "dist/handler/lambda/",
+                "suffix": ".handler"
+              }
+            },
+            "kind": "standard",
+            "timeout": 30
+          }
+        },
+        "in": {
+          "aim": {
+            "cag": {}
+          }
+        },
+        "options": {
+          "debug": true
+        },
+        "out": {},
+        "user": {
+          "required": true
+        }
+      }
+    },
     "theme": {
       "mode": "light",
       "modes": {
