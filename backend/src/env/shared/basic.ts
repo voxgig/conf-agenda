@@ -5,6 +5,8 @@ import { entity } from '@voxgig/util'
 
 import Model from '../../../model/model.json'
 
+import FixtureTree from '../../concern/FixtureTree/FixtureTree'
+
 
 // Core seneca setup shared by the local runner and (optionally) tests.
 //
@@ -46,6 +48,7 @@ const base = {
         standard: ['id', 'handle', 'email', 'name', 'active'],
       },
     },
+    fixturetree: {},
     reload: {},
 
     // Access control, enforced by @seneca/owner at the entity layer rather
@@ -128,6 +131,12 @@ function basic(seneca: any, options?: any) {
     .use('user', deep(base.options.user, options.user))
     .use('owner', deep(base.options.owner, options.owner))
     .use('reload', deep(base.options.reload, options.reload))
+
+  // Concerns: shared business logic several services need identically
+  // (PLATFORM 1.5). Loaded once here, called over the bus as `concern:*`,
+  // never imported by a service. No `aim:` surface, so never gateway- or
+  // API-reachable.
+  seneca.use(FixtureTree, deep(base.options.fixturetree, options.fixturetree))
 
   return seneca
 }
