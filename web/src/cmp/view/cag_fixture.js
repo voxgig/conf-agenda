@@ -133,7 +133,9 @@ class VgViewCagFixture extends HTMLElement {
       .map((a) => speakers.get(a.speaker_id) || a.speaker_id)
     const clock = clockFor(this.data.top && this.data.top.t_tzn)
 
-    panel.replaceChildren(
+    // replaceChildren stringifies anything that is not a Node, so a null
+    // child renders the literal text "null". Filter before it, not inside el().
+    panel.replaceChildren(...[
       el('h3', { text: session.title || session.id }),
       el('p', { class: 'vg-muted', text:
         clock(session.t_start) + '–' + clock(session.t_end) +
@@ -142,7 +144,7 @@ class VgViewCagFixture extends HTMLElement {
         (names.length ? ' · ' + names.join(', ') : '') }),
       session.desc ? el('p', { text: session.desc }) : null,
       el('p', { class: 'vg-muted', text: 'Read-only at this stage. Editing arrives in Stage 2.' }),
-    )
+    ].filter((n) => null != n))
   }
 
   toggleHelp() {
@@ -188,45 +190,69 @@ class VgViewCagFixture extends HTMLElement {
     const placed = list.filter((s) => null != s.room_id)
     const order = new Map(list.map((s, i) => [s.id, i]))
 
+    const sessionNode = (s) => {
+      const names = appearances
+        .filter((a) => a.fixture_id === s.id)
+        .map((a) => speakers.get(a.speaker_id) || a.speaker_id)
+      const badge = STATUS_LABEL[s.effective_status] || ''
+      return el('div', {
+        'data-session': s.id,
+        'data-index': order.get(s.id),
+        class: 'cancelled' === s.effective_status ? 'vg-session vg-cancelled' : 'vg-session',
+      }, [
+        el('div', { class: 'vg-strong', text: s.title || s.id }),
+        names.length ? el('div', { class: 'vg-muted', text: names.join(', ') }) : null,
+        el('div', { class: 'vg-muted', text: clock(s.t_start) + '–' + clock(s.t_end) }),
+        // Status is shown as a WORD, never as colour alone (K10).
+        badge ? el('div', { class: 'vg-badge', text: badge }) : null,
+      ])
+    }
+
     const head = el('tr', {}, [
       el('th', { scope: 'col', text: 'Time' }),
       ...rooms.map((r) => el('th', { scope: 'col', text: r.name || r.id })),
     ])
 
-    const taken = new Set()
+    // A session can START INSIDE another session's rowspan - that is exactly
+    // what a room double-booking looks like. So instead of skipping a covered
+    // slot (which silently HID the second session), remember which cell covers
+    // each slot and append into it. Nothing is ever dropped.
+    const cover = new Map()
     const body = []
+
     for (let i = 0; i < marks.length - 1; i++) {
       const cells = [el('th', { scope: 'row', class: 'vg-muted', text: clock(marks[i]) })]
+
       for (const room of rooms) {
-        if (taken.has(room.id + ':' + i)) continue
-        const s = placed.find((x) => x.room_id === room.id && x.t_start === marks[i])
-        if (!s) {
+        const here = placed.filter((x) => x.room_id === room.id && x.t_start === marks[i])
+        const covering = cover.get(room.id + ':' + i)
+
+        if (covering) {
+          // Covered by a span from above. Any session starting now is a clash:
+          // put it in the SAME cell so the organiser sees both.
+          for (const s of here) {
+            covering.appendChild(sessionNode(s))
+            covering.classList.add('vg-clash')
+          }
+          continue
+        }
+
+        if (0 === here.length) {
           cells.push(el('td', {}))
           continue
         }
-        const endIdx = marks.indexOf(s.t_end)
-        const span = Math.max(1, (endIdx < 0 ? i + 1 : endIdx) - i)
-        for (let k = 1; k < span; k++) taken.add(room.id + ':' + (i + k))
 
-        const names = appearances
-          .filter((a) => a.fixture_id === s.id)
-          .map((a) => speakers.get(a.speaker_id) || a.speaker_id)
-        const badge = STATUS_LABEL[s.effective_status] || ''
+        const spans = here.map((x) => {
+          const endIdx = marks.indexOf(x.t_end)
+          return Math.max(1, (endIdx < 0 ? i + 1 : endIdx) - i)
+        })
+        const span = Math.max(...spans)
 
-        cells.push(
-          el('td', {
-            rowspan: 1 < span ? span : null,
-            'data-session': s.id,
-            'data-index': order.get(s.id),
-            class: 'cancelled' === s.effective_status ? 'vg-cancelled' : null,
-          }, [
-            el('div', { class: 'vg-strong', text: s.title || s.id }),
-            names.length ? el('div', { class: 'vg-muted', text: names.join(', ') }) : null,
-            el('div', { class: 'vg-muted', text: clock(s.t_start) + '–' + clock(s.t_end) }),
-            // Status is shown as a WORD, never as colour alone (K10).
-            badge ? el('div', { class: 'vg-badge', text: badge }) : null,
-          ]),
-        )
+        const cell = el('td', { rowspan: 1 < span ? span : null })
+        if (1 < here.length) cell.classList.add('vg-clash')
+        for (const s of here) cell.appendChild(sessionNode(s))
+        for (let k = 1; k < span; k++) cover.set(room.id + ':' + (i + k), cell)
+        cells.push(cell)
       }
       body.push(el('tr', {}, cells))
     }

@@ -46,29 +46,48 @@ Neither is published (404, checked 2026-09-13) — that is the package PLATFORM.
 "exists, unpublished", owned by the repo-manager developer. §19.2 prescribes vendoring todo-app's
 working copy, which is what `web/public/` now holds. See `web/public/VENDORED.md`.
 
-## UNRESOLVED: the auth service does not register
+## RESOLVED: the auth service now registers
 
-**Status: open. The SPA does not boot because of this.**
+**Cause: the auth messages were never in the model.** `srv.aon` declared the service, but the
+`msg.aon` edit that was supposed to add its messages silently did not apply, and the script that
+made it reported success anyway. `@voxgig/system`'s selection rule explains the rest:
 
-`auth` is declared in `srv.aon`, its messages and proxies are declared in `msg.aon`, and
-`dist/srv/auth/auth-srv.js` exists and `require`s cleanly. But `@voxgig/system`'s `Local` loader
-does not register any `aim:auth,*` pattern. A probe (`backend/tool/probe.mjs`) lists what is
-actually wired:
-
-```
-aim:agenda,get:agenda
-aim:cag,load:tree
-aim:cag,publish:fixture
-aim:cag,validate:fixture
-aim:web,load:tree,on:cag
+```js
+const srvpats = listmsgs(srv.in).map(m => m.props)   // patterns from the service's `in:` block
+srvpats.reduce((a, pat) => (a.push(...allpat.list(pat).map(o => o.data)), a), srvmsgs)
 ```
 
-`cag` and `agenda` load from the same folder, by the same loader, with structurally identical
-`srv.aon` blocks. Reordering the services changes nothing. The gateway allows `aim:web` wholesale,
-so the `not-allowed` the browser sees is "no such action", not a permission refusal.
+`srvmsgs` matches the service's `in:` patterns against `main.msg`. A service whose messages are not
+declared loads as a plugin, registers **nothing**, and logs no error — so the browser sees
+`not-allowed`, which reads like a permission refusal and is actually "no such action". That
+misleading symptom is worth knowing: **check `main.msg` before suspecting the gateway.**
 
-Consequence: `aim:web,on:cag,load:tree` **works** (verified against the running server — it returns
-the seeded `tiny` conference), but the SPA cannot get past sign-in, so the grid has not been seen
-rendering in a browser.
+`backend/tool/probe.mjs` lists what is actually registered, and is the fastest way to tell the two
+apart.
 
-Next step is to read `@voxgig/system`'s `useSrvs()` to find its actual selection rule.
+Also removed `aim:web,get:info`: it was declared with no action file, which PLATFORM.md §1.2
+forbids ("only declare messages whose files exist").
+
+## The generic entity admin does not work, and that is the real cost
+
+With auth wired, the SPA signs in and the **custom Fixture view renders** — it uses
+`aim:web,on:cag,load:tree`, a semantic message of our own.
+
+The other entity screens do not. The generated `web/src/api.js` reaches for
+`aim:web,on:ent,cmd:list|load|save|remove`, which this project deliberately does not declare, so
+Room, Speaker, Track, Appearance and Snapshot fail.
+
+SPEC §19.3 lists "generic entity admin plus a read-only grid" for Stage 1, so this is a real gap
+rather than a deferred nicety. Three ways to close it:
+
+1. **Declare the generic ent surface** — fastest, and forbidden by SPEC §9 / PLATFORM §1.2. It is
+   the surface the tenant-from-payload flaw rode in on. No.
+2. **Generate per-entity intent messages** (`update:speaker` with exactly the editable fields) —
+   what the spec actually wants, and the `@voxgig/build` delta PLATFORM §1.2 anticipates. Does not
+   exist yet.
+3. **Hand-write per-entity messages** for room/track/speaker/appearance and point the admin at
+   them. Real work, and `api.js` is generated, so the patch would need re-applying on every build
+   until (2) lands.
+
+Leaning (3) for Stage 1, scoped to read-only list/load, because the organiser needs to *see* rooms
+and speakers before Stage 2 makes them editable.

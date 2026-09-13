@@ -50,4 +50,30 @@
   { pat: [{aim: agenda}, {get: agenda}]
     params: { org_id: 'String', slug: 'String' } }
 
+  # ---- auth service ------------------------------------------------------
+  # Session and user settings, thin wrappers over @seneca/user. SPEC 19.3
+  # runs Stage 1 behind a login. Shape follows todo-app's own msg.aon.
+
+  { pat: [{aim: auth}, {get: info}] }
+  { pat: [{aim: auth}, {signin: user}] }
+  { pat: [{aim: auth}, {signout: user}] }
+  { pat: [{aim: auth}, {load: auth}] }
+  { pat: [{aim: auth}, {change: pass}] }
+  { pat: [{aim: auth}, {update: user}] }
+  { pat: [{aim: auth}, {remind: pass}] }
+  { pat: [{aim: auth}, {create: apikey}] }
+  { pat: [{aim: auth}, {list: apikey}] }
+  { pat: [{aim: auth}, {revoke: apikey}] }
+
+  { pat: [{aim: web}, {on: auth}, {signin: user}],   file: './web_signin_user' }
+  { pat: [{aim: web}, {on: auth}, {signout: user}],  file: './web_signout_user' }
+  { pat: [{aim: web}, {on: auth}, {load: auth}],     file: './web_load_auth' }
+  { pat: [{aim: web}, {on: auth}, {change: pass}],   file: './web_change_pass' }
+  { pat: [{aim: web}, {on: auth}, {update: user}],   file: './web_update_user' }
+  { pat: [{aim: web}, {on: auth}, {remind: pass}],   file: './web_remind_pass' }
+  { pat: [{aim: web}, {on: auth}, {create: apikey}], file: './web_create_apikey' }
+  { pat: [{aim: web}, {on: auth}, {list: apikey}],   file: './web_list_apikey' }
+  { pat: [{aim: web}, {on: auth}, {revoke: apikey}], file: './web_revoke_apikey' }
+
+
 ]

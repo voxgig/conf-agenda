@@ -13,8 +13,15 @@
 .vg-grid thead th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
 .vg-grid th[scope='row'] { font-family: ui-monospace, monospace; font-size: 12px;
   font-weight: 400; white-space: nowrap; width: 1%; }
-.vg-grid td.vg-focus { outline: 2px solid var(--vg-primary, #0274b4); outline-offset: -2px; }
-.vg-grid td.vg-cancelled .vg-strong { text-decoration: line-through; opacity: .7; }
+.vg-session { padding: 2px 0; }
+.vg-session + .vg-session { margin-top: 6px; border-top: 1px dashed var(--vg-border, #d7dce4);
+  padding-top: 6px; }
+.vg-grid [data-session].vg-focus { outline: 2px solid var(--vg-primary, #0274b4);
+  outline-offset: 1px; }
+/* Two sessions in one cell is a double-booking - flagged with a word, not
+   only a colour (K10): the second carries a visible rule above it. */
+.vg-grid td.vg-clash { background: rgba(231, 0, 66, .06); }
+.vg-grid .vg-cancelled .vg-strong { text-decoration: line-through; opacity: .7; }
 .vg-strong { font-weight: 600; }
 .vg-badge { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; opacity: .75; }
 .vg-scroll { overflow-x: auto; }
