@@ -12,6 +12,19 @@ cag: {
 }
 
 
+## The public read path. user.required is FALSE - this is the one
+## unauthenticated surface (SPEC 9.1), because the embed runs on someone
+## else's page and cannot carry credentials.
+agenda: {
+  in: {
+    aim: agenda: {}
+  }
+  user: required: false
+  api: web: path: { area: 'public/', suffix: '' }
+  env: lambda: active: true
+}
+
+
 ## Example service definition. Uncomment to add the example 'thing'
 ## service (see also msg.aon and src/srv/).
 

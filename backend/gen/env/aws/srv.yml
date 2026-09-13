@@ -1,3 +1,18 @@
+agenda:
+  handler: dist/handler/lambda/agenda.handler
+  role: BasicConfAgendaLambdaRole
+  timeout: 30
+  memorySize: 1024
+  events:
+    - http:
+        path: "/api/public/agenda"
+        method: POST
+        cors: false
+
+
+
+
+
 cag:
   handler: dist/handler/lambda/cag.handler
   role: BasicConfAgendaLambdaRole

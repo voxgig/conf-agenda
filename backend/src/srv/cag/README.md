@@ -12,6 +12,7 @@ Requires a signed-in user (`user.required: true`).
 | Message | Action file |
 |---|---|
 | `aim:cag,validate:fixture` | `validate_fixture.ts` |
+| `aim:cag,publish:fixture` | `publish_fixture.ts` |
 
 ## Flow
 
@@ -19,6 +20,7 @@ Requires a signed-in user (`user.required: true`).
 flowchart LR
   gateway{{gateway}} -->|validated msg| srv[srv cag]
   srv --> validate_fixture["aim:cag,validate:fixture<br>validate_fixture.ts"]
+  srv --> publish_fixture["aim:cag,publish:fixture<br>publish_fixture.ts"]
 ```
 
 Message params are validated from the model (gubu); see
