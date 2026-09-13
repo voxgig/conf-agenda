@@ -9,12 +9,27 @@ derived from the model.*
 
 ```mermaid
 flowchart TB
-  client([Clients]) -->|aim:*| gateway{{gateway}}
+  subgraph spa[Web SPA]
+    shell[cmp/shell]
+    admin[cmp/admin]
+    publiccmp[cmp/public + cmp/auth]
+    settings[cmp/settings]
+    view_cag_fixture[cmp/view/cag_fixture]
+    bus[(Seneca bus)]
+    shell --> bus
+    admin --> bus
+    publiccmp --> bus
+    settings --> bus
+    view_cag_fixture --> bus
+  end
+  bus -->|aim:* over browser transport| gateway{{gateway}}
   subgraph services[Services]
     srv_agenda[agenda]
+    srv_auth[auth]
     srv_cag[cag]
   end
   gateway --> srv_agenda
+  gateway --> srv_auth
   gateway --> srv_cag
   subgraph data[Entities]
     subgraph zone_cag[zone cag]
@@ -31,6 +46,7 @@ flowchart TB
     end
   end
   srv_agenda --> data
+  srv_auth --> data
   srv_cag --> data
 ```
 
@@ -40,8 +56,9 @@ flowchart TB
 flowchart LR
   model[(model.json)]
   model --> env_local[env local]
+  model --> env_web[env web]
 ```
 
-Active environments: `local`.
+Active environments: `local`, `web`.
 
 See also: [entities](entities.md) · [messages](messages.md).

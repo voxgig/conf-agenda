@@ -4,7 +4,7 @@
   "description": "conf-agenda backend",
   "main": "index.js",
   "scripts": {
-    "test": "node --enable-source-maps --test-force-exit --test \"dist-test/unit/**/*.test.js\"",
+    "test": "node --enable-source-maps --test-force-exit --test \"dist-test/unit/*.test.js\"",
     "test-some": "node --enable-source-maps --test-force-exit --test-name-pattern=\"$npm_config_pattern\" --test \"dist-test/unit/**/*.test.js\"",
     "model": "voxgig-model model/model.aon --watch",
     "model-build": "voxgig-model model/model.aon",

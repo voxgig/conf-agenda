@@ -477,6 +477,9 @@
     "env": {
       "local": {
         "active": true
+      },
+      "web": {
+        "active": true
       }
     },
     "msg": [
@@ -508,6 +511,33 @@
       },
       {
         "params": {
+          "fixture_id": "Skip(String)"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "load": "tree"
+          }
+        ]
+      },
+      {
+        "file": "./web_load_tree",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "load": "tree"
+          }
+        ]
+      },
+      {
+        "params": {
           "org_id": "String",
           "slug": "String"
         },
@@ -517,6 +547,232 @@
           },
           {
             "get": "agenda"
+          }
+        ]
+      },
+      {
+        "pat": [
+          {
+            "aim": "auth"
+          },
+          {
+            "get": "info"
+          }
+        ]
+      },
+      {
+        "pat": [
+          {
+            "aim": "auth"
+          },
+          {
+            "signin": "user"
+          }
+        ]
+      },
+      {
+        "pat": [
+          {
+            "aim": "auth"
+          },
+          {
+            "signout": "user"
+          }
+        ]
+      },
+      {
+        "pat": [
+          {
+            "aim": "auth"
+          },
+          {
+            "load": "auth"
+          }
+        ]
+      },
+      {
+        "pat": [
+          {
+            "aim": "auth"
+          },
+          {
+            "change": "pass"
+          }
+        ]
+      },
+      {
+        "pat": [
+          {
+            "aim": "auth"
+          },
+          {
+            "update": "user"
+          }
+        ]
+      },
+      {
+        "pat": [
+          {
+            "aim": "auth"
+          },
+          {
+            "remind": "pass"
+          }
+        ]
+      },
+      {
+        "pat": [
+          {
+            "aim": "auth"
+          },
+          {
+            "create": "apikey"
+          }
+        ]
+      },
+      {
+        "pat": [
+          {
+            "aim": "auth"
+          },
+          {
+            "list": "apikey"
+          }
+        ]
+      },
+      {
+        "pat": [
+          {
+            "aim": "auth"
+          },
+          {
+            "revoke": "apikey"
+          }
+        ]
+      },
+      {
+        "file": "./web_signin_user",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "auth"
+          },
+          {
+            "signin": "user"
+          }
+        ]
+      },
+      {
+        "file": "./web_signout_user",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "auth"
+          },
+          {
+            "signout": "user"
+          }
+        ]
+      },
+      {
+        "file": "./web_load_auth",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "auth"
+          },
+          {
+            "load": "auth"
+          }
+        ]
+      },
+      {
+        "file": "./web_change_pass",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "auth"
+          },
+          {
+            "change": "pass"
+          }
+        ]
+      },
+      {
+        "file": "./web_update_user",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "auth"
+          },
+          {
+            "update": "user"
+          }
+        ]
+      },
+      {
+        "file": "./web_remind_pass",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "auth"
+          },
+          {
+            "remind": "pass"
+          }
+        ]
+      },
+      {
+        "file": "./web_create_apikey",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "auth"
+          },
+          {
+            "create": "apikey"
+          }
+        ]
+      },
+      {
+        "file": "./web_list_apikey",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "auth"
+          },
+          {
+            "list": "apikey"
+          }
+        ]
+      },
+      {
+        "file": "./web_revoke_apikey",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "auth"
+          },
+          {
+            "revoke": "apikey"
           }
         ]
       }
@@ -576,6 +832,57 @@
           "required": false
         }
       },
+      "auth": {
+        "api": {
+          "web": {
+            "active": true,
+            "cors": {
+              "active": false
+            },
+            "method": "POST",
+            "path": {
+              "area": "public/",
+              "prefix": "/api/",
+              "suffix": ""
+            }
+          }
+        },
+        "deps": {},
+        "env": {
+          "lambda": {
+            "active": true,
+            "handler": {
+              "path": {
+                "prefix": "dist/handler/lambda/",
+                "suffix": ".handler"
+              }
+            },
+            "kind": "standard",
+            "timeout": 30
+          }
+        },
+        "in": {
+          "aim": {
+            "auth": {},
+            "web": {
+              "on": {
+                "auth": {
+                  "$": {
+                    "allow": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "options": {
+          "debug": true
+        },
+        "out": {},
+        "user": {
+          "required": false
+        }
+      },
       "cag": {
         "api": {
           "web": {
@@ -607,7 +914,16 @@
         },
         "in": {
           "aim": {
-            "cag": {}
+            "cag": {},
+            "web": {
+              "on": {
+                "cag": {
+                  "$": {
+                    "allow": true
+                  }
+                }
+              }
+            }
           }
         },
         "options": {

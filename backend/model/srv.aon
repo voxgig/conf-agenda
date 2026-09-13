@@ -5,6 +5,7 @@
 cag: {
   in: {
     aim: cag: {}
+    aim: web: on: cag: '$': allow: true
   }
   user: required: true
   api: web: path: { area: 'private/', suffix: '' }
@@ -37,3 +38,15 @@ agenda: {
 #   api: web: path: { area: 'private/', suffix: '' }
 #   env: lambda: active: true
 # }
+
+
+## Session and user settings. Stage 1 runs behind a login (SPEC 19.3).
+auth: {
+  in: {
+    aim: auth: {}
+    aim: web: on: auth: '$': allow: true
+  }
+  user: required: false
+  api: web: path: { area: 'public/', suffix: '' }
+  env: lambda: active: true
+}

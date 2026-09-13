@@ -1,0 +1,61 @@
+# Service: auth (generated)
+
+<!-- AUTO-GENERATED from the model by @voxgig/build (doc_gen) - do not edit. -->
+
+Answers `aim:auth`, `aim:web` messages, loaded by convention (`@voxgig/system` MakeSrv): each
+message maps to the action file named after its last pattern pair.
+
+## Messages
+
+| Message | Action file |
+|---|---|
+| `aim:auth,get:info` | `get_info.ts` |
+| `aim:auth,signin:user` | `signin_user.ts` |
+| `aim:auth,signout:user` | `signout_user.ts` |
+| `aim:auth,load:auth` | `load_auth.ts` |
+| `aim:auth,change:pass` | `change_pass.ts` |
+| `aim:auth,update:user` | `update_user.ts` |
+| `aim:auth,remind:pass` | `remind_pass.ts` |
+| `aim:auth,create:apikey` | `create_apikey.ts` |
+| `aim:auth,list:apikey` | `list_apikey.ts` |
+| `aim:auth,revoke:apikey` | `revoke_apikey.ts` |
+| `aim:web,on:cag,load:tree` | `web_load_tree.ts` |
+| `aim:web,on:auth,signin:user` | `web_signin_user.ts` |
+| `aim:web,on:auth,signout:user` | `web_signout_user.ts` |
+| `aim:web,on:auth,load:auth` | `web_load_auth.ts` |
+| `aim:web,on:auth,change:pass` | `web_change_pass.ts` |
+| `aim:web,on:auth,update:user` | `web_update_user.ts` |
+| `aim:web,on:auth,remind:pass` | `web_remind_pass.ts` |
+| `aim:web,on:auth,create:apikey` | `web_create_apikey.ts` |
+| `aim:web,on:auth,list:apikey` | `web_list_apikey.ts` |
+| `aim:web,on:auth,revoke:apikey` | `web_revoke_apikey.ts` |
+
+## Flow
+
+```mermaid
+flowchart LR
+  gateway{{gateway}} -->|validated msg| srv[srv auth]
+  srv --> get_info["aim:auth,get:info<br>get_info.ts"]
+  srv --> signin_user["aim:auth,signin:user<br>signin_user.ts"]
+  srv --> signout_user["aim:auth,signout:user<br>signout_user.ts"]
+  srv --> load_auth["aim:auth,load:auth<br>load_auth.ts"]
+  srv --> change_pass["aim:auth,change:pass<br>change_pass.ts"]
+  srv --> update_user["aim:auth,update:user<br>update_user.ts"]
+  srv --> remind_pass["aim:auth,remind:pass<br>remind_pass.ts"]
+  srv --> create_apikey["aim:auth,create:apikey<br>create_apikey.ts"]
+  srv --> list_apikey["aim:auth,list:apikey<br>list_apikey.ts"]
+  srv --> revoke_apikey["aim:auth,revoke:apikey<br>revoke_apikey.ts"]
+  srv --> web_load_tree["aim:web,on:cag,load:tree<br>web_load_tree.ts"]
+  srv --> web_signin_user["aim:web,on:auth,signin:user<br>web_signin_user.ts"]
+  srv --> web_signout_user["aim:web,on:auth,signout:user<br>web_signout_user.ts"]
+  srv --> web_load_auth["aim:web,on:auth,load:auth<br>web_load_auth.ts"]
+  srv --> web_change_pass["aim:web,on:auth,change:pass<br>web_change_pass.ts"]
+  srv --> web_update_user["aim:web,on:auth,update:user<br>web_update_user.ts"]
+  srv --> web_remind_pass["aim:web,on:auth,remind:pass<br>web_remind_pass.ts"]
+  srv --> web_create_apikey["aim:web,on:auth,create:apikey<br>web_create_apikey.ts"]
+  srv --> web_list_apikey["aim:web,on:auth,list:apikey<br>web_list_apikey.ts"]
+  srv --> web_revoke_apikey["aim:web,on:auth,revoke:apikey<br>web_revoke_apikey.ts"]
+```
+
+Message params are validated from the model (gubu); see
+`../../../model/` and `docs/reference/messages.md` at the project root.
