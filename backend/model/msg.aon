@@ -1,26 +1,26 @@
 
-## Seneca message patterns.
+# Seneca message patterns.
+#
+# main.msg is a LIST of definitions, each carrying its pattern as DATA - an
+# ordered list of single-pair maps - rather than as its position in a nested
+# tree (PLATFORM 1.4). A list and not a map keyed by name, because a gateway
+# proxy and the message it forwards to necessarily share their LAST pattern
+# pair, and any key derived from that pair would collide.
+#
+# The action file comes from the last pattern pair (validate:fixture ->
+# validate_fixture.ts), with `file` overriding it - which is what a proxy
+# needs. Only declare a message whose action file EXISTS (PLATFORM 1.2).
+#
+# The browser surface is aim:web and nothing else, declared as web_ proxies
+# here and allowed in srv.aon. None exist yet: there is no frontend.
 
-aim: {}
+[
 
+  # ---- cag service -------------------------------------------------------
+  # Validation, publication and the segment intents. Entity operations stay
+  # internal, behind these (SPEC 9 - there is no generic ent service).
 
-## Example service messages. Uncomment to add messages for the example
-## 'thing' service. Each message maps by convention to an action file in
-## src/srv/thing/ (save:item -> save_item.ts); add a message only when its
-## action file exists.
+  { pat: [{aim: cag}, {validate: fixture}]
+    params: { fixture_id: 'String' } }
 
-# aim: thing: {
-#   get: info: {}
-#   save: item: {}
-# }
-
-
-## Gateway (web) routing to web_ action files. aim:web is the only
-## namespace the gateway accepts from a browser.
-
-# aim: web: {
-#   get: info: {}
-#   on: thing: {
-#     save: item: { '$': { file: './web_save_item' }}
-#   }
-# }
+]

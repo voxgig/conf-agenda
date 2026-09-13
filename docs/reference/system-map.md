@@ -11,7 +11,9 @@ derived from the model.*
 flowchart TB
   client([Clients]) -->|aim:*| gateway{{gateway}}
   subgraph services[Services]
+    srv_cag[cag]
   end
+  gateway --> srv_cag
   subgraph data[Entities]
     subgraph zone_cag[zone cag]
       cag_appearance[appearance]
@@ -25,6 +27,7 @@ flowchart TB
       sys_user[user]
     end
   end
+  srv_cag --> data
 ```
 
 ## Target environments
