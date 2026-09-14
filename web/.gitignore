@@ -1,1 +1,6 @@
-web/app-grid.png
+dist
+node_modules
+app-grid.png
+app-admin.png
+blank.png
+landing.png
