@@ -2,34 +2,46 @@
    Override tokens in custom.css; add modes via the theme:modes hook. */
 
 :root,
-:root[data-theme-mode="light"] {
-  --vg-accent-bg: #e7f0ff;
-  --vg-bg: #f5f7fa;
-  --vg-border: #e3e8ee;
-  --vg-font: 15px/1.5 system-ui, sans-serif;
-  --vg-muted: #8b949e;
-  --vg-primary: #1f6feb;
-  --vg-primary-dark: #1a5fd0;
+:root[data-theme-mode="dark"] {
+  --vg-accent-bg: rgba(0,198,216,.12);
+  --vg-bg: #0f1117;
+  --vg-border: #2a3040;
+  --vg-border-strong: #41506b;
+  --vg-danger: #e70042;
+  --vg-font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  --vg-mono: ui-monospace, Menlo, Consolas, monospace;
+  --vg-muted: #8b95a7;
+  --vg-primary: #00c6d8;
+  --vg-primary-dark: #089ea5;
   --vg-radius: 6px;
-  --vg-shadow-card: 0 6px 24px rgba(13,27,42,.10);
-  --vg-surface: #ffffff;
-  --vg-text: #1c2733;
-  --vg-topbar-bg: #0d1b2a;
+  --vg-shadow-card: 0 6px 18px rgba(0,0,0,.40);
+  --vg-success: #3fb950;
+  --vg-success-dark: #2ea043;
+  --vg-surface: #1a2029;
+  --vg-text: #e6edf3;
+  --vg-topbar-bg: #0b0d12;
   --vg-topbar-fg: #e6edf3;
+  --vg-warning: #f8b833;
 }
 
-:root[data-theme-mode="dark"] {
-  --vg-accent-bg: #1f6feb44;
-  --vg-bg: #0d1117;
-  --vg-border: #30363d;
-  --vg-font: 15px/1.5 system-ui, sans-serif;
-  --vg-muted: #8b949e;
-  --vg-primary: #58a6ff;
-  --vg-primary-dark: #388bfd;
+:root[data-theme-mode="light"] {
+  --vg-accent-bg: rgba(2,116,180,.10);
+  --vg-bg: #f7f8fa;
+  --vg-border: #d7dce4;
+  --vg-border-strong: #b6bfcc;
+  --vg-danger: #c4003a;
+  --vg-font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  --vg-mono: ui-monospace, Menlo, Consolas, monospace;
+  --vg-muted: #5d6675;
+  --vg-primary: #0274b4;
+  --vg-primary-dark: #065f91;
   --vg-radius: 6px;
-  --vg-shadow-card: 0 6px 24px rgba(0,0,0,.55);
-  --vg-surface: #161b22;
-  --vg-text: #e6edf3;
-  --vg-topbar-bg: #010409;
+  --vg-shadow-card: 0 6px 24px rgba(13,27,42,.10);
+  --vg-success: #2ea043;
+  --vg-success-dark: #1a7f37;
+  --vg-surface: #ffffff;
+  --vg-text: #1a1d23;
+  --vg-topbar-bg: #0f1117;
   --vg-topbar-fg: #e6edf3;
+  --vg-warning: #9a6700;
 }
