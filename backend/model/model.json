@@ -551,6 +551,21 @@
         ]
       },
       {
+        "params": {
+          "format": "Skip(String)",
+          "org_id": "String",
+          "slug": "String"
+        },
+        "pat": [
+          {
+            "aim": "agenda"
+          },
+          {
+            "get": "feed"
+          }
+        ]
+      },
+      {
         "pat": [
           {
             "aim": "auth"
