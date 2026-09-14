@@ -40,15 +40,18 @@ const refKey = (r: EntityRef) => r.canon + '/' + r.id
 
 /**
  * Deterministic order (SPEC 16.3, and SPEC 17: identical input, identical
- * output). Sorts by rule, then severity (errors first), then the anchor
+ * output). Severity first (errors before warnings), then rule, then the anchor
  * entity, then the related set - so two runs over the same data produce
- * byte-identical diagnostics.
+ * byte-identical diagnostics, and the blocking problems are read first.
  */
 export function sortDiagnostics(list: Diagnostic[]): Diagnostic[] {
   const sevRank = (s: Severity) => ('error' === s ? 0 : 1)
   return list.slice().sort((a, b) => {
-    if (a.rule !== b.rule) return a.rule < b.rule ? -1 : 1
+    // SEVERITY FIRST: errors block publication, so they are what the organiser
+    // must deal with. A report that buries the blocking error under warnings
+    // is a report nobody reads to the end.
     if (a.severity !== b.severity) return sevRank(a.severity) - sevRank(b.severity)
+    if (a.rule !== b.rule) return a.rule < b.rule ? -1 : 1
     const ae = refKey(a.entity)
     const be = refKey(b.entity)
     if (ae !== be) return ae < be ? -1 : 1

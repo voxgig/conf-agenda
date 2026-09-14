@@ -39,11 +39,13 @@ describe('aim:cag,validate:fixture', () => {
 
     assert.equal(out.ok, true, 'the action ran')
     assert.equal(out.valid, false, 'the programme is NOT publishable')
-    assert.equal(out.error_count, 1)
-    assert.equal(out.warn_count, 0)
+    assert.equal(out.error_count, 1, 'one blocking error')
+    assert.ok(out.warn_count > 0, 'and warnings, which do not block')
     assert.equal(out.top_id, 'conf_tiny')
 
+    // Errors sort FIRST: they are what the organiser must act on.
     const d = out.diagnostics[0]
+    assert.equal(d.severity, 'error')
     assert.equal(d.rule, 'room-double-booked')
     assert.match(d.message, /Room A/)
     assert.match(d.message, /overlap by 30 min/)
@@ -64,7 +66,11 @@ describe('aim:cag,validate:fixture', () => {
 
     const out = await seneca.post('aim:cag,validate:fixture', { fixture_id: 'conf_tiny' })
     assert.equal(out.valid, true)
-    assert.deepEqual(out.diagnostics, [])
+    assert.equal(out.error_count, 0, 'valid means NO ERRORS - warnings are allowed')
+    assert.ok(
+      out.diagnostics.every((d: any) => 'warn' === d.severity),
+      'anything left is advisory',
+    )
 
     await seneca.close()
   })
