@@ -87,6 +87,16 @@ class VgViewCagFixture extends HTMLElement {
     const list = this.sessions
     if (0 === list.length) return
 
+    // Cmd-K/Ctrl-K FIRST. The modifier check has to come before the bare
+    // 'k' case, because ev.key is still 'k' when the modifier is held - test
+    // plain 'k' first and the command bar is unreachable, which is exactly
+    // what happened here.
+    if ('k' === ev.key.toLowerCase() && (ev.metaKey || ev.ctrlKey)) {
+      ev.preventDefault()
+      this.toggleBar()
+      return
+    }
+
     // j/k/Enter are the SHARED vocabulary (PLATFORM 5.2) - the same keys mean
     // the same things in both apps. Focus is always somewhere and always
     // visible (K8).
@@ -99,9 +109,6 @@ class VgViewCagFixture extends HTMLElement {
       return
     } else if ('?' === ev.key) {
       this.toggleHelp()
-      return
-    } else if ('k' === ev.key.toLowerCase() && (ev.metaKey || ev.ctrlKey)) {
-      this.toggleBar()
       return
     } else {
       return
