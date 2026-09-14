@@ -1,0 +1,370 @@
+{
+  "_readme": "A clean, richer conference for demos: two days with explicit day fixtures (so the tree is three levels deep), three rooms, three tracks, five speakers, one cancelled session. Validates with no errors, so it publishes.",
+  "cag/room": [
+    {
+      "id": "dr_main",
+      "org_id": "org_demo",
+      "name": "Main Hall",
+      "capacity": 400,
+      "order": 1
+    },
+    {
+      "id": "dr_studio",
+      "org_id": "org_demo",
+      "name": "Studio",
+      "capacity": 120,
+      "order": 2
+    },
+    {
+      "id": "dr_lab",
+      "org_id": "org_demo",
+      "name": "Workshop Lab",
+      "capacity": 40,
+      "order": 3
+    }
+  ],
+  "cag/track": [
+    {
+      "id": "dt_platform",
+      "org_id": "org_demo",
+      "name": "Platform",
+      "color": "#e70042",
+      "order": 1
+    },
+    {
+      "id": "dt_frontend",
+      "org_id": "org_demo",
+      "name": "Frontend",
+      "color": "#00c6d8",
+      "order": 2
+    },
+    {
+      "id": "dt_community",
+      "org_id": "org_demo",
+      "name": "Community",
+      "color": "#089ea5",
+      "order": 3
+    }
+  ],
+  "cag/speaker": [
+    {
+      "id": "ds_ada",
+      "org_id": "org_demo",
+      "name": "Ada Byrne",
+      "email": "ada@example.invalid",
+      "bio": "Platform engineer.",
+      "org_name": "Voxgig"
+    },
+    {
+      "id": "ds_tomas",
+      "org_id": "org_demo",
+      "name": "Tomas Quinn",
+      "email": "tomas@example.invalid",
+      "bio": "Frontend engineer.",
+      "org_name": "Nearform"
+    },
+    {
+      "id": "ds_mina",
+      "org_id": "org_demo",
+      "name": "Mina Kovac",
+      "email": "mina@example.invalid",
+      "bio": "Database engineer.",
+      "org_name": "Cloudflare"
+    },
+    {
+      "id": "ds_lea",
+      "org_id": "org_demo",
+      "name": "Lea Fontaine",
+      "email": "lea@example.invalid",
+      "bio": "Teaches Aontu.",
+      "org_name": "Independent"
+    },
+    {
+      "id": "ds_priya",
+      "org_id": "org_demo",
+      "name": "Priya Nair",
+      "email": "priya@example.invalid",
+      "bio": "Works on embeds.",
+      "org_name": "Voxgig"
+    }
+  ],
+  "cag/fixture": [
+    {
+      "org_id": "org_demo",
+      "top_id": "demo_conf",
+      "status": "confirmed",
+      "private": false,
+      "id": "demo_conf",
+      "kind": "con",
+      "slug": "demo-conf-2027",
+      "title": "Demo Conf 2027",
+      "desc": "A two-day conference, used to demonstrate conf-agenda.",
+      "t_start": 1825230600000,
+      "t_end": 1825347600000,
+      "t_tzn": "Europe/Dublin",
+      "p_name": "The Round Room, Dublin"
+    },
+    {
+      "org_id": "org_demo",
+      "top_id": "demo_conf",
+      "status": "confirmed",
+      "private": false,
+      "id": "demo_day1",
+      "parent_id": "demo_conf",
+      "kind": "day",
+      "title": "Wed 3 Nov",
+      "t_start": 1825230600000,
+      "t_end": 1825264800000
+    },
+    {
+      "org_id": "org_demo",
+      "top_id": "demo_conf",
+      "status": "confirmed",
+      "private": false,
+      "id": "demo_day2",
+      "parent_id": "demo_conf",
+      "kind": "day",
+      "title": "Thu 4 Nov",
+      "t_start": 1825318800000,
+      "t_end": 1825347600000
+    },
+    {
+      "org_id": "org_demo",
+      "top_id": "demo_conf",
+      "status": "confirmed",
+      "private": false,
+      "id": "demo_open",
+      "parent_id": "demo_day1",
+      "kind": "key",
+      "room_id": "dr_main",
+      "track_id": "dt_platform",
+      "title": "Keynote — Boring Infrastructure, Exciting Products",
+      "desc": "Why the dull parts decide whether the exciting parts ship.",
+      "t_start": 1825232400000,
+      "t_end": 1825236000000
+    },
+    {
+      "org_id": "org_demo",
+      "top_id": "demo_conf",
+      "status": "confirmed",
+      "private": false,
+      "id": "demo_buses",
+      "parent_id": "demo_day1",
+      "kind": "tak",
+      "room_id": "dr_studio",
+      "track_id": "dt_frontend",
+      "title": "Message Buses in the Browser",
+      "desc": "One message vocabulary from the server to the DOM.",
+      "t_start": 1825236900000,
+      "t_end": 1825239600000
+    },
+    {
+      "org_id": "org_demo",
+      "top_id": "demo_conf",
+      "status": "confirmed",
+      "private": false,
+      "id": "demo_d1",
+      "parent_id": "demo_day1",
+      "kind": "tak",
+      "room_id": "dr_main",
+      "track_id": "dt_platform",
+      "title": "D1 at the Edge",
+      "desc": "Running a real database inside a Worker.",
+      "t_start": 1825236900000,
+      "t_end": 1825239600000
+    },
+    {
+      "org_id": "org_demo",
+      "top_id": "demo_conf",
+      "status": "confirmed",
+      "private": false,
+      "id": "demo_coffee",
+      "parent_id": "demo_day1",
+      "kind": "brk",
+      "room_id": "dr_main",
+      "title": "Coffee",
+      "t_start": 1825239600000,
+      "t_end": 1825241400000
+    },
+    {
+      "org_id": "org_demo",
+      "top_id": "demo_conf",
+      "status": "confirmed",
+      "private": false,
+      "id": "demo_workshop",
+      "parent_id": "demo_day1",
+      "kind": "wrk",
+      "room_id": "dr_lab",
+      "track_id": "dt_platform",
+      "title": "Workshop — Aontu in Anger",
+      "desc": "Bring a laptop. Three hours, hands on keyboards.",
+      "t_start": 1825241400000,
+      "t_end": 1825252200000
+    },
+    {
+      "org_id": "org_demo",
+      "top_id": "demo_conf",
+      "status": "cancelled",
+      "private": false,
+      "id": "demo_undo",
+      "parent_id": "demo_day1",
+      "kind": "tak",
+      "room_id": "dr_studio",
+      "track_id": "dt_frontend",
+      "title": "Undo as a Contract",
+      "desc": "Why the inverse should be declared, not guessed.",
+      "t_start": 1825241400000,
+      "t_end": 1825244100000
+    },
+    {
+      "org_id": "org_demo",
+      "top_id": "demo_conf",
+      "status": "confirmed",
+      "private": false,
+      "id": "demo_embed",
+      "parent_id": "demo_day2",
+      "kind": "tak",
+      "room_id": "dr_main",
+      "track_id": "dt_frontend",
+      "title": "Ejectable Embeds",
+      "desc": "Shipping a widget somebody can take away from you.",
+      "t_start": 1825320600000,
+      "t_end": 1825323300000
+    },
+    {
+      "org_id": "org_demo",
+      "top_id": "demo_conf",
+      "status": "confirmed",
+      "private": false,
+      "id": "demo_panel",
+      "parent_id": "demo_day2",
+      "kind": "pan",
+      "room_id": "dr_main",
+      "track_id": "dt_community",
+      "title": "Panel — Self-hosting Forever",
+      "desc": "What it takes to still run in ten years.",
+      "t_start": 1825324200000,
+      "t_end": 1825327800000
+    },
+    {
+      "org_id": "org_demo",
+      "top_id": "demo_conf",
+      "status": "confirmed",
+      "private": false,
+      "id": "demo_lunch",
+      "parent_id": "demo_day2",
+      "kind": "mea",
+      "room_id": "dr_main",
+      "title": "Lunch",
+      "t_start": 1825331400000,
+      "t_end": 1825335000000
+    },
+    {
+      "org_id": "org_demo",
+      "top_id": "demo_conf",
+      "status": "confirmed",
+      "private": false,
+      "id": "demo_close",
+      "parent_id": "demo_day2",
+      "kind": "key",
+      "room_id": "dr_main",
+      "track_id": "dt_community",
+      "title": "Closing — What We Ship Next",
+      "desc": "A short one, then the pub.",
+      "t_start": 1825344000000,
+      "t_end": 1825346700000
+    }
+  ],
+  "cag/appearance": [
+    {
+      "id": "da1",
+      "org_id": "org_demo",
+      "fixture_id": "demo_open",
+      "speaker_id": "ds_ada",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "da2",
+      "org_id": "org_demo",
+      "fixture_id": "demo_buses",
+      "speaker_id": "ds_tomas",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "da3",
+      "org_id": "org_demo",
+      "fixture_id": "demo_d1",
+      "speaker_id": "ds_mina",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "da4",
+      "org_id": "org_demo",
+      "fixture_id": "demo_workshop",
+      "speaker_id": "ds_lea",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "da5",
+      "org_id": "org_demo",
+      "fixture_id": "demo_undo",
+      "speaker_id": "ds_tomas",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "da6",
+      "org_id": "org_demo",
+      "fixture_id": "demo_embed",
+      "speaker_id": "ds_priya",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "da7",
+      "org_id": "org_demo",
+      "fixture_id": "demo_panel",
+      "speaker_id": "ds_ada",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "da8",
+      "org_id": "org_demo",
+      "fixture_id": "demo_panel",
+      "speaker_id": "ds_mina",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "da9",
+      "org_id": "org_demo",
+      "fixture_id": "demo_panel",
+      "speaker_id": "ds_priya",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "da10",
+      "org_id": "org_demo",
+      "fixture_id": "demo_close",
+      "speaker_id": "ds_ada",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    }
+  ]
+}

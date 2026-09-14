@@ -7,9 +7,15 @@ export async function seedDemo(
   seneca: any,
   usersByEmail: Record<string, any>,
 ): Promise<void> {
-  // The `tiny` conference (test/fixtures/tiny), so `npm run web` shows a real
-  // agenda rather than an empty grid. Same rows the tests use, loaded from the
-  // same file - the dev app and the suite cannot drift apart.
+  // Two conferences, both from test/fixtures - the same rows the suite uses,
+  // so the dev app and the tests cannot drift apart.
+  //
+  //   tiny  - carries a DELIBERATE room clash, so it does NOT publish. The
+  //           grid shows it, and `validate` has something real to find.
+  //   demo  - two days with explicit day fixtures (a three-level tree), three
+  //           rooms, a cancelled session. Validates clean, so it publishes and
+  //           the public path, the feeds and the embed all have something to
+  //           serve.
   const owner = Object.values(usersByEmail)[0]
   if (!owner) return
 
@@ -20,20 +26,32 @@ export async function seedDemo(
   const Fs = require('node:fs')
   // eslint-disable-next-line
   const Path = require('node:path')
-  const file = Path.join(__dirname, '../../../test/fixtures/tiny/tiny.json')
-  if (!Fs.existsSync(file)) return
-  const tiny = JSON.parse(Fs.readFileSync(file, 'utf8'))
 
-  for (const canon of [
-    'cag/room', 'cag/track', 'cag/speaker', 'cag/fixture', 'cag/appearance',
-  ]) {
-    for (const row of tiny[canon]) {
-      await seneca.entity(canon).data$({ ...row, id$: row.id, owner_id: owner.id }).save$()
+  for (const name of ['tiny/tiny', 'demo/demo']) {
+    const file = Path.join(__dirname, '../../../test/fixtures/' + name + '.json')
+    if (!Fs.existsSync(file)) continue
+    const bundle = JSON.parse(Fs.readFileSync(file, 'utf8'))
+
+    for (const canon of [
+      'cag/room', 'cag/track', 'cag/speaker', 'cag/fixture', 'cag/appearance',
+    ]) {
+      for (const row of bundle[canon] || []) {
+        await seneca.entity(canon).data$({ ...row, id$: row.id, owner_id: owner.id }).save$()
+      }
     }
   }
 
-  // Leave the deliberate clash in place: the grid should show a real
-  // programme, and Stage 2's live validation has something to find.
+  // Publish whatever validates. A conference with errors publishes NOTHING -
+  // which is the point: the public path must never serve an unpublishable
+  // programme, and the seed is not allowed to route around that.
+  const tops = (await seneca.entity('cag/fixture').list$({}))
+    .map((r: any) => r.data$(false))
+    .filter((f: any) => null == f.parent_id || '' === f.parent_id)
+    .sort((a: any, b: any) => (a.id < b.id ? -1 : 1))
+
+  for (const top of tops) {
+    await seneca.post('aim:cag,publish:fixture', { fixture_id: top.id })
+  }
 
   // Example (uncomment and adapt to your model):
   //

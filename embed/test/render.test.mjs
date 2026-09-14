@@ -74,7 +74,7 @@ after(async () => {
         caption: sr.querySelector('caption')?.textContent,
         colHeaders: [...sr.querySelectorAll('thead th')].map((n) => n.textContent),
         rowHeaders: [...sr.querySelectorAll('th[scope="row"]')].map((n) => n.textContent),
-        sessions: [...sr.querySelectorAll('td.session .title')].map((n) => n.textContent),
+        sessions: [...sr.querySelectorAll('.session .title')].map((n) => n.textContent),
       }
     })
 

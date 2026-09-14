@@ -1,3 +1,4 @@
 node_modules
 dist
 test/embed-render.png
+test/live-embed.png

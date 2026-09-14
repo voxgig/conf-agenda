@@ -53,6 +53,32 @@ function makeClock(tzn, lang) {
   return (ms) => fmt.format(new Date(ms))
 }
 
+/** Local date label, for splitting a multi-day grid. */
+function makeDate(tzn, lang) {
+  let fmt
+  try {
+    fmt = new Intl.DateTimeFormat(lang || 'en-GB', {
+      weekday: 'short', day: 'numeric', month: 'short', timeZone: tzn || 'UTC',
+    })
+  } catch (e) {
+    fmt = new Intl.DateTimeFormat(lang || 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+  }
+  return (ms) => fmt.format(new Date(ms))
+}
+
+/** The local calendar day an instant falls on, as a sortable key. */
+function makeDayKey(tzn) {
+  let fmt
+  try {
+    fmt = new Intl.DateTimeFormat('en-CA', {
+      year: 'numeric', month: '2-digit', day: '2-digit', timeZone: tzn || 'UTC',
+    })
+  } catch (e) {
+    fmt = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' })
+  }
+  return (ms) => fmt.format(new Date(ms))
+}
+
 /** Distinct slot boundaries, so a session can span the rows it covers. */
 function ladder(sessions) {
   const marks = new Set()
@@ -208,52 +234,98 @@ class ConfAgenda extends HTMLElement {
     const placed = sessions.filter((s) => null != s.room)
     if (0 === roomRows.length || 0 === placed.length) return this.list(sessions)
 
+    const sessionNode = (s) => {
+      const names = (s.speakers || []).map((id) => speakers.get(id) || id).join(', ')
+      return el('div', {
+        class: 'cancelled' === s.status ? 'session cancelled' : 'session',
+      }, [
+        el('div', { class: 'title', part: 'session-title', text: s.title || s.id }),
+        names ? el('div', { class: 'meta', text: names }) : null,
+        el('div', { class: 'meta', text: clock(s.t_start) + '–' + clock(s.t_end) }),
+        'cancelled' === s.status
+          ? el('div', { class: 'badge', part: 'cancelled-badge', text: 'Cancelled' })
+          : null,
+      ])
+    }
+
     const rooms = roomRows.slice().sort((a, b) => (a.order || 0) - (b.order || 0))
-    const marks = ladder(placed)
+    const clockDate = makeDate(conf.t_tzn, this.getAttribute('lang'))
+    const dayKey = makeDayKey(conf.t_tzn)
 
     const head = el('tr', {}, [
       el('th', { scope: 'col', text: 'Time' }),
       ...rooms.map((r) => el('th', { scope: 'col', part: 'room-header', text: r.name || r.id })),
     ])
 
-    // Track which (room, row) cells are already covered by a rowspan above.
-    const taken = new Set()
+    // A conference runs over days, and one continuous time ladder across them
+    // reads as a bug: the column runs 14:30 then 09:30. So the grid is split by
+    // LOCAL DATE, each day its own ladder under a date header. SPEC 8 keeps
+    // days out of the entity model - a day is a derived grouping - so this is
+    // derived here, from each session's own instant in the conference zone.
+    const days = new Map()
+    for (const s of placed) {
+      const k = dayKey(s.t_start)
+      if (!days.has(k)) days.set(k, [])
+      days.get(k).push(s)
+    }
+    const dayKeys = [...days.keys()].sort()
+    const multiDay = 1 < dayKeys.length
+
     const body = []
 
-    for (let i = 0; i < marks.length - 1; i++) {
-      const at = marks[i]
-      const cells = [el('th', { scope: 'row', part: 'time-label', text: clock(at) })]
+    for (const key of dayKeys) {
+      const forDay = days.get(key)
 
-      for (const room of rooms) {
-        if (taken.has(room.id + ':' + i)) continue
-
-        const s = placed.find((x) => x.room === room.id && x.t_start === at)
-        if (!s) {
-          cells.push(el('td', { class: 'empty' }))
-          continue
-        }
-
-        const endIdx = marks.indexOf(s.t_end)
-        const span = Math.max(1, (endIdx < 0 ? i + 1 : endIdx) - i)
-        for (let k = 1; k < span; k++) taken.add(room.id + ':' + (i + k))
-
-        const names = (s.speakers || []).map((id) => speakers.get(id) || id).join(', ')
-        cells.push(
-          el('td', {
-            rowspan: span > 1 ? span : null,
-            part: 'session',
-            class: 'cancelled' === s.status ? 'session cancelled' : 'session',
-          }, [
-            el('div', { class: 'title', part: 'session-title', text: s.title || s.id }),
-            names ? el('div', { class: 'meta', text: names }) : null,
-            el('div', { class: 'meta', text: clock(s.t_start) + '–' + clock(s.t_end) }),
-            'cancelled' === s.status
-              ? el('div', { class: 'badge', part: 'cancelled-badge', text: 'Cancelled' })
-              : null,
+      if (multiDay) {
+        body.push(
+          el('tr', { class: 'dayrow' }, [
+            el('th', {
+              scope: 'colgroup',
+              colspan: rooms.length + 1,
+              part: 'day-header',
+              text: clockDate(forDay[0].t_start),
+            }),
           ]),
         )
       }
-      body.push(el('tr', {}, cells))
+
+      const marks = ladder(forDay)
+      const cover = new Map()
+
+      for (let i = 0; i < marks.length - 1; i++) {
+        const cells = [el('th', { scope: 'row', part: 'time-label', text: clock(marks[i]) })]
+
+        for (const room of rooms) {
+          const here = forDay.filter((x) => x.room === room.id && x.t_start === marks[i])
+          const covering = cover.get(room.id + ':' + i)
+
+          if (covering) {
+            // A session starting inside another's rowspan is a double booking.
+            // Put it in the SAME cell rather than skipping the slot, so nothing
+            // is ever hidden.
+            for (const s of here) covering.appendChild(sessionNode(s))
+            if (here.length) covering.classList.add('clash')
+            continue
+          }
+          if (0 === here.length) {
+            cells.push(el('td', { class: 'empty' }))
+            continue
+          }
+
+          const span = Math.max(
+            ...here.map((x) => {
+              const endIdx = marks.indexOf(x.t_end)
+              return Math.max(1, (endIdx < 0 ? i + 1 : endIdx) - i)
+            }),
+          )
+          const cell = el('td', { rowspan: 1 < span ? span : null, part: 'session' })
+          if (1 < here.length) cell.classList.add('clash')
+          for (const s of here) cell.appendChild(sessionNode(s))
+          for (let k = 1; k < span; k++) cover.set(room.id + ':' + (i + k), cell)
+          cells.push(cell)
+        }
+        body.push(el('tr', {}, cells))
+      }
     }
 
     const table = el('table', { part: 'grid' }, [
@@ -265,7 +337,7 @@ class ConfAgenda extends HTMLElement {
     // Selecting a session is an event the host page can act on; the embed
     // itself never navigates (SPEC 11.2, read-only).
     table.addEventListener('click', (ev) => {
-      const cell = ev.target.closest && ev.target.closest('td.session')
+      const cell = ev.target.closest && ev.target.closest('.session')
       if (!cell) return
       const title = cell.querySelector('.title')
       this.emit('select', { title: title ? title.textContent : null })

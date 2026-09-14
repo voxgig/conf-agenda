@@ -146,6 +146,48 @@ async function run() {
     app.use(apiconf.prefix || '/api', apiHandler(seneca, Model))
   }
 
+  // THE PUBLIC AGENDA PATH. Anonymous by design (SPEC 9.1): the embed runs on
+  // a third party's page and cannot carry credentials, and a calendar client
+  // subscribing to a feed carries none either.
+  //
+  // Everything here reads the published SNAPSHOT through aim:agenda,* - never
+  // a live row - so draft and private content is not filtered out on this
+  // path, it was never written into what this path reads.
+  //
+  // The URL shape matches what the embed defaults to
+  // (/agenda/<org>/<conference>.json), so pointing <conf-agenda> at a
+  // self-hosted backend is a host swap rather than a different route.
+  app.get('/agenda/:org/:slug.:ext', async (req: any, res: any) => {
+    const { org, slug, ext } = req.params
+
+    if ('json' === ext) {
+      const out = await seneca.post('aim:agenda,get:agenda', { org_id: org, slug })
+      if (!out.ok) return res.status(404).type('application/json').send({ ok: false, why: out.why })
+      return res
+        .type('application/json')
+        // Public, cacheable, and revalidated often enough for a day-of change
+        // to land (SPEC 21 Q3: snapshot plus short-TTL revalidation).
+        .set('Cache-Control', 'public, max-age=60, stale-while-revalidate=600')
+        .set('Access-Control-Allow-Origin', '*')
+        .send(out.agenda_json)
+    }
+
+    if ('ics' === ext || 'csv' === ext) {
+      const out = await seneca.post('aim:agenda,get:feed', { org_id: org, slug, format: ext })
+      if (!out.ok) return res.status(404).type('text/plain').send(out.why)
+      return res
+        .type(out.content_type)
+        .set('Cache-Control', 'public, max-age=300, stale-while-revalidate=3600')
+        .set('Access-Control-Allow-Origin', '*')
+        // inline, not attachment: a calendar client subscribing to the URL
+        // should read it, not download it.
+        .set('Content-Disposition', 'inline; filename="' + out.filename + '"')
+        .send(out.body)
+    }
+
+    return res.status(404).type('text/plain').send('unknown format: ' + ext)
+  })
+
   app
     .get('/model.json',
       (_req: any, res: any) => res.sendFile(
