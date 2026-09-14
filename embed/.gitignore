@@ -2,3 +2,5 @@ node_modules
 dist
 test/embed-render.png
 test/live-embed.png
+test/embed-light.png
+test/embed-dark.png

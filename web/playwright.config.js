@@ -25,7 +25,15 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         // Self-contained chromium (no system chrome / no desktop): install
         // with `npx playwright install chromium` (no --with-deps).
-        launchOptions: { args: ['--no-sandbox'] },
+        //
+        // PLAYWRIGHT_CHROMIUM_PATH is an escape hatch for a machine whose
+        // cached browser build does not match the npm package's expected
+        // revision (WSL, where the download is slow enough to be worth
+        // reusing). Unset everywhere else, so CI is unaffected.
+        launchOptions: {
+          args: ['--no-sandbox'],
+          executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || undefined,
+        },
       },
     },
   ],
