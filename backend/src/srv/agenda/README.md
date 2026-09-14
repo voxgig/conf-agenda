@@ -10,6 +10,7 @@ message maps to the action file named after its last pattern pair.
 | Message | Action file |
 |---|---|
 | `aim:agenda,get:agenda` | `get_agenda.ts` |
+| `aim:agenda,get:feed` | `get_feed.ts` |
 
 ## Flow
 
@@ -17,6 +18,7 @@ message maps to the action file named after its last pattern pair.
 flowchart LR
   gateway{{gateway}} -->|validated msg| srv[srv agenda]
   srv --> get_agenda["aim:agenda,get:agenda<br>get_agenda.ts"]
+  srv --> get_feed["aim:agenda,get:feed<br>get_feed.ts"]
 ```
 
 Message params are validated from the model (gubu); see

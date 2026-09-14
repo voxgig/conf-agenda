@@ -28,6 +28,7 @@ flowchart LR
 | Message | Action file |
 |---|---|
 | `aim:agenda,get:agenda` | `src/srv/agenda/get_agenda.ts` |
+| `aim:agenda,get:feed` | `src/srv/agenda/get_feed.ts` |
 
 ## Service: auth
 

@@ -50,6 +50,10 @@
   { pat: [{aim: agenda}, {get: agenda}]
     params: { org_id: 'String', slug: 'String' } }
 
+  # Feeds, derived from the same snapshot: .ics to subscribe, .csv to export.
+  { pat: [{aim: agenda}, {get: feed}]
+    params: { org_id: 'String', slug: 'String', format: 'Skip(String)' } }
+
   # ---- auth service ------------------------------------------------------
   # Session and user settings, thin wrappers over @seneca/user. SPEC 19.3
   # runs Stage 1 behind a login. Shape follows todo-app's own msg.aon.
