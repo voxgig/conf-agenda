@@ -31,8 +31,13 @@ when WSL restarts:
 hostname -I | awk '{print $1}'
 ```
 
-Whichever you use, **open the app in the browser before the audience is watching**. A blank page at
-minute one costs you the room.
+**Both ports move together.** The backend is `:50500` and the embed page is `:50600`; if one needs
+the WSL IP, so does the other. The demo page handles this itself — it rewrites the backend host to
+match whichever host you reached *it* on, so the embed is not left pointing at a `127.0.0.1` that
+means Windows' own loopback to a browser running on Windows.
+
+Whichever you use, **open both pages in the browser before the audience is watching**. A blank page
+at minute one costs you the room.
 
 ### 2. Start the two things
 
@@ -58,6 +63,9 @@ the demo and the tests cannot drift apart. Two conferences:
 1. `http://127.0.0.1:50500/` — the app
 2. `http://127.0.0.1:50600/test/live` — the embed on a third-party page (`serve` strips the `.html`)
 3. A terminal in `~/conf-agenda/backend`
+
+…or the same two over the WSL IP — `http://172.18.117.226:50500/` and
+`http://172.18.117.226:50600/test/live` — if you have not set `networkingMode=mirrored`.
 
 Sign in as `alice@example.com` / `alice-pass-01`.
 
@@ -284,7 +292,8 @@ browser.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Connection refused from Windows | WSL2 localhost forwarding | `networkingMode=mirrored`, or use the WSL IP |
+| Connection refused from Windows, on either port | WSL2 localhost forwarding — the servers are fine, check with `curl` inside WSL | `networkingMode=mirrored`, or use the WSL IP for **both** ports |
+| Embed page loads but the agenda is empty | The browser cannot reach the backend host in `src` | Reach the page over the same host as the backend; the page rewrites it for you |
 | App loads, grid is empty | Seed only runs into an empty store | Restart `npm run web` |
 | `not-allowed` in the browser console | A service's messages are not declared in `srv.aon`'s `in:` block | An undeclared service registers nothing and logs no error — check the declaration, not permissions |
 | Embed shows nothing | Backend not running, or CORS | The `/agenda/...` routes send `Access-Control-Allow-Origin: *`; check the backend first |
