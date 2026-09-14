@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>conf-agenda — live embed</title>
+<!--
+  DEMO page: the embed reading the running backend over HTTP, rather than the
+  static agenda.json test/index.html uses. Start the backend first:
+
+     cd backend && npm run web        # serves on :50500
+
+  test/index.html stays hermetic so the Playwright suite has no server
+  dependency; this one is for showing people.
+-->
+<style>
+  body { font-family: Georgia, serif; max-width: 1040px; margin: 2rem auto; padding: 0 1rem;
+         background: #faf8f5; color: #2b2b2b; }
+  .panel { background:#fff; border:1px solid #ddd; padding:1rem 1.25rem; margin:1rem 0; }
+  code { background:#eee; padding:0 .25rem; }
+  h1 { font-size: 1.6rem; }
+  conf-agenda { --ca-primary: #e70042; --ca-font: system-ui, sans-serif; }
+  a.sub { display:inline-block; margin-top:.5rem; }
+</style>
+</head>
+<body>
+
+<h1>NearForm's conference page</h1>
+<p>The agenda below is served by conf-agenda. Two lines of markup:</p>
+<pre class="panel"><code>&lt;script type="module" src="/dist/conf-agenda.mjs"&gt;&lt;/script&gt;
+&lt;conf-agenda src="http://127.0.0.1:50500/agenda/org_demo/demo-conf-2027.json"&gt;&lt;/conf-agenda&gt;</code></pre>
+
+<div class="panel">
+  <conf-agenda
+    src="http://127.0.0.1:50500/agenda/org_demo/demo-conf-2027.json"
+    view="grid" theme="auto"></conf-agenda>
+</div>
+
+<div class="panel">
+  <h2>Subscribe</h2>
+  <p>The same agenda as a calendar feed — paste this into any calendar app:</p>
+  <code>http://127.0.0.1:50500/agenda/org_demo/demo-conf-2027.ics</code>
+  <br>
+  <a class="sub" href="http://127.0.0.1:50500/agenda/org_demo/demo-conf-2027.ics">Open the .ics</a>
+  ·
+  <a class="sub" href="http://127.0.0.1:50500/agenda/org_demo/demo-conf-2027.csv">Download the .csv</a>
+</div>
+
+<script type="module" src="../dist/conf-agenda.mjs"></script>
+</body>
+</html>

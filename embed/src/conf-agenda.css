@@ -96,3 +96,20 @@ td.empty { background: transparent; }
 @media (prefers-reduced-motion: no-preference) {
   .session { transition: none; }
 }
+
+/* Multi-day: each local date gets its own ladder under a header, because one
+   continuous time column across days reads as a bug (14:30 then 09:30). */
+tr.dayrow th {
+  background: var(--ca-surface);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ca-fg);
+  border-top: 2px solid var(--ca-border);
+}
+td.clash { background: color-mix(in srgb, var(--ca-primary) 8%, transparent); }
+.session + .session {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--ca-border);
+}
