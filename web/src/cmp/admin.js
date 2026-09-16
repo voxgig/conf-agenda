@@ -20,6 +20,85 @@ function esc(s) {
 }
 
 
+// --- row overflow menus ------------------------------------------------------
+// One open at a time, dismissed by Escape, by an outside click, or by opening
+// another. The popup itself reuses .vg-user-dropdown (shell.js): a second
+// bespoke menu style is how a small app starts to look assembled rather than
+// designed.
+
+function closeRowMenus(root) {
+  for (const btn of (root || document).querySelectorAll('.vg-rowmenu-btn[aria-expanded="true"]')) {
+    btn.setAttribute('aria-expanded', 'false')
+    const pop = btn.nextElementSibling
+    if (pop) {
+      pop.hidden = true
+      // Drop the computed placement so the next open recomputes from scratch.
+      pop.style.cssText = ''
+    }
+  }
+}
+
+// POSITION FIXED, placed from the trigger. The table wrapper has to clip - it
+// is what rounds the corners and carries the horizontal scroll - so an
+// absolutely-positioned menu is cut off on the last rows, which is exactly
+// where it happened: 75px of the final row's menu sat outside the wrapper.
+// Fixed positioning escapes the clip entirely.
+function placeRowMenu(btn, pop) {
+  const r = btn.getBoundingClientRect()
+  const h = pop.offsetHeight
+  const below = window.innerHeight - r.bottom
+  pop.style.position = 'fixed'
+  pop.style.right = (window.innerWidth - r.right) + 'px'
+  // Flip up when there is no room below but there is above.
+  // 'auto', not '': clearing the inline value falls back to the stylesheet's
+  // own `top: 110%`, and a fixed element with BOTH top and bottom set is
+  // stretched to fit between them - which collapsed the flipped menu to 10px.
+  if (below < h + 8 && r.top > h + 8) {
+    pop.style.top = 'auto'
+    pop.style.bottom = (window.innerHeight - r.top + 4) + 'px'
+  }
+  else {
+    pop.style.bottom = 'auto'
+    pop.style.top = (r.bottom + 4) + 'px'
+  }
+}
+
+function openRowMenu(btn) {
+  btn.setAttribute('aria-expanded', 'true')
+  const pop = btn.nextElementSibling
+  if (!pop) return
+  pop.hidden = false
+  placeRowMenu(btn, pop)
+
+  const first = pop.querySelector('[role=menuitem]:not([disabled])')
+  if (first) first.focus()
+}
+
+if ('undefined' !== typeof document) {
+  document.addEventListener('click', () => closeRowMenus(document))
+  // A fixed menu does not travel with its row, so it is REPLACED on scroll
+  // rather than closed. Closing looked simpler and was wrong: focusing the
+  // trigger scrolls it into view, and that scroll arrives just after the menu
+  // opens - so every menu near the bottom of a list shut itself immediately.
+  const follow = () => {
+    for (const btn of document.querySelectorAll('.vg-rowmenu-btn[aria-expanded="true"]')) {
+      const pop = btn.nextElementSibling
+      if (pop && !pop.hidden) placeRowMenu(btn, pop)
+    }
+  }
+  window.addEventListener('scroll', follow, true)
+  window.addEventListener('resize', follow)
+  document.addEventListener('keydown', (ev) => {
+    if ('Escape' !== ev.key) return
+    const open = document.querySelector('.vg-rowmenu-btn[aria-expanded="true"]')
+    if (!open) return
+    closeRowMenus(document)
+    // Focus goes back to the trigger, not to nowhere (K8).
+    open.focus()
+  })
+}
+
+
 class VgEntityAdmin extends HTMLElement {
   reload() {
     if (this.detailId) {
@@ -75,7 +154,12 @@ class VgEntityAdmin extends HTMLElement {
       else {
         const m = maps[field] || { labels: {} }
         const label = m.labels[value] || value
-        out = `<a href="#" class="vg-ref" data-canon="${fdef.ref}" data-id="${esc(value)}">${esc(label)}</a>`
+        // Only link where there is somewhere to land. sys/org has no browser
+        // read surface, so `org_tiny` rendered as a link that navigated
+        // straight to "Not found." - a dead link is worse than plain text.
+        out = Api.canRead(fdef.ref)
+          ? `<a href="#" class="vg-ref" data-canon="${fdef.ref}" data-id="${esc(value)}">${esc(label)}</a>`
+          : `<span class="vg-ref-flat" title="${esc(fdef.ref)}">${esc(label)}</span>`
       }
     }
     else if ('Boolean' === fdef.kind) {
@@ -126,33 +210,89 @@ class VgEntityAdmin extends HTMLElement {
       Model.displayFields(canon).filter((f) => f !== pf), { canon })
     const labelName = Model.labelOf(canon)
 
-    const rows = items.map((item) => `
-      <tr>
+    // One row, one overflow menu. Three bordered buttons per row means thirty
+    // of them on a normal list, all competing with the data they act on; the
+    // row itself becomes the Open target and the rest move behind the menu.
+    // Writes are Stage 2 (see api.js). Say so on the controls rather than
+    // letting them look live: Api.remove() returns { ok: false } and this
+    // component used to ignore the result, so Delete re-rendered the list and
+    // looked exactly like a successful delete of a row that was still there.
+    const wr = Api.canWrite()
+      ? { off: '', why: '' }
+      : { off: 'disabled', why: Api.writeBlockedReason() }
+
+    const rows = items.map((item) => {
+      const name = item[Model.labelField(canon)] || item.id
+      return `
+      <tr data-row="${esc(item.id)}">
         ${fields.map((f) => `<td>${this.cell(canon, f, item[f], maps, 'list')}</td>`).join('')}
         <td class="vg-actions">
           ${Hooks.html('admin:row:actions', { canon, item })}
-          <button class="vg-open" data-id="${item.id}">Open</button>
-          <button class="vg-edit" data-id="${item.id}">Edit</button>
-          <button class="vg-del" data-id="${item.id}">Delete</button>
+          <div class="vg-rowmenu">
+            <button class="vg-rowmenu-btn" aria-haspopup="menu" aria-expanded="false"
+              aria-label="Actions for ${esc(name)}" data-id="${esc(item.id)}">⋯</button>
+            <div class="vg-user-dropdown vg-rowmenu-pop" role="menu" hidden>
+              <button role="menuitem" class="vg-open" data-id="${esc(item.id)}">Open</button>
+              <button role="menuitem" class="vg-edit" data-id="${esc(item.id)}"
+                ${wr.off} title="${esc(wr.why)}">Edit</button>
+              <button role="menuitem" class="vg-del vg-danger" data-id="${esc(item.id)}"
+                data-name="${esc(name)}" ${wr.off} title="${esc(wr.why)}">Delete</button>
+            </div>
+          </div>
         </td>
-      </tr>`).join('')
+      </tr>`
+    }).join('')
 
+    // vg-table-wrap is a real element, not decoration: border-radius does not
+    // clip cell backgrounds on a border-collapse table, and the wrapper is
+    // also the horizontal scroll container on a narrow screen.
     this.innerHTML = `
-      <div class="vg-entity">
+      <div class="vg-entity vg-entity--wide">
         <div class="vg-entity-head">
           <h2>${esc(labelName)}</h2>
+          ${wr.off ? '<span class="vg-chip">read-only</span>' : ''}
           ${Hooks.html('admin:list:toolbar', { canon })}
-          <button class="vg-primary" id="vg-new">New ${esc(labelName)}</button>
+          <button class="vg-primary" id="vg-new" ${wr.off}
+            title="${esc(wr.why)}">New ${esc(labelName)}</button>
         </div>
-        <table class="vg-table">
-          <thead><tr>${fields.map((f) => `<th>${esc(Model.titleize(f))}</th>`).join('')}<th></th></tr></thead>
-          <tbody>${rows || `<tr><td colspan="${fields.length + 1}" class="vg-muted">No ${esc(labelName)} yet.</td></tr>`}</tbody>
-        </table>
+        <div class="vg-table-wrap">
+          <table class="vg-table">
+            <thead><tr>${fields.map((f) => `<th>${esc(Model.titleize(f))}</th>`).join('')}<th></th></tr></thead>
+            <tbody>${rows || `<tr><td colspan="${fields.length + 1}" class="vg-muted">No ${esc(labelName)} yet.</td></tr>`}</tbody>
+          </table>
+        </div>
         <p id="vg-count" class="vg-muted">${items.length} item${1 === items.length ? '' : 's'}</p>
       </div>`
 
     this.wireRefLinks(this)
     this.querySelector('#vg-new').onclick = () => this.showForm(null)
+
+    // The row is the Open target. Delegated, and it steps aside for anything
+    // that is already interactive - the reference links in the cells, and the
+    // actions cell itself - so nothing that worked before stops working.
+    const tbody = this.querySelector('.vg-table tbody')
+    if (tbody) {
+      tbody.onclick = (ev) => {
+        if (ev.target.closest('.vg-actions, a, button, input, select, details')) return
+        const tr = ev.target.closest('[data-row]')
+        if (tr) this.navigate(canon, tr.dataset.row)
+      }
+    }
+
+    for (const pop of this.querySelectorAll('.vg-rowmenu-pop')) {
+      // Clicks inside the menu must not reach the document dismisser before
+      // the item's own handler runs - that is what made the two-step delete
+      // impossible to arm.
+      pop.onclick = (ev) => ev.stopPropagation()
+    }
+    for (const b of this.querySelectorAll('.vg-rowmenu-btn')) {
+      b.onclick = (ev) => {
+        ev.stopPropagation()
+        const open = 'true' === b.getAttribute('aria-expanded')
+        closeRowMenus(this)
+        if (!open) openRowMenu(b)
+      }
+    }
     for (const b of this.querySelectorAll('.vg-open')) {
       // Route through the shell so it can update project context.
       b.onclick = () => this.navigate(canon, b.dataset.id)
@@ -162,7 +302,17 @@ class VgEntityAdmin extends HTMLElement {
     }
     for (const b of this.querySelectorAll('.vg-del')) {
       b.onclick = async () => {
-        await Api.remove(canon, b.dataset.id)
+        const res = await Api.remove(canon, b.dataset.id)
+        // Report the refusal. This call used to be awaited and thrown away,
+        // so a delete that did nothing looked identical to one that worked.
+        // When writes land in Stage 2 this is where the confirm step goes -
+        // one click, no undo, on every row is not a thing to ship.
+        if (!res || !res.ok) {
+          closeRowMenus(this)
+          const note = this.querySelector('#vg-count')
+          if (note) note.textContent = res && res.message ? res.message : 'Delete failed.'
+          return
+        }
         this.afterMutation()
         this.showList()
       }
@@ -202,6 +352,7 @@ class VgEntityAdmin extends HTMLElement {
             <h3>${esc(c.label)}</h3>
             <button class="vg-primary vg-child-new" data-canon="${c.canon}">New ${esc(c.label)}</button>
           </div>
+          <div class="vg-table-wrap">
           <table class="vg-table">
             <thead><tr>${kfields.map((f) => `<th>${esc(Model.titleize(f))}</th>`).join('')}<th></th></tr></thead>
             <tbody>${kids.map((k) => `
@@ -213,6 +364,7 @@ class VgEntityAdmin extends HTMLElement {
               </tr>`).join('') || `<tr><td colspan="${kfields.length + 1}" class="vg-muted">None yet.</td></tr>`}
             </tbody>
           </table>
+          </div>
         </section>`)
     }
 
@@ -220,7 +372,7 @@ class VgEntityAdmin extends HTMLElement {
       return
     }
     this.innerHTML = `
-      <div class="vg-entity">
+      <div class="vg-entity vg-entity--wide">
         <div class="vg-entity-head">
           <button class="vg-link" id="vg-back">‹ ${esc(Model.labelOf(canon))}</button>
           <h2>${esc(label)}</h2>

@@ -36,7 +36,8 @@ test('the list shows a summary, not the document', async ({ page }) => {
 
 test('the detail page is titled by slug, with the document collapsed', async ({ page }) => {
   await openSnapshots(page)
-  await page.click('.vg-open')
+  // The row itself is the Open target now.
+  await page.click('.vg-table tbody tr[data-row]')
   await page.waitForSelector('.vg-detail')
 
   // The heading is the slug. It used to be 3.4KB of JSON.
@@ -55,7 +56,7 @@ test('the detail page is titled by slug, with the document collapsed', async ({ 
 
 test('epoch milliseconds render as a date', async ({ page }) => {
   await openSnapshots(page)
-  await page.click('.vg-open')
+  await page.click('.vg-table tbody tr[data-row]')
   await page.waitForSelector('.vg-detail')
 
   // published_at is UTC epoch ms. A raw 13-digit integer is unreadable and,

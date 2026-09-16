@@ -171,36 +171,124 @@ a:hover { color: var(--vg-primary); }
 .vg-entity-head h2 { font-size: var(--vg-fs-large); }
 
 /* --- tables ------------------------------------------------------------- */
-/* voxgig.com's .cmp-table: horizontal rules only, a tinted header, and room
-   to breathe. Vertical rules are what make a table look like a database
-   viewer rather than a document. */
+/* A list is a thing, not loose text. voxgig.com's .cmp-table gives the inside
+   - horizontal rules only, a tinted header, room to breathe - and the wrapper
+   gives it edges, because hairlines floating on the page ground read as
+   unfinished. Vertical rules are what make a table look like a database
+   viewer rather than a document; they stay out. */
+
+/* List and detail views use the whole content area. Forms do not: a 1700px
+   wide form is worse than a narrow one, and .vg-entity-form is capped at
+   28rem anyway. */
+.vg-entity--wide { max-width: none; }
+
+.vg-table-wrap {
+  background: var(--vg-surface);
+  border: 1px solid var(--vg-border);
+  border-radius: var(--vg-radius-lg);
+  box-shadow: var(--vg-shadow-sm);
+  /* Clips the header's tinted ground to the rounded corners, and carries the
+     horizontal scroll when there are more columns than screen. */
+  overflow: hidden auto;
+  overflow-x: auto;
+}
+
 .vg-table, .vg-detail {
   border: none; border-radius: 0; background: transparent;
   font-size: var(--vg-fs-small);
 }
 .vg-table th, .vg-table td, .vg-detail th, .vg-detail td {
-  /* Generous, but not so generous that eight generated columns squeeze the
-     text ones into two-word ribbons. */
-  padding: var(--vg-space-2) var(--vg-space-3);
+  padding: var(--vg-space-3);
   border-bottom: 1px solid var(--vg-border);
-  vertical-align: top;
+  vertical-align: middle;
 }
 .vg-table th, .vg-detail th {
   font-weight: 700; font-size: var(--vg-fs-tiny); letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--vg-muted); background: var(--vg-bg-tint);
+  vertical-align: middle;
 }
 .vg-table tbody td:first-child { font-weight: 600; color: var(--vg-text); }
+/* No rule against the container's own edge. */
+.vg-table tbody tr:last-child td { border-bottom: none; }
 .vg-table tbody tr { transition: background var(--vg-t-fast); }
+/* The row is the Open target, so it has to look like one. */
+.vg-table tbody tr[data-row] { cursor: pointer; }
 .vg-table tbody tr:hover { background: var(--vg-bg-tint); }
-.vg-detail th { width: 26%; text-transform: none; letter-spacing: 0; font-size: var(--vg-fs-small); }
 
-.vg-actions button, .vg-proj-card .vg-open, .vg-apikey-revoke {
+.vg-detail th { width: 26%; text-transform: none; letter-spacing: 0; font-size: var(--vg-fs-small); }
+.vg-detail { max-width: 48rem; }
+
+/* --- row overflow menu --------------------------------------------------- */
+.vg-actions { width: 1%; white-space: nowrap; text-align: right; }
+.vg-rowmenu { position: relative; display: inline-block; }
+
+.vg-rowmenu-btn {
+  font: inherit; font-size: 15px; line-height: 1;
+  color: var(--vg-muted); background: transparent;
+  border: 1px solid transparent; border-radius: var(--vg-radius);
+  padding: 4px 9px; cursor: pointer;
+  /* Quiet until wanted - but OPACITY, never display:none. SPEC K1: an action
+     that exists only behind a hover is not finished, and the button has to
+     stay in the tab order for a keyboard user to reach Edit and Delete. */
+  opacity: 0;
+  transition: opacity var(--vg-t-fast), color var(--vg-t-fast),
+              border-color var(--vg-t-fast);
+}
+tr:hover .vg-rowmenu-btn,
+.vg-rowmenu-btn:focus-visible,
+.vg-rowmenu-btn[aria-expanded='true'] { opacity: 1; }
+.vg-rowmenu-btn:hover, .vg-rowmenu-btn[aria-expanded='true'] {
+  color: var(--vg-text); border-color: var(--vg-border);
+}
+/* No hover on a touch screen, so there is nothing to reveal it. */
+@media (hover: none) {
+  .vg-rowmenu-btn { opacity: 1; }
+}
+
+.vg-rowmenu-pop {
+  /* Placement is computed in admin.js (position: fixed) so the table
+     wrapper's clip cannot cut the last rows' menus off. */
+  top: calc(100% + 4px); min-width: 11rem; z-index: 950;
+  border-radius: var(--vg-radius); box-shadow: var(--vg-shadow-card);
+  padding: var(--vg-space-1);
+  text-align: left;
+}
+.vg-rowmenu-pop button {
+  font: inherit; font-size: var(--vg-fs-small); text-align: left;
+  background: transparent; border: none; border-radius: var(--vg-radius);
+  color: var(--vg-text); padding: .45rem .7rem; cursor: pointer;
+  transition: background var(--vg-t-fast), color var(--vg-t-fast);
+}
+.vg-rowmenu-pop button:hover { background: var(--vg-bg-tint); }
+.vg-rowmenu-pop .vg-danger { color: var(--vg-danger); }
+.vg-rowmenu-pop .vg-danger:hover {
+  background: color-mix(in srgb, var(--vg-danger) 14%, transparent);
+}
+/* Disabled, because writes are Stage 2. Dimmed and not-allowed, but still
+   READABLE and still carrying its title - the point is to say what the app
+   will do, not to hide it. */
+.vg-rowmenu-pop button[disabled] { opacity: .45; cursor: not-allowed; }
+.vg-rowmenu-pop button[disabled]:hover { background: transparent; }
+/* A dimmed red button still reads as a live red button. Off means off. */
+.vg-primary[disabled], .vg-primary[disabled]:hover {
+  background: transparent; color: var(--vg-muted);
+  border: 1px solid var(--vg-border); cursor: not-allowed;
+}
+
+/* The header's read-only chip, matching the agenda grid's own label. */
+.vg-chip {
+  font-size: var(--vg-fs-tiny); font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--vg-muted);
+  border: 1px solid var(--vg-border); border-radius: var(--vg-radius-pill);
+  padding: 2px 10px; white-space: nowrap;
+}
+
+.vg-proj-card .vg-open, .vg-apikey-revoke {
   border-radius: var(--vg-radius); font-weight: 600; font-size: var(--vg-fs-tiny);
   letter-spacing: .02em; color: var(--vg-text-soft);
   transition: border-color var(--vg-t-fast), color var(--vg-t-fast);
 }
-.vg-actions button:hover { border-color: var(--vg-focus); color: var(--vg-text); background: transparent; }
 
 /* --- forms -------------------------------------------------------------- */
 .vg-entity-form, .vg-auth-form, .vg-settings .vg-card {
@@ -593,3 +681,7 @@ a:hover { color: var(--vg-primary); }
   tab-size: 2;
 }
 
+
+/* A reference whose target has no browser surface (sys/org). Still legible as
+   an identifier, but not dressed as a link to nowhere. */
+.vg-ref-flat { color: var(--vg-text-soft); font-family: var(--vg-mono); font-size: var(--vg-fs-tiny); }
