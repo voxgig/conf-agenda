@@ -3,39 +3,78 @@
 ## tokens (colors, fonts, radius, effects) emitted as CSS variables
 ## (--vg-<token>) by @voxgig/build into web/src/theme.css. Override tokens
 ## per project in web/src/custom.css; add modes via the `theme:modes` hook.
+##
+## THE PALETTE IS PLATFORM.md 5.1 - the voxgig.com design language, observed
+## from the live site. It is DARK-FIRST: that is the ground the product is
+## designed on, and the light mode is the adaptation rather than the other way
+## round.
+##
+## These tokens are LOAD-BEARING, not decoration. The `bad-color-contrast`
+## validation rule (SPEC 16.1) checks each organiser's track colour against the
+## foreground and background BELOW, in both modes - so the colours the
+## validator checks are the colours that ship. One source for both.
+##
+## Never hand-edit web/src/theme.css: it is regenerated on every model-build.
 
-mode: 'light'          # default mode
+mode: 'dark'           # dark-first (PLATFORM 5.1)
 
 modes: {
-  light: {
-    primary:       '#1f6feb'
-    'primary-dark': '#1a5fd0'
-    bg:            '#f5f7fa'
-    surface:       '#ffffff'
-    text:          '#1c2733'
-    muted:         '#8b949e'
-    border:        '#e3e8ee'
-    'topbar-bg':   '#0d1b2a'
+  dark: {
+    ## voxgig accents. `primary` is the cyan used for links and focus; the
+    ## crimson is the louder one, reserved for emphasis and per-track accents.
+    primary:       '#00c6d8'
+    'primary-dark': '#089ea5'
+
+    bg:            '#0f1117'   # page ground
+    surface:       '#1a2029'   # cards
+    text:          '#e6edf3'   # body
+    muted:         '#8b95a7'   # secondary
+    border:        '#2a3040'   # rules
+    'border-strong': '#41506b'
+
+    'topbar-bg':   '#0b0d12'
     'topbar-fg':   '#e6edf3'
-    'accent-bg':   '#e7f0ff'
-    font:          '15px/1.5 system-ui, sans-serif'
+    'accent-bg':   'rgba(0,198,216,.12)'
+
+    ## Semantic. Success doubles as `confirmed` in the agenda grid.
+    success:       '#3fb950'
+    'success-dark': '#2ea043'
+    danger:        '#e70042'
+    warning:       '#f8b833'
+
+    font:          '15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif'
+    mono:          'ui-monospace, Menlo, Consolas, monospace'
     radius:        '6px'
-    'shadow-card': '0 6px 24px rgba(13,27,42,.10)'
+    'shadow-card': '0 6px 18px rgba(0,0,0,.40)'
   }
 
-  dark: {
-    primary:       '#58a6ff'
-    'primary-dark': '#388bfd'
-    bg:            '#0d1117'
-    surface:       '#161b22'
-    text:          '#e6edf3'
-    muted:         '#8b949e'
-    border:        '#30363d'
-    'topbar-bg':   '#010409'
+  ## The same language on a light ground, for anyone who wants it. Contrast
+  ## ratios are kept above 4.5:1 against `bg` so WCAG 2.2 AA holds in BOTH
+  ## modes - `bad-color-contrast` checks both, and a theme that only passes in
+  ## one is a theme that fails half its users.
+  light: {
+    primary:       '#0274b4'
+    'primary-dark': '#065f91'
+
+    bg:            '#f7f8fa'
+    surface:       '#ffffff'
+    text:          '#1a1d23'
+    muted:         '#5d6675'
+    border:        '#d7dce4'
+    'border-strong': '#b6bfcc'
+
+    'topbar-bg':   '#0f1117'
     'topbar-fg':   '#e6edf3'
-    'accent-bg':   '#1f6feb44'
-    font:          '15px/1.5 system-ui, sans-serif'
+    'accent-bg':   'rgba(2,116,180,.10)'
+
+    success:       '#2ea043'
+    'success-dark': '#1a7f37'
+    danger:        '#c4003a'
+    warning:       '#9a6700'
+
+    font:          '15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif'
+    mono:          'ui-monospace, Menlo, Consolas, monospace'
     radius:        '6px'
-    'shadow-card': '0 6px 24px rgba(0,0,0,.55)'
+    'shadow-card': '0 6px 24px rgba(13,27,42,.10)'
   }
 }

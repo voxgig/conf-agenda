@@ -12,7 +12,9 @@
   --ca-muted: #5d6675;
   --ca-surface: #ffffff;
   --ca-border: #d7dce4;
+  --ca-border-strong: #b6bfcc;
   --ca-primary: #0274b4;
+  --ca-danger: #c4003a;
   --ca-radius: 6px;
   --ca-font: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --ca-mono: ui-monospace, Menlo, Consolas, monospace;
@@ -27,24 +29,36 @@
 }
 
 /* theme="auto" follows the host page's preference; theme="dark"/"light" pin it. */
+/* When the embed flips to dark it must PAINT ITS OWN GROUND. The default
+   --ca-bg is transparent so the embed blends into the host page - but a
+   transparent ground plus light text is unreadable on a host page that stayed
+   light, which is exactly what prefers-color-scheme:dark produces on a light
+   site. An organiser who wants it transparent can still set --ca-bg. */
 @media (prefers-color-scheme: dark) {
   :host([theme='auto']), :host(:not([theme])) {
+    --ca-bg: #0f1117;
     --ca-fg: #e6edf3;
     --ca-muted: #8b95a7;
     --ca-surface: #1a2029;
     --ca-border: #2a3040;
+    --ca-border-strong: #41506b;
     --ca-primary: #00c6d8;
+    --ca-danger: #e70042;
   }
 }
 :host([theme='dark']) {
+  --ca-bg: #0f1117;
   --ca-fg: #e6edf3;
   --ca-muted: #8b95a7;
   --ca-surface: #1a2029;
   --ca-border: #2a3040;
+  --ca-border-strong: #41506b;
   --ca-primary: #00c6d8;
+  --ca-danger: #e70042;
 }
 
 .wrap { overflow-x: auto; }
+:host { padding: 2px; border-radius: var(--ca-radius); }
 
 table { border-collapse: collapse; width: 100%; min-width: 480px; }
 
@@ -62,7 +76,8 @@ th, td {
   vertical-align: top;
 }
 
-thead th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ca-muted); }
+thead th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--ca-muted); border-bottom: 1px solid var(--ca-border-strong); }
 
 th[scope='row'] {
   font-family: var(--ca-mono);
@@ -107,7 +122,8 @@ tr.dayrow th {
   color: var(--ca-fg);
   border-top: 2px solid var(--ca-border);
 }
-td.clash { background: color-mix(in srgb, var(--ca-primary) 8%, transparent); }
+td.clash { background: color-mix(in srgb, var(--ca-danger) 10%, transparent);
+  box-shadow: inset 3px 0 0 var(--ca-danger); }
 .session + .session {
   margin-top: 6px;
   padding-top: 6px;

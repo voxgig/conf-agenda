@@ -46,6 +46,32 @@
   <a class="sub" href="http://127.0.0.1:50500/agenda/org_demo/demo-conf-2027.csv">Download the .csv</a>
 </div>
 
+<!--
+  The backend host is rewritten to match whichever host you reached THIS page
+  on. Without it, opening the page over the WSL IP (because WSL2 localhost
+  forwarding is off) loads the page fine and then leaves the embed empty: the
+  markup says 127.0.0.1:50500, and to a browser running on Windows that is
+  Windows' own loopback, not WSL's.
+
+  Classic (non-module) and placed BEFORE the module script, so it runs while
+  the module is still deferred - the attribute is rewritten before the element
+  upgrades and reads it.
+-->
+<script>
+  if ('127.0.0.1' !== location.hostname && 'localhost' !== location.hostname) {
+    const swap = (u) => u.replace('127.0.0.1', location.hostname)
+    for (const el of document.querySelectorAll('conf-agenda[src]')) {
+      el.setAttribute('src', swap(el.getAttribute('src')))
+    }
+    for (const a of document.querySelectorAll('a.sub[href]')) {
+      a.href = swap(a.getAttribute('href'))
+    }
+    for (const c of document.querySelectorAll('code')) {
+      if (c.textContent.includes('127.0.0.1')) c.textContent = swap(c.textContent)
+    }
+  }
+</script>
+
 <script type="module" src="../dist/conf-agenda.mjs"></script>
 </body>
 </html>
