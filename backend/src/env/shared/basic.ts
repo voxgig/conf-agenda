@@ -7,6 +7,7 @@ import Model from '../../../model/model.json'
 
 import FixtureTree from '../../concern/FixtureTree/FixtureTree'
 import CalendarSync from '../../concern/CalendarSync/CalendarSync'
+import CalendarSafety from '../../concern/CalendarSync/CalendarSafety'
 import FakeProvider from '../../concern/CalendarSync/FakeProvider'
 
 
@@ -146,6 +147,14 @@ function basic(seneca: any, options?: any) {
   // they are destined for senecajs/Calendar upstream. No aim: surface either
   // way, so nothing here is gateway-reachable.
   seneca.use(CalendarSync, deep(base.options.calendarsync, options.calendarsync))
+
+  // The safety chain, layered ABOVE the provider dispatch with prior-wraps:
+  // cap (C5) -> redaction (C7) -> ledger gate (C2/C3). Loaded AFTER
+  // CalendarSync, because each same-pattern definition wraps the previous and
+  // the outermost has to be registered last. Every provider inherits these,
+  // including ones nobody has written yet - which is the whole reason they sit
+  // here rather than inside a provider or inside a caller.
+  seneca.use(CalendarSafety, deep(base.options.calendarsync, options.calendarsync))
 
   // The recording provider. Loaded ALWAYS, not only in tests: the ledger is
   // proven against it before any real provider exists, and Stage 1 has no

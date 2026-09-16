@@ -60,18 +60,54 @@ day and asserts nothing is stranded; an orphaned event is a meeting a speaker st
 | **`confirm` cannot be in the message shape** | Declared required, an unconfirmed `apply:sync` **throws**; given a literal default, it folds into the *pattern* and an unconfirmed call matches nothing. Both turn C4's refusal into an exception, and a refusal that arrives as a stack trace is not one the caller can act on. So `confirm` is read from the message and anything but `true` refuses. |
 | **`id$` only creates** | Saving an existing id that way is `entity-id-exists` — the same trap the snapshot upsert hit on republish. Updating a link loads the row first. |
 
+## The safety chain, and why it is prior-wraps
+
+`CalendarSafety.ts` layers three same-pattern overrides above `send:invite`, each calling
+`this.prior()`:
+
+```
+cap (C5)  ->  redaction (C7)  ->  ledger gate (C2/C3)  ->  provider dispatch
+```
+
+**Where they sit is the design, not what they do.** Above the dispatch, they hold for *every*
+provider — including ones added years from now by someone who never reads this file. Put them
+inside a provider and the next provider ships without them; put them inside `apply:sync` and the
+next caller — a retry, a queue replay, a scheduler — ships without them. The tests therefore post
+`send:invite` **directly**, bypassing `apply:sync` entirely, because that is what those callers do.
+
+Registration order is inverted relative to execution: each definition wraps the previous, so the
+outermost is registered last. The cap is outermost because refusing early is the whole of "bounded
+blast radius", and a cap under redaction would report an unredacted reason.
+
+**The redactor is one function at the sink** (`src/lib/redact.ts`), not a rule applied at call
+sites. The threat is not a developer logging a secret on purpose; it is a provider SDK throwing an
+error whose message embeds the request it failed on, that string being stored in `last_error`, and
+`last_error` then reaching a console, a log aggregator and a support ticket — without ever passing
+through anybody's own code. Sinks are countable; call sites are not. It drops `Error.stack`
+outright, because a stack is the commonest way a request body reaches a log.
+
+## The lock (C10)
+
+Per top fixture, acquired by `apply:sync` and released in a `finally` — a run that throws must not
+lock a conference out until the TTL. Three properties the tests pin: only the holder can release
+(otherwise a timed-out run unlocks the run that replaced it, and then both are live, which is the
+duplicate path); a stale lock expires, so one crash is not permanent; and a second run while the
+first holds it is refused before any provider call.
+
+**It is in-process, which is correct locally and a lie at Stage 4.** Two Cloudflare isolates share
+no `Map`. The message shape is what survives — `acquire:lock` / `release:lock` become a Durable
+Object behind the same patterns, which is the point of putting it behind messages at all.
+
 ## Not built yet, and deliberately
 
 - **`apply:sync` has no `aim:` surface.** Applying reaches real speakers. The confirmed surface
-  lands with the lock (C10) and the queue (§10.6), not before. Only `aim:cag,plan:sync` is
+  lands with the queue (§10.6) and per-segment progress, not before. Only `aim:cag,plan:sync` is
   declared, and it is read-only.
-- **C7 redaction.** There are no credentials yet: `sys/calendar_account.secret_ref` carries a
-  sekreto *name* from the first row, so C7's placement holds, but the redactor arrives with the
-  first real provider.
-- **C10, the lock.** Concurrent syncs are the other way duplicates appear. Advisory locally, a
-  Durable Object on Cloudflare.
+- **The queue.** §10.6 wants one job per (segment × account) with backoff and jitter, so a single
+  failure is isolated and retriable. Today `apply:sync` runs the plan in a loop, in the request.
 - **RSVPs.** The fake answers `not-supported`, which is the honest answer — a silent success would
   read as "nobody has responded yet" forever.
+- **Any real provider.** Google is last, on purpose.
 
 ## One toolchain note, unrelated but found here
 

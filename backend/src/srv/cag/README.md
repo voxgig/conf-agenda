@@ -15,7 +15,6 @@ Requires a signed-in user (`user.required: true`).
 | `aim:cag,publish:fixture` | `publish_fixture.ts` |
 | `aim:cag,load:tree` | `load_tree.ts` |
 | `aim:cag,plan:sync` | `plan_sync.ts` |
-| `aim:cag,plan:sync` | `plan_sync.ts` |
 | `aim:cag,list:room` | `list_room.ts` |
 | `aim:cag,load:room` | `load_room.ts` |
 | `aim:cag,list:track` | `list_track.ts` |
@@ -27,7 +26,6 @@ Requires a signed-in user (`user.required: true`).
 | `aim:cag,list:snapshot` | `list_snapshot.ts` |
 | `aim:cag,load:snapshot` | `load_snapshot.ts` |
 | `aim:web,on:cag,load:tree` | `web_load_tree.ts` |
-| `aim:web,on:cag,plan:sync` | `web_plan_sync.ts` |
 | `aim:web,on:cag,plan:sync` | `web_plan_sync.ts` |
 | `aim:web,on:auth,signin:user` | `web_signin_user.ts` |
 | `aim:web,on:auth,signout:user` | `web_signout_user.ts` |

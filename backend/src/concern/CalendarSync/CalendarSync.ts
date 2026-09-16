@@ -25,6 +25,7 @@
 import {
   buildSpec, hashSpec, invitable, EventSpec, SpecFixture,
 } from '../../lib/eventspec'
+import { redactReason } from '../../lib/redact'
 
 /** SPEC C5: a per-run outbound cap. Exceeding it aborts BEFORE the first send. */
 const DEFAULT_CAP = 100
@@ -321,6 +322,24 @@ export default function CalendarSync(this: any, options: any) {
         }
       }
 
+      // C10: ONE SYNC AT A TIME PER CONFERENCE. Concurrent syncs are the other
+      // way duplicates appear - two runs both read "no link", both create.
+      const lock = await this.post('sys:calendar,acquire:lock', { top_id: plan.top_id })
+      if (!lock.ok) return { ...plan, ok: false, why: 'sync-in-progress' }
+
+      try {
+        return await runPlan.call(this, plan, lock.token)
+      }
+      finally {
+        // ALWAYS. A run that throws must not leave the conference locked out
+        // of syncing until the TTL expires.
+        await this.post('sys:calendar,release:lock',
+          { top_id: plan.top_id, token: lock.token })
+      }
+    })
+
+
+  async function runPlan(this: any, plan: SyncPlan, run_id: string) {
       const accounts = new Map((await this.entity('sys/calendar_account')
         .list$({})).map((r: any) => [r.id, r.data$(false)]))
 
@@ -331,14 +350,20 @@ export default function CalendarSync(this: any, options: any) {
           continue
         }
         const account = accounts.get(item.account_id)
-        const out = await this.post('sys:calendar,send:invite', { item, account })
+        // run_id is what the outbound cap counts against (C5).
+        const out = await this.post('sys:calendar,send:invite', { item, account, run_id })
 
         if (!out.ok) {
           // Record the failure ON THE LINK and keep going: one provider
           // rejecting must not abandon the other segments (C9).
           if (item.link_id) {
+            // C7 at the sink. The safety wrap already redacted this, and it
+            // is applied again here rather than trusted: the marker matches
+            // nothing, so scrubbing twice is free, and a future caller that
+            // bypasses the wrap still cannot write a token into a row that
+            // anyone who can read the org can read.
             const row = await this.entity('sys/calendar_link').load$(item.link_id)
-            if (row) await row.data$({ last_error: String(out.why) }).save$()
+            if (row) await row.data$({ last_error: redactReason(out.why) }).save$()
           }
           results.push({ ...brief(item), state: 'failed', why: out.why })
           continue
@@ -349,7 +374,7 @@ export default function CalendarSync(this: any, options: any) {
       }
 
       return { ok: true, top_id: plan.top_id, counts: plan.counts, results }
-    })
+  }
 
 
   function brief(item: PlanItem) {
