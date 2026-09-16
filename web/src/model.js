@@ -112,6 +112,15 @@ function isProjectScoped(canon) {
 // plain string field, else id).
 function labelField(canon) {
   const f = fieldsOf(canon)
+  // An entity may name its own label field: ux: { label: 'slug' }. Without
+  // this the fallback below takes the first non-ref String in KEY ORDER, which
+  // is alphabetical in model.json - so an entity holding a JSON document in
+  // `agenda_json` gets the whole document as its page heading.
+  const [z, n] = String(canon).split('/')
+  const def = ent()[z] && ent()[z][n]
+  if (def && def.ux && def.ux.label && f[def.ux.label]) {
+    return def.ux.label
+  }
   if (f.name) {
     return 'name'
   }

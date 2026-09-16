@@ -330,6 +330,9 @@
           "id": {
             "field": "id"
           },
+          "ux": {
+            "label": "slug"
+          },
           "valid": {
             "$$": "Open"
           }

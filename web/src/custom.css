@@ -547,3 +547,49 @@ a:hover { color: var(--vg-primary); }
   .vg-stat-row { grid-template-columns: 1fr; gap: var(--vg-space-4); }
   .vg-table th, .vg-table td { padding: var(--vg-space-2) var(--vg-space-3); }
 }
+
+/* --- JSON documents in the entity admin ---------------------------------
+   A blob column is rendered as a summary in a list and as a collapsed,
+   pretty-printed document on the detail page. See customise.js. */
+.vg-json-summary {
+  font-family: var(--vg-mono); font-size: var(--vg-fs-tiny);
+  color: var(--vg-muted); white-space: nowrap;
+}
+.vg-danger { color: var(--vg-danger); }
+
+.vg-json > summary {
+  display: flex; align-items: center; gap: var(--vg-space-3);
+  cursor: pointer; list-style: none;
+  padding: var(--vg-space-1) 0;
+}
+.vg-json > summary::-webkit-details-marker { display: none; }
+/* The disclosure triangle, drawn rather than inherited, so it can sit in front
+   of the summary text and rotate. */
+.vg-json > summary::before {
+  content: '▸'; color: var(--vg-muted); font-size: 11px;
+  transition: transform var(--vg-t-fast);
+}
+.vg-json[open] > summary::before { transform: rotate(90deg); }
+
+.vg-json-copy {
+  font: inherit; font-size: var(--vg-fs-tiny); font-weight: 600;
+  color: var(--vg-text-soft); background: transparent;
+  border: 1px solid var(--vg-border); border-radius: var(--vg-radius);
+  padding: 1px 8px; cursor: pointer;
+  transition: border-color var(--vg-t-fast), color var(--vg-t-fast);
+}
+.vg-json-copy:hover { border-color: var(--vg-focus); color: var(--vg-text); }
+
+.vg-json pre {
+  margin: var(--vg-space-2) 0 0;
+  padding: var(--vg-space-3);
+  background: var(--vg-bg); border: 1px solid var(--vg-border);
+  border-radius: var(--vg-radius);
+  /* Capped and scrollable: a two-day conference is a few hundred lines, and an
+     uncapped <pre> pushes everything below it off the page. */
+  max-height: 24rem; overflow: auto;
+  font-family: var(--vg-mono); font-size: var(--vg-fs-tiny); line-height: 1.5;
+  color: var(--vg-text-soft);
+  tab-size: 2;
+}
+

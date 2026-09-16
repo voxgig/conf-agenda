@@ -181,6 +181,10 @@ cag: appearance: {
 ## id is '<org_id>:<slug>', so the public read is a load by id.
 
 cag: snapshot: {
+  ## Without this the app picks the first non-ref String field in key order -
+  ## `agenda_json` - and renders the entire published document as the page
+  ## heading. The slug is what a human calls this row.
+  ux: { label: 'slug' }
   field: {
     id: { label: 'ID' kind: String }
     org_id: { label: 'Org' kind: String ref: 'sys/org' valid: Skip }

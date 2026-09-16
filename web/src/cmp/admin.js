@@ -63,20 +63,33 @@ class VgEntityAdmin extends HTMLElement {
     return maps
   }
 
-  cell(canon, field, value, maps) {
+  // `where` is 'list' | 'detail' | 'child' - the same field often wants a
+  // compact form in a table row and a full one on its own page.
+  cell(canon, field, value, maps, where) {
     const fdef = Model.fieldsOf(canon)[field] || {}
+    let out
     if (fdef.ref) {
       if (null == value) {
-        return '<span class="vg-muted">—</span>'
+        out = '<span class="vg-muted">—</span>'
       }
-      const m = maps[field] || { labels: {} }
-      const label = m.labels[value] || value
-      return `<a href="#" class="vg-ref" data-canon="${fdef.ref}" data-id="${esc(value)}">${esc(label)}</a>`
+      else {
+        const m = maps[field] || { labels: {} }
+        const label = m.labels[value] || value
+        out = `<a href="#" class="vg-ref" data-canon="${fdef.ref}" data-id="${esc(value)}">${esc(label)}</a>`
+      }
     }
-    if ('Boolean' === fdef.kind) {
-      return value ? '✓' : '<span class="vg-muted">✗</span>'
+    else if ('Boolean' === fdef.kind) {
+      out = value ? '✓' : '<span class="vg-muted">✗</span>'
     }
-    return esc(value)
+    else {
+      out = esc(value)
+    }
+    // Hook: render one field however the project likes. The generic admin
+    // cannot know that a field holds a JSON document, a duration or a colour;
+    // this is where a project says so, without forking the component.
+    return Hooks.filter('admin:cell', out, {
+      canon, field, value, where: where || 'list', fdef,
+    })
   }
 
   wireRefLinks(root) {
@@ -115,7 +128,7 @@ class VgEntityAdmin extends HTMLElement {
 
     const rows = items.map((item) => `
       <tr>
-        ${fields.map((f) => `<td>${this.cell(canon, f, item[f], maps)}</td>`).join('')}
+        ${fields.map((f) => `<td>${this.cell(canon, f, item[f], maps, 'list')}</td>`).join('')}
         <td class="vg-actions">
           ${Hooks.html('admin:row:actions', { canon, item })}
           <button class="vg-open" data-id="${item.id}">Open</button>
@@ -174,7 +187,7 @@ class VgEntityAdmin extends HTMLElement {
     const label = item[Model.labelField(canon)] || id
 
     const rowsHtml = fields.map((f) => `
-      <tr><th>${esc(Model.titleize(f))}</th><td>${this.cell(canon, f, item[f], maps)}</td></tr>`).join('')
+      <tr><th>${esc(Model.titleize(f))}</th><td>${this.cell(canon, f, item[f], maps, 'detail')}</td></tr>`).join('')
 
     // Inverse relationships: everything that references THIS entity.
     const children = Model.inverseRefs(canon)
@@ -193,7 +206,7 @@ class VgEntityAdmin extends HTMLElement {
             <thead><tr>${kfields.map((f) => `<th>${esc(Model.titleize(f))}</th>`).join('')}<th></th></tr></thead>
             <tbody>${kids.map((k) => `
               <tr>
-                ${kfields.map((f) => `<td>${this.cell(c.canon, f, k[f], kmaps)}</td>`).join('')}
+                ${kfields.map((f) => `<td>${this.cell(c.canon, f, k[f], kmaps, 'child')}</td>`).join('')}
                 <td class="vg-actions">
                   <button class="vg-child-open" data-canon="${c.canon}" data-id="${k.id}">Open</button>
                 </td>
