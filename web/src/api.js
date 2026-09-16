@@ -40,6 +40,13 @@ function nounOf(ent) {
   return READABLE[ent]
 }
 
+// Whether an entity has a browser read surface at all. sys/org and sys/member
+// do not: they are referenced BY cag rows but have no aim:web message, so a
+// link to one is a link to "Not found."
+function canRead(ent) {
+  return null != READABLE[ent]
+}
+
 async function list(ent, q) {
   const noun = nounOf(ent)
   if (!noun) return []
@@ -62,6 +69,17 @@ const NOT_YET = {
   ok: false,
   why: 'read-only-stage-1',
   message: 'Editing arrives in Stage 2, as per-entity intent messages.',
+}
+
+// The UI has to be able to ASK, rather than offering New / Edit / Delete and
+// finding out afterwards. A control that looks live and silently does nothing
+// is worse than one that is plainly disabled and says why.
+function canWrite() {
+  return false
+}
+
+function writeBlockedReason() {
+  return NOT_YET.message
 }
 
 async function save() {
@@ -122,6 +140,9 @@ export {
   load,
   save,
   remove,
+  canRead,
+  canWrite,
+  writeBlockedReason,
   users,
   loadAuth,
   signin,

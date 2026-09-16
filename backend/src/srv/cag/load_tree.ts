@@ -41,11 +41,26 @@ module.exports = function make_load_tree() {
       name: s.name,
     }))
 
+    // Publish state for the header. BOTH halves are real: the timestamp comes
+    // from the snapshot, and the count is segments edited since it was written.
+    // A conference that has never published returns null rather than a zero -
+    // "0 unpublished changes" and "never published" are different facts, and
+    // the organiser needs to tell them apart.
+    const snap = await seneca.entity('cag/snapshot').load$(top.org_id + ':' + top.slug)
+    const published_at = snap ? (snap.published_at as number) : null
+    const publish = {
+      published_at,
+      unpublished: null == published_at
+        ? segments.length
+        : segments.filter((s: any) => 'number' === typeof s.t_m && s.t_m > published_at).length,
+    }
+
     return {
       ok: true,
       tops,
       top,
       segments,
+      publish,
       rooms: plain(await seneca.entity('cag/room').list$(q)),
       tracks: plain(await seneca.entity('cag/track').list$(q)),
       speakers,

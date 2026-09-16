@@ -227,6 +227,7 @@ class ConfAgenda extends HTMLElement {
     const conf = this.agenda.conference || {}
     const clock = makeClock(conf.t_tzn, this.getAttribute('lang'))
     const speakers = new Map((this.agenda.speakers || []).map((s) => [s.id, s.name]))
+    const tracks = new Map((this.agenda.tracks || []).map((t) => [t.id, t]))
     const roomRows = this.agenda.rooms || []
 
     // Sessions with no room cannot be placed in a room grid; show them as a
@@ -236,15 +237,22 @@ class ConfAgenda extends HTMLElement {
 
     const sessionNode = (s) => {
       const names = (s.speakers || []).map((id) => speakers.get(id) || id).join(', ')
+      // The organiser's track colour, carried on a custom property so the
+      // strip and the chip both read it and a host page can still override
+      // either through ::part(). agenda.json already carries `color`.
+      const track = tracks.get(s.track)
       return el('div', {
         class: 'cancelled' === s.status ? 'session cancelled' : 'session',
+        style: track && track.color ? '--ca-track: ' + track.color : null,
       }, [
+        track ? el('div', { class: 'strip', part: 'track-strip' }) : null,
         el('div', { class: 'title', part: 'session-title', text: s.title || s.id }),
         names ? el('div', { class: 'meta', text: names }) : null,
         el('div', { class: 'meta', text: clock(s.t_start) + '–' + clock(s.t_end) }),
         'cancelled' === s.status
           ? el('div', { class: 'badge', part: 'cancelled-badge', text: 'Cancelled' })
           : null,
+        track ? el('div', { class: 'chip', part: 'track-chip', text: track.name || track.id }) : null,
       ])
     }
 

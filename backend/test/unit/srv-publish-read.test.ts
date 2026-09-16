@@ -182,3 +182,45 @@ describe('publish and the public read path', () => {
     await seneca.close()
   })
 })
+
+describe('load:tree publish state', () => {
+  // The agenda header reads "Published 2h ago · 3 unpublished changes". Both
+  // halves come from real data, and the difference between "never published"
+  // and "published, nothing changed since" has to survive - they are different
+  // facts and the organiser acts differently on each.
+
+  test('a conference that has never published reports null, not zero', async () => {
+    const seneca = await makeSeneca()
+
+    const out = await seneca.post('aim:cag,load:tree', { fixture_id: 'conf_tiny' })
+    assert.equal(out.ok, true)
+    assert.equal(out.publish.published_at, null)
+    // Never published means EVERY segment is unpublished, which is not the
+    // same claim as "no changes".
+    assert.equal(out.publish.unpublished, out.segments.length)
+    assert.ok(0 < out.publish.unpublished)
+
+    await seneca.close()
+  })
+
+  test('after publishing, an edited segment is counted and the rest are not', async () => {
+    const seneca = await makeSeneca()
+
+    const pub = await seneca.post('aim:cag,publish:fixture', { fixture_id: 'conf_tiny' })
+    assert.equal(pub.ok, true)
+
+    const clean = await seneca.post('aim:cag,load:tree', { fixture_id: 'conf_tiny' })
+    assert.ok(null != clean.publish.published_at)
+    assert.equal(clean.publish.unpublished, 0)
+
+    // Touch one segment with a modification stamp after the snapshot.
+    const seg = await seneca.entity('cag/fixture').load$('seg_keynote')
+    seg.t_m = (clean.publish.published_at as number) + 1000
+    await seg.save$()
+
+    const dirty = await seneca.post('aim:cag,load:tree', { fixture_id: 'conf_tiny' })
+    assert.equal(dirty.publish.unpublished, 1)
+
+    await seneca.close()
+  })
+})

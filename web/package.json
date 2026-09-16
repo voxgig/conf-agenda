@@ -13,5 +13,8 @@
     "@playwright/test": "^1.58.2",
     "seneca-browser": "^8.0.0-rc4",
     "vite": "^7.3.4"
+  },
+  "dependencies": {
+    "@fontsource-variable/nunito": "^5.3.0"
   }
 }

@@ -1,36 +1,63 @@
-
 ## Design theme (UI), controlled by the model. Each mode is a set of design
-## tokens (colors, fonts, radius, effects) emitted as CSS variables
-## (--vg-<token>) by @voxgig/build into web/src/theme.css. Override tokens
-## per project in web/src/custom.css; add modes via the `theme:modes` hook.
+## tokens emitted as CSS variables (--vg-<token>) by @voxgig/build into
+## web/src/theme.css. Override per project in web/src/custom.css; add modes via
+## the `theme:modes` hook.
 ##
-## THE PALETTE IS PLATFORM.md 5.1 - the voxgig.com design language, observed
-## from the live site. It is DARK-FIRST: that is the ground the product is
-## designed on, and the light mode is the adaptation rather than the other way
-## round.
+## THE PALETTE IS voxgig.com, read from its own stylesheet
+## (/_astro/Layout.CxpNnITy.css) rather than eyeballed. PLATFORM 5.1.
 ##
-## These tokens are LOAD-BEARING, not decoration. The `bad-color-contrast`
-## validation rule (SPEC 16.1) checks each organiser's track colour against the
+## TWO GROUNDS, ON PURPOSE. voxgig.com is light-first; the conf-agenda mockups
+## in metsitaba/project-specs are dark (#0f1117 / #1a2029 / cyan). Both are the
+## voxgig language - one is the marketing site, one is the product UI, and they
+## share the brand ramp. So:
+##
+##   the app (admin, agenda grid)  -> dark, per mockups/src/Main.dc.html,
+##                                    which is the spec's acceptance criteria
+##   the public / landing page     -> light, per voxgig.com
+##
+## The public page pins itself with data-theme-mode="light" (see custom.css),
+## so both live in one build.
+##
+## WHAT LIVES HERE vs custom.css: this file holds only what VARIES BY MODE -
+## colours and shadows. The mode-invariant scale (type sizes, spacing, radii,
+## containers, motion, and the brand ramp itself) is defined once under :root
+## in web/src/custom.css. Duplicating a constant across two modes is how a
+## theme toggle silently changes your spacing, and a comment does not prevent
+## that; one definition does.
+##
+## These tokens are LOAD-BEARING, not decoration. `bad-color-contrast`
+## (SPEC 16.1, Stage 2) will check each organiser's track colour against the
 ## foreground and background BELOW, in both modes - so the colours the
 ## validator checks are the colours that ship. One source for both.
 ##
 ## Never hand-edit web/src/theme.css: it is regenerated on every model-build.
 
-mode: 'dark'           # dark-first (PLATFORM 5.1)
+mode: 'dark'           # the app's ground
 
 modes: {
+  ## ---------------------------------------------------------------- dark ---
+  ## The mockups' values, NOT voxgig.com's dark. They are near neighbours
+  ## (voxgig.com runs #0f0f15 / #17171e / #2c2c37, a touch warmer) but the
+  ## mockups are the acceptance criteria for these screens, and the demo track
+  ## colours were chosen against exactly this ground.
   dark: {
-    ## voxgig accents. `primary` is the cyan used for links and focus; the
-    ## crimson is the louder one, reserved for emphasis and per-track accents.
-    primary:       '#00c6d8'
-    'primary-dark': '#089ea5'
+    ## Role assignments. voxgig.com puts ACCENT on red, LINKS on blue and
+    ## reserves teal for focus rings and hover washes - getting this the wrong
+    ## way round is the single biggest reason a page fails to read as voxgig.
+    primary:       '#e70042'   # vox-red - buttons, accents, the eyebrow
+    'primary-dark': '#ce0246'  # vox-red-dark - hover
+    link:          '#0796d6'   # vox-blue-light - readable on a dark ground
+    focus:         '#00c6d8'   # vox-teal - focus rings, selection, hover wash
 
     bg:            '#0f1117'   # page ground
+    'bg-tint':     '#161b24'   # banded sections, table headers
     surface:       '#1a2029'   # cards
     text:          '#e6edf3'   # body
-    muted:         '#8b95a7'   # secondary
+    'text-soft':   '#b8c2d4'   # secondary body
+    muted:         '#8b95a7'   # labels, timestamps
     border:        '#2a3040'   # rules
-    'border-strong': '#41506b'
+    'border-soft': '#222833'   # the quieter hairline
+    'border-strong': '#41506b' # emphasis, selected chrome
 
     'topbar-bg':   '#0b0d12'
     'topbar-fg':   '#e6edf3'
@@ -42,39 +69,42 @@ modes: {
     danger:        '#e70042'
     warning:       '#f8b833'
 
-    font:          '15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif'
-    mono:          'ui-monospace, Menlo, Consolas, monospace'
-    radius:        '6px'
+    'shadow-sm':   '0 1px 3px rgba(0,0,0,.5)'
     'shadow-card': '0 6px 18px rgba(0,0,0,.40)'
+    'shadow-lg':   '0 30px 50px -10px rgba(0,0,0,.55)'
   }
 
-  ## The same language on a light ground, for anyone who wants it. Contrast
-  ## ratios are kept above 4.5:1 against `bg` so WCAG 2.2 AA holds in BOTH
-  ## modes - `bad-color-contrast` checks both, and a theme that only passes in
-  ## one is a theme that fails half its users.
+  ## --------------------------------------------------------------- light ---
+  ## voxgig.com's :root, verbatim. This is what the public page renders on.
   light: {
-    primary:       '#0274b4'
-    'primary-dark': '#065f91'
+    primary:       '#e70042'
+    'primary-dark': '#ce0246'
+    link:          '#0274b4'   # vox-blue - the darker one, for a light ground
+    focus:         '#07868c'   # voxgig.com's --focus-ring: teal, darkened
 
-    bg:            '#f7f8fa'
+    bg:            '#f5f5f9'
+    'bg-tint':     '#f6f4f9'
     surface:       '#ffffff'
-    text:          '#1a1d23'
-    muted:         '#5d6675'
-    border:        '#d7dce4'
-    'border-strong': '#b6bfcc'
+    text:          '#0a0a0a'
+    'text-soft':   '#4d5761'
+    muted:         '#6c737f'
+    border:        '#e0dce4'
+    'border-soft': '#eceaf0'
+    'border-strong': '#c9c2cf'
 
-    'topbar-bg':   '#0f1117'
-    'topbar-fg':   '#e6edf3'
-    'accent-bg':   'rgba(2,116,180,.10)'
+    'topbar-bg':   '#ffffff'
+    'topbar-fg':   '#0a0a0a'
+    'accent-bg':   'rgba(231,0,66,.08)'
 
-    success:       '#2ea043'
-    'success-dark': '#1a7f37'
-    danger:        '#c4003a'
-    warning:       '#9a6700'
+    ## Darkened against white so each clears 4.5:1 - the brand ramp's own
+    ## values do not, and a badge nobody can read is not a badge.
+    success:       '#1a7f37'
+    'success-dark': '#116329'
+    danger:        '#ce0246'
+    warning:       '#8a5a00'
 
-    font:          '15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif'
-    mono:          'ui-monospace, Menlo, Consolas, monospace'
-    radius:        '6px'
-    'shadow-card': '0 6px 24px rgba(13,27,42,.10)'
+    'shadow-sm':   '0 1px 3px rgba(10,10,10,.06)'
+    'shadow-card': '0 3px 12px rgba(10,10,10,.08)'
+    'shadow-lg':   '0 30px 50px -10px rgba(10,10,10,.06)'
   }
 }

@@ -1,99 +1,687 @@
-/* Project overrides. PLATFORM 5.3's layer 2: tokens in the model first, CSS
-   overrides second, and only then hooks or a custom view.
-   --------------------------------------------------------------------------
-   style.css ships three hardcoded blues from the scaffold's default palette.
-   They predate model/theme.aon carrying the voxgig language (PLATFORM 5.1),
-   so they are pulled back onto the token here rather than edited in place -
-   style.css says "Override in custom.css", and an override survives whatever
-   the generator does to that file later. */
-.vg-link { color: var(--vg-primary); }
-.vg-proj-bar > div { background: var(--vg-primary); }
-.vg-auth-form button[type=submit] {
-  background: var(--vg-primary);
-  color: var(--vg-topbar-bg);
-  font-weight: 600;
-}
-.vg-auth-form button[type=submit]:hover { background: var(--vg-primary-dark); }
+/* The voxgig design language, applied.
+   ==========================================================================
+   PLATFORM 5.3 layers: model tokens first (backend/model/theme.aon), CSS
+   second (here), a custom view only where a generator cannot guess (the
+   agenda grid). Nothing below fights the generator.
 
-/* Project CSS customisation (CREATE-ONCE — never overwritten). Override the
-   theme variables (defined in style.css) to restyle the whole app, and add
-   any rules you like. */
+   Every number here is lifted from voxgig.com's own stylesheet
+   (/_astro/Layout.CxpNnITy.css) or from the conf-agenda mockups in
+   metsitaba/project-specs. None of it is eyeballed.
 
+   WHY SOME TOKENS LIVE HERE AND NOT IN theme.aon: theme.aon holds what varies
+   by MODE. The scale below - type sizes, spacing, radii, containers, motion,
+   and the brand ramp itself - is identical in light and dark, and duplicating
+   a constant across two modes is how a theme toggle silently changes your
+   spacing. One definition, no drift. */
+
+/* --- the brand ramp + the invariant scale ------------------------------- */
 :root {
-  /* e.g. --vg-primary: #7c3aed; --vg-topbar-bg: #111827; */
+  /* voxgig brand, straight from the site. Roles (primary/link/focus) are
+     assigned per mode in theme.aon; these are the raw ink. */
+  --vox-red: #e70042;   --vox-red-dark: #ce0246;   --vox-red-light: #f2307a;
+  --vox-teal: #00c6d8;  --vox-teal-dark: #089ea5;  --vox-teal-light: #11e5ef;
+  --vox-blue: #0274b4;  --vox-blue-light: #0796d6;
+  --vox-yellow: #f8b833;
+
+  --vg-font: 1rem/1.5 'Nunito Variable', 'Nunito Fallback', system-ui,
+             -apple-system, 'Segoe UI', sans-serif;
+  --vg-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
+             'Liberation Mono', monospace;
+
+  --vg-fs-tiny: .75rem;
+  --vg-fs-small: .875rem;
+  --vg-fs-base: 1rem;
+  --vg-fs-medium: 1.2rem;
+  --vg-fs-large: clamp(1.25rem, 2vw, 1.5rem);
+  --vg-fs-h3: clamp(2rem, 4vw, 3.2rem);
+  --vg-fs-h2: clamp(2.4rem, 5vw, 4.5rem);
+  --vg-fs-h1: clamp(2.5rem, 7vw, 6rem);
+  --vg-fs-hero: clamp(2.75rem, 8vw, 6.8rem);
+
+  --vg-space-1: .25rem;  --vg-space-2: .5rem;   --vg-space-3: 1rem;
+  --vg-space-4: 1.5rem;  --vg-space-5: 2rem;    --vg-space-6: 3rem;
+  --vg-space-7: 4rem;    --vg-space-8: 6rem;
+  --vg-gutter: clamp(1.25rem, 5vw, 2.5rem);
+  --vg-section-y: clamp(2.5rem, 7vw, 4rem);
+  --vg-container: 80rem;
+  --vg-container-narrow: 64rem;
+  --vg-container-tight: 48rem;
+
+  --vg-radius: 4px;
+  --vg-radius-lg: 8px;
+  --vg-radius-pill: 999px;
+
+  --vg-t-fast: .15s;
+  --vg-t-base: .25s;
+  --vg-ease: cubic-bezier(.445, .05, .55, .95);
 }
 
-/* --- agenda grid (custom view for cag/fixture) -------------------------
-   Every colour here is a --vg-* token from model/theme.aon, so the grid
-   follows the theme rather than pinning its own palette. PLATFORM 5.1. */
-.vg-grid { border-collapse: collapse; width: 100%; font-size: 13.5px; }
-.vg-grid th, .vg-grid td {
-  border: 1px solid var(--vg-border);
-  padding: 7px 9px; text-align: left; vertical-align: top;
-}
-.vg-grid thead th {
-  font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em;
-  color: var(--vg-muted); font-weight: 600;
-  border-bottom: 1px solid var(--vg-border-strong);
-}
-.vg-grid th[scope='row'] {
-  font-family: var(--vg-mono); font-size: 11.5px; font-weight: 400;
-  color: var(--vg-muted); white-space: nowrap; width: 1%;
-}
-.vg-grid td { background: var(--vg-surface); }
-.vg-grid td:empty { background: transparent; }
-
-.vg-session { padding: 1px 0; }
-.vg-session + .vg-session {
-  margin-top: 7px; padding-top: 7px; border-top: 1px dashed var(--vg-border-strong);
-}
-.vg-grid [data-session].vg-focus {
-  outline: 2px solid var(--vg-primary); outline-offset: 2px; border-radius: 3px;
+/* Metric-matched fallback, copied from voxgig.com. Without it the page
+   reflows when Nunito arrives; with it, Arial stands in at the same metrics
+   and nothing moves. */
+@font-face {
+  font-family: 'Nunito Fallback';
+  src: local('Arial');
+  size-adjust: 101.85%;
+  ascent-override: 99.26%;
+  descent-override: 34.66%;
+  line-gap-override: 0%;
 }
 
-/* A double-booking. Tinted AND carrying a rule between the two sessions, so
-   the collision is not signalled by colour alone (K10). */
-.vg-grid td.vg-clash {
-  background: color-mix(in srgb, var(--vg-danger) 10%, var(--vg-surface));
-  box-shadow: inset 3px 0 0 var(--vg-danger);
+/* --- base --------------------------------------------------------------- */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -.02em;
 }
 
-.vg-cancelled .vg-strong { text-decoration: line-through; color: var(--vg-muted); }
-.vg-strong { font-weight: 600; color: var(--vg-text); }
-.vg-badge {
-  font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em;
-  color: var(--vg-muted);
-}
-.vg-scroll { overflow-x: auto; }
+/* Links carry --vg-link (blue); --vg-primary is RED and belongs to buttons
+   and accents. Getting these the wrong way round is the single thing that
+   most stops a page reading as voxgig. */
+a:hover { color: var(--vg-primary); }
 
-.vg-detail:empty { display: none; }
-.vg-detail {
-  margin-top: 14px; padding: 12px 14px;
+::selection { background: color-mix(in srgb, var(--vg-focus) 30%, transparent); }
+
+:focus-visible {
+  outline: 2px solid var(--vg-focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* The site's signature label: it sits above headings all over voxgig.com. */
+.vg-eyebrow {
+  font-size: var(--vg-fs-small);
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--vg-primary);
+}
+
+/* --- buttons ------------------------------------------------------------ */
+.vg-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: var(--vg-space-2);
+  padding: 0 1.6rem; min-height: 2.5rem;
+  border-radius: var(--vg-radius); border: 1px solid transparent;
+  font: inherit; font-weight: 600; letter-spacing: .02em;
+  text-decoration: none; cursor: pointer;
+  transition: background var(--vg-t-base) var(--vg-ease),
+              border-color var(--vg-t-base), color var(--vg-t-base);
+}
+.vg-btn--primary { background: var(--vg-primary); color: #fff; border-color: var(--vg-primary-dark); }
+.vg-btn--primary:hover { background: var(--vg-primary-dark); color: #fff; }
+.vg-btn--teal { background: var(--vox-teal); color: #0a0a0a; border-color: var(--vox-teal-dark); }
+.vg-btn--teal:hover { background: var(--vox-teal-light); color: #0a0a0a; }
+.vg-btn--ghost { background: transparent; color: var(--vg-text); border-color: currentColor; }
+.vg-btn--ghost:hover { background: color-mix(in srgb, var(--vg-text) 8%, transparent); color: var(--vg-text); }
+.vg-btn-row { display: flex; flex-wrap: wrap; gap: var(--vg-space-3); align-items: center; }
+
+/* The scaffold's own primary button, pulled onto the same shape. */
+.vg-primary, .vg-auth-form button[type=submit] {
+  border-radius: var(--vg-radius); font-weight: 600; letter-spacing: .02em;
+}
+
+/* A keycap. The mockups draw these in the footer hint bar and inline. */
+.vg-kbd {
+  font-family: var(--vg-mono); font-size: 11px; line-height: 1.6;
+  color: var(--vg-text-soft);
   background: var(--vg-surface);
-  border: 1px solid var(--vg-border); border-left: 3px solid var(--vg-primary);
+  border: 1px solid var(--vg-border); border-bottom-width: 2px;
   border-radius: var(--vg-radius);
+  padding: 1px 7px; white-space: nowrap;
 }
-.vg-detail h3 { margin: 0 0 4px; }
 
-.vg-bar {
-  margin: 10px 0; padding: 10px;
+/* --- app chrome --------------------------------------------------------- */
+/* Sticky, translucent, blurred - voxgig.com's .site-header treatment. */
+.vg-topbar {
+  position: sticky; top: 0; z-index: 900;
+  background: color-mix(in srgb, var(--vg-topbar-bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--vg-border);
+}
+.vg-topbar .vg-brand { display: flex; align-items: center; gap: 9px; font-size: 14px; }
+/* The mark: the mockup's cyan rounded square. It replaces an emoji that
+   rendered as a tofu box wherever the font lacked it. */
+.vg-brand-mark {
+  width: 10px; height: 10px; border-radius: 3px;
+  background: var(--vg-focus); flex: 0 0 auto;
+}
+.vg-topbar-sep { color: var(--vg-border-strong); }
+.vg-topbar-ctx { font-size: 13px; color: var(--vg-text-soft); }
+
+.vg-sidebar { padding: var(--vg-space-3) var(--vg-space-2); }
+.vg-navgroup-title {
+  font-size: var(--vg-fs-tiny); font-weight: 700; letter-spacing: .08em;
+  color: var(--vg-muted); padding: 0 var(--vg-space-2) var(--vg-space-1);
+}
+.vg-navlink {
+  border-radius: var(--vg-radius); padding: .4rem .65rem;
+  transition: background var(--vg-t-fast), color var(--vg-t-fast);
+}
+/* The teal hover wash, exactly as the site does its nav. */
+.vg-navlink:hover { background: color-mix(in srgb, var(--vox-teal) 16%, transparent); }
+.vg-navlink.vg-sel {
+  background: color-mix(in srgb, var(--vox-teal) 14%, transparent);
+  box-shadow: inset 2px 0 0 var(--vg-focus);
+}
+
+.vg-main { padding: var(--vg-space-5) var(--vg-gutter); }
+.vg-entity { max-width: var(--vg-container-narrow); }
+.vg-entity-head { margin-bottom: var(--vg-space-4); }
+.vg-entity-head h2 { font-size: var(--vg-fs-large); }
+
+/* --- tables ------------------------------------------------------------- */
+/* A list is a thing, not loose text. voxgig.com's .cmp-table gives the inside
+   - horizontal rules only, a tinted header, room to breathe - and the wrapper
+   gives it edges, because hairlines floating on the page ground read as
+   unfinished. Vertical rules are what make a table look like a database
+   viewer rather than a document; they stay out. */
+
+/* List and detail views use the whole content area. Forms do not: a 1700px
+   wide form is worse than a narrow one, and .vg-entity-form is capped at
+   28rem anyway. */
+.vg-entity--wide { max-width: none; }
+
+.vg-table-wrap {
   background: var(--vg-surface);
-  border: 1px solid var(--vg-border-strong); border-radius: var(--vg-radius);
+  border: 1px solid var(--vg-border);
+  border-radius: var(--vg-radius-lg);
+  box-shadow: var(--vg-shadow-sm);
+  /* Clips the header's tinted ground to the rounded corners, and carries the
+     horizontal scroll when there are more columns than screen. */
+  overflow: hidden auto;
+  overflow-x: auto;
+}
+
+.vg-table, .vg-detail {
+  border: none; border-radius: 0; background: transparent;
+  font-size: var(--vg-fs-small);
+}
+.vg-table th, .vg-table td, .vg-detail th, .vg-detail td {
+  padding: var(--vg-space-3);
+  border-bottom: 1px solid var(--vg-border);
+  vertical-align: middle;
+}
+.vg-table th, .vg-detail th {
+  font-weight: 700; font-size: var(--vg-fs-tiny); letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--vg-muted); background: var(--vg-bg-tint);
+  vertical-align: middle;
+}
+.vg-table tbody td:first-child { font-weight: 600; color: var(--vg-text); }
+/* No rule against the container's own edge. */
+.vg-table tbody tr:last-child td { border-bottom: none; }
+.vg-table tbody tr { transition: background var(--vg-t-fast); }
+/* The row is the Open target, so it has to look like one. */
+.vg-table tbody tr[data-row] { cursor: pointer; }
+.vg-table tbody tr:hover { background: var(--vg-bg-tint); }
+
+.vg-detail th { width: 26%; text-transform: none; letter-spacing: 0; font-size: var(--vg-fs-small); }
+.vg-detail { max-width: 48rem; }
+
+/* --- row overflow menu --------------------------------------------------- */
+.vg-actions { width: 1%; white-space: nowrap; text-align: right; }
+.vg-rowmenu { position: relative; display: inline-block; }
+
+.vg-rowmenu-btn {
+  font: inherit; font-size: 15px; line-height: 1;
+  color: var(--vg-muted); background: transparent;
+  border: 1px solid transparent; border-radius: var(--vg-radius);
+  padding: 4px 9px; cursor: pointer;
+  /* Quiet until wanted - but OPACITY, never display:none. SPEC K1: an action
+     that exists only behind a hover is not finished, and the button has to
+     stay in the tab order for a keyboard user to reach Edit and Delete. */
+  opacity: 0;
+  transition: opacity var(--vg-t-fast), color var(--vg-t-fast),
+              border-color var(--vg-t-fast);
+}
+tr:hover .vg-rowmenu-btn,
+.vg-rowmenu-btn:focus-visible,
+.vg-rowmenu-btn[aria-expanded='true'] { opacity: 1; }
+.vg-rowmenu-btn:hover, .vg-rowmenu-btn[aria-expanded='true'] {
+  color: var(--vg-text); border-color: var(--vg-border);
+}
+/* No hover on a touch screen, so there is nothing to reveal it. */
+@media (hover: none) {
+  .vg-rowmenu-btn { opacity: 1; }
+}
+
+.vg-rowmenu-pop {
+  /* Placement is computed in admin.js (position: fixed) so the table
+     wrapper's clip cannot cut the last rows' menus off. */
+  top: calc(100% + 4px); min-width: 11rem; z-index: 950;
+  border-radius: var(--vg-radius); box-shadow: var(--vg-shadow-card);
+  padding: var(--vg-space-1);
+  text-align: left;
+}
+.vg-rowmenu-pop button {
+  font: inherit; font-size: var(--vg-fs-small); text-align: left;
+  background: transparent; border: none; border-radius: var(--vg-radius);
+  color: var(--vg-text); padding: .45rem .7rem; cursor: pointer;
+  transition: background var(--vg-t-fast), color var(--vg-t-fast);
+}
+.vg-rowmenu-pop button:hover { background: var(--vg-bg-tint); }
+.vg-rowmenu-pop .vg-danger { color: var(--vg-danger); }
+.vg-rowmenu-pop .vg-danger:hover {
+  background: color-mix(in srgb, var(--vg-danger) 14%, transparent);
+}
+/* Disabled, because writes are Stage 2. Dimmed and not-allowed, but still
+   READABLE and still carrying its title - the point is to say what the app
+   will do, not to hide it. */
+.vg-rowmenu-pop button[disabled] { opacity: .45; cursor: not-allowed; }
+.vg-rowmenu-pop button[disabled]:hover { background: transparent; }
+/* A dimmed red button still reads as a live red button. Off means off. */
+.vg-primary[disabled], .vg-primary[disabled]:hover {
+  background: transparent; color: var(--vg-muted);
+  border: 1px solid var(--vg-border); cursor: not-allowed;
+}
+
+/* The header's read-only chip, matching the agenda grid's own label. */
+.vg-chip {
+  font-size: var(--vg-fs-tiny); font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--vg-muted);
+  border: 1px solid var(--vg-border); border-radius: var(--vg-radius-pill);
+  padding: 2px 10px; white-space: nowrap;
+}
+
+.vg-proj-card .vg-open, .vg-apikey-revoke {
+  border-radius: var(--vg-radius); font-weight: 600; font-size: var(--vg-fs-tiny);
+  letter-spacing: .02em; color: var(--vg-text-soft);
+  transition: border-color var(--vg-t-fast), color var(--vg-t-fast);
+}
+
+/* --- forms -------------------------------------------------------------- */
+.vg-entity-form, .vg-auth-form, .vg-settings .vg-card {
+  border-radius: var(--vg-radius-lg); box-shadow: var(--vg-shadow-sm);
+}
+.vg-entity-form input, .vg-entity-form select,
+.vg-auth-form input, .vg-ent-filter {
+  border-radius: var(--vg-radius); background: var(--vg-bg);
+  color: var(--vg-text); border: 1px solid var(--vg-border);
+  padding: .5rem .65rem;
+}
+.vg-entity-form input:focus, .vg-auth-form input:focus, .vg-ent-filter:focus {
+  outline: 2px solid var(--vg-focus); outline-offset: 0; border-color: transparent;
+}
+
+/* ==========================================================================
+   THE AGENDA GRID - custom view for cag/fixture
+   Built to metsitaba/project-specs conf-agenda/mockups/src/Main.dc.html,
+   which is this screen's acceptance criteria.
+
+   A CSS grid rather than a table: sessions span arbitrary time ranges and
+   float as cards with gaps between them, which a table's cell model cannot
+   draw. The markup keeps its hooks (.vg-grid, [data-session], .vg-focus,
+   .vg-strong) so web/e2e/grid-keys.spec.js still pins the keyboard model
+   through the rebuild.
+   ========================================================================== */
+/* The agenda wants the whole width; the entity screens do not. */
+.vg-agenda { display: flex; flex-direction: column; gap: var(--vg-space-3); max-width: none; }
+
+/* --- header: conference, day pills, publish state --- */
+.ca-head {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding-bottom: var(--vg-space-3);
+  border-bottom: 1px solid var(--vg-border);
+}
+.ca-confsel {
+  font: inherit; font-weight: 700; font-size: var(--vg-fs-large);
+  letter-spacing: -.02em;
+  background: transparent; color: var(--vg-text);
+  border: 1px solid transparent; border-radius: var(--vg-radius);
+  padding: 2px 6px; cursor: pointer; max-width: 22rem;
+}
+.ca-confsel:hover { border-color: var(--vg-border); }
+.ca-days { display: flex; gap: 6px; }
+.ca-day {
+  font: inherit; font-size: 11.5px; cursor: pointer;
+  color: var(--vg-muted); background: transparent;
+  border: 1px solid var(--vg-border); border-radius: var(--vg-radius-pill);
+  padding: 2px 11px;
+  transition: color var(--vg-t-fast), background var(--vg-t-fast), border-color var(--vg-t-fast);
+}
+.ca-day:hover { color: var(--vg-text); }
+.ca-day[aria-pressed='true'] {
+  color: var(--vg-text); background: var(--vg-bg-tint);
+  border-color: var(--vg-border-strong);
+}
+.ca-pubstate { margin-left: auto; font-size: 11.5px; color: var(--vg-muted); }
+.ca-pubstate .ca-dirty { color: var(--vg-warning); }
+.ca-pubstate .ca-never { color: var(--vg-muted); font-style: italic; }
+
+/* --- the grid itself --- */
+.ca-scroll { overflow-x: auto; }
+.vg-grid.ca-grid {
+  display: grid;
+  gap: 6px;
+  min-width: 640px;
+  /* grid-template-columns / -rows are set inline: the column count is the
+     room count and the row heights are proportional to each time slot's
+     real duration, so a 15-minute gap is visibly shorter than an hour. */
+}
+.ca-roomh {
+  font-size: 12px; font-weight: 700; color: var(--vg-muted);
+  letter-spacing: .06em; text-transform: uppercase;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center;
+}
+.ca-timel {
+  font-family: var(--vg-mono); font-size: 11px; color: var(--vg-muted);
+  display: flex; align-items: flex-start; justify-content: flex-end;
+  padding: 2px 10px 0 0;
+}
+
+/* --- a session card --- */
+.ca-seg {
+  background: var(--vg-surface);
+  border: 1px solid var(--vg-border);
+  border-radius: 6px;
+  padding: 10px 10px 8px;
+  display: flex; flex-direction: column; gap: 3px;
+  overflow: hidden; position: relative;
+  min-height: 0;
+  transition: border-color var(--vg-t-fast), box-shadow var(--vg-t-fast);
+}
+.ca-seg:hover { border-color: var(--vg-border-strong); }
+/* The track's colour, as a 3px strip along the top. */
+.ca-seg-strip {
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--ca-track, var(--vg-border-strong));
+}
+.ca-seg-title {
+  font-size: 12.5px; font-weight: 700; color: var(--vg-text); line-height: 1.25;
+}
+.ca-seg-meta { font-size: 11px; color: var(--vg-muted); }
+.ca-seg-chip {
+  font-size: 10px; font-weight: 700; letter-spacing: .03em;
+  border-radius: var(--vg-radius-pill); padding: 1px 8px;
+  align-self: flex-start; margin-top: 1px;
+  background: color-mix(in srgb, var(--ca-track, var(--vg-muted)) 14%, transparent);
+  /* Mixed toward the body text, so it lightens on a dark ground and darkens
+     on a light one without needing two palettes. */
+  color: color-mix(in srgb, var(--ca-track, var(--vg-muted)) 62%, var(--vg-text));
+}
+
+/* Cancelled keeps its slot. An attendee who remembers a talk needs to see
+   that it was cancelled, not find a hole where it used to be. */
+.ca-seg.ca-cancelled { opacity: .62; }
+.ca-seg.ca-cancelled .ca-seg-title { text-decoration: line-through; color: var(--vg-muted); }
+.ca-seg.ca-cancelled .ca-seg-strip { background: var(--vg-muted); }
+.ca-seg.ca-draft .ca-seg-strip { background: repeating-linear-gradient(
+  90deg, var(--vg-muted) 0 4px, transparent 4px 8px); }
+
+/* Focus: the mockup's teal ring. NOT --vg-primary, which is red. */
+.vg-grid [data-session].vg-focus {
+  outline: 2px solid var(--vg-focus); outline-offset: 1px;
+  box-shadow: var(--vg-shadow-card);
+}
+
+/* A break that HOLDS a room stays in its column, but still reads as an
+   interval rather than a talk: quieter, dashed, no strip. `cancelled-holds-room`
+   exists because holding a room is a real and deliberate thing to do. */
+.ca-seg.ca-seg-break {
+  background: transparent;
+  border-style: dashed;
+}
+.ca-seg.ca-seg-break .ca-seg-strip { display: none; }
+.ca-seg.ca-seg-break .ca-seg-title { font-weight: 600; color: var(--vg-text-soft); }
+
+/* A break with no room at all spans every room column, as the mockup draws
+   Coffee. */
+.ca-break {
+  border: 1px dashed var(--vg-border); border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; color: var(--vg-muted); font-size: 11.5px;
+}
+
+/* A double-booking. Tinted AND carrying a rule, so the collision is never
+   signalled by colour alone (K10). Both sessions stay visible: an earlier
+   version of this grid hid the second one, which is precisely the bug the
+   product exists to find. */
+.ca-slot-clash {
+  display: grid; gap: 4px; align-content: start;
+  background: color-mix(in srgb, var(--vg-danger) 10%, transparent);
+  border-radius: 6px; box-shadow: inset 3px 0 0 var(--vg-danger);
+  padding: 3px;
+}
+
+/* --- detail panel --- */
+.vg-detail-panel {
+  border: 1px solid var(--vg-border); border-left: 4px solid var(--vg-focus);
+  border-radius: var(--vg-radius); background: var(--vg-surface);
+  padding: var(--vg-space-4); max-width: 42rem;
+}
+.vg-detail-panel h3 { margin: 0 0 var(--vg-space-2); font-size: var(--vg-fs-large); }
+.vg-detail-panel p { margin: 0 0 var(--vg-space-2); }
+.vg-detail-panel p:last-child { margin-bottom: 0; }
+
+/* --- command bar, help, footer hint bar --- */
+.vg-bar {
+  background: var(--vg-surface); border: 1px solid var(--vg-border-strong);
+  border-radius: var(--vg-radius-lg); padding: var(--vg-space-3);
+  box-shadow: var(--vg-shadow-card); max-width: 30rem;
 }
 .vg-bar input {
-  width: 100%; padding: 7px 9px;
+  width: 100%; font: inherit; padding: .5rem .65rem;
   background: var(--vg-bg); color: var(--vg-text);
-  border: 1px solid var(--vg-border); border-radius: 4px;
+  border: 1px solid var(--vg-border); border-radius: var(--vg-radius);
 }
-.vg-bar ul { list-style: none; padding: 0; margin: 8px 0 0; }
-.vg-bar li { padding: 3px 0; color: var(--vg-muted); font-size: 13px; }
-.vg-bar kbd {
-  font-family: var(--vg-mono); font-size: 11px; color: var(--vg-text);
-  background: var(--vg-bg); border: 1px solid var(--vg-border);
-  border-bottom-width: 2px; border-radius: 4px; padding: 1px 6px;
-}
-.vg-help { margin: 10px 0; font-size: 13px; color: var(--vg-muted); }
+.vg-bar ul { list-style: none; margin: var(--vg-space-2) 0 0; padding: 0;
+  display: flex; flex-direction: column; gap: 2px; font-size: var(--vg-fs-small); }
+.vg-bar li { display: flex; gap: 8px; align-items: center; color: var(--vg-text-soft); }
 
-/* Visually hidden, still announced — the live region for j/k moves. */
-.vg-sr { position: absolute; width: 1px; height: 1px; overflow: hidden;
-  clip: rect(0 0 0 0); white-space: nowrap; }
+.vg-help { font-size: var(--vg-fs-small); color: var(--vg-muted); }
+
+.ca-foot {
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  padding-top: var(--vg-space-3); border-top: 1px solid var(--vg-border);
+}
+.ca-hint { display: flex; align-items: center; gap: 6px;
+  color: var(--vg-muted); font-size: 11.5px; }
+
+.vg-sr {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+
+/* ==========================================================================
+   THE PUBLIC SITE - light, because voxgig.com is light.
+   The app stays dark; this scope pins its own ground so both live in one
+   build. data-theme-mode on the element re-runs theme.css's light block.
+   ========================================================================== */
+.vg-public {
+  background: var(--vg-bg); color: var(--vg-text);
+  min-height: 100vh;
+}
+
+.vg-public-nav {
+  position: sticky; top: 0; z-index: 900;
+  background: color-mix(in srgb, var(--vg-bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--vg-border-soft);
+  padding: var(--vg-space-3) var(--vg-gutter);
+}
+.vg-public-nav .vg-brand { display: flex; align-items: center; gap: 9px; }
+.vg-public-nav a {
+  padding: .35rem .7rem; border-radius: var(--vg-radius);
+  transition: background var(--vg-t-fast);
+}
+.vg-public-nav a:hover { background: color-mix(in srgb, var(--vox-teal) 16%, transparent); }
+
+.vg-public section, .vg-public .vg-hero {
+  max-width: var(--vg-container); margin-inline: auto;
+  padding-inline: var(--vg-gutter);
+}
+.vg-public .vg-hero {
+  display: grid; grid-template-columns: 1fr .85fr;
+  gap: var(--vg-space-5) var(--vg-space-8); align-items: center;
+  padding-block: var(--vg-space-7) var(--vg-space-6);
+  max-width: var(--vg-container);
+}
+.vg-hero-copy { display: flex; flex-direction: column; gap: var(--vg-space-4); }
+/* Weight 400 at this size, exactly as the site sets .hero__title. A huge
+   heading at 700 shouts; at 400 it just is. */
+/* voxgig.com runs its hero title full-bleed across the page; ours shares the
+   row with the sign-in form, so it is scaled to the column it actually has.
+   The token stays faithful to the site for anywhere that has the width. */
+.vg-hero-copy h1 {
+  font-size: clamp(2.25rem, 5vw, 4.25rem); font-weight: 400; line-height: .95;
+  letter-spacing: -.02em; margin: 0;
+}
+.vg-hero-copy h1 .vg-accent { color: var(--vg-primary); }
+.vg-hero-copy p {
+  font-size: var(--vg-fs-medium); color: var(--vg-text-soft);
+  max-width: 24em; margin: 0;
+}
+.vg-hero-auth { flex: none; }
+
+.vg-features, .vg-about, .vg-stats {
+  padding-block: var(--vg-section-y);
+}
+.vg-features h2, .vg-about h2 {
+  font-size: var(--vg-fs-h3); margin: 0 0 var(--vg-space-5);
+}
+.vg-feature-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--vg-space-5);
+}
+
+/* voxgig.com's .card--themed: a per-card accent, a tinted icon tile, and a
+   pattern masked diagonally out of the corner. Pure CSS, no images. */
+.vg-feature {
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; gap: var(--vg-space-3);
+  padding: var(--vg-space-5);
+  background: var(--vg-surface);
+  border: 1px solid var(--vg-border-soft);
+  border-radius: var(--vg-radius);
+  transition: border-color var(--vg-t-base) var(--vg-ease),
+              box-shadow var(--vg-t-base) var(--vg-ease);
+}
+.vg-feature > * { position: relative; z-index: 1; }
+.vg-feature:hover {
+  box-shadow: var(--vg-shadow-card);
+  border-color: color-mix(in srgb, var(--card-accent, var(--vg-primary)) 45%, var(--vg-border-soft));
+}
+.vg-feature::before {
+  content: ''; position: absolute; inset: 0; z-index: 0;
+  opacity: .6; pointer-events: none;
+  mask-image: linear-gradient(to bottom left, #000, transparent 62%);
+  -webkit-mask-image: linear-gradient(to bottom left, #000, transparent 62%);
+}
+.vg-feature[data-pattern='dots']::before {
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--card-accent) 30%, transparent) 1.4px, transparent 1.5px);
+  background-size: 14px 14px;
+}
+.vg-feature[data-pattern='diagonal']::before {
+  background-image: repeating-linear-gradient(45deg,
+    color-mix(in srgb, var(--card-accent) 22%, transparent) 0 1px, transparent 1px 11px);
+}
+.vg-feature[data-pattern='grid']::before {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--card-accent) 20%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--card-accent) 20%, transparent) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+.vg-feature-mark {
+  width: 2.75rem; height: 2.75rem; padding: .6rem; border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--card-accent);
+  background: color-mix(in srgb, var(--card-accent) 12%, transparent);
+}
+.vg-feature-mark svg { width: 100%; height: 100%; }
+.vg-feature h3 {
+  font-size: var(--vg-fs-large); font-weight: 600; letter-spacing: -.01em; margin: 0;
+}
+.vg-feature p { color: var(--vg-text-soft); margin: 0; }
+
+/* The stat row. Figures in red, at weight 700 - the site's .stat__big. */
+.vg-stat-row {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: var(--vg-space-5); text-align: center;
+}
+.vg-stat-big {
+  font-size: clamp(2rem, 4vw, 3rem); font-weight: 700;
+  color: var(--vg-primary); line-height: 1;
+}
+.vg-stat-label { color: var(--vg-text-soft); margin-top: var(--vg-space-2); }
+
+/* A full-bleed tinted band that keeps the section's own container and gutter,
+   so its heading still lines up with every other section. Painting past the
+   edges with a spread shadow does that; widening the element does not - it
+   re-centres the content and knocks the whole band out of alignment, which is
+   exactly what the first attempt did. */
+/* --surface (white), not --bg-tint. voxgig.com has both bands; tint is only
+   four hex points off its page ground, which on a page with white cards reads
+   as a boundary and on this one read as nothing at all. .section.is-surface is
+   the site's own answer. */
+.vg-public .vg-about {
+  background: var(--vg-surface);
+  box-shadow: 0 0 0 100vmax var(--vg-surface);
+  clip-path: inset(0 -100vmax);
+  border-block: 1px solid var(--vg-border-soft);
+}
+.vg-public .vg-about p { max-width: 46em; color: var(--vg-text-soft); font-size: var(--vg-fs-medium); }
+
+.vg-public-footer {
+  border-top: 1px solid var(--vg-border-soft);
+  padding: var(--vg-space-6) var(--vg-gutter);
+}
+
+/* --- responsive --------------------------------------------------------- */
+@media (max-width: 860px) {
+  .vg-public .vg-hero { grid-template-columns: 1fr; }
+  .vg-feature-grid { grid-template-columns: 1fr; }
+  .vg-stat-row { grid-template-columns: 1fr; gap: var(--vg-space-4); }
+  .vg-table th, .vg-table td { padding: var(--vg-space-2) var(--vg-space-3); }
+}
+
+/* --- JSON documents in the entity admin ---------------------------------
+   A blob column is rendered as a summary in a list and as a collapsed,
+   pretty-printed document on the detail page. See customise.js. */
+.vg-json-summary {
+  font-family: var(--vg-mono); font-size: var(--vg-fs-tiny);
+  color: var(--vg-muted); white-space: nowrap;
+}
+.vg-danger { color: var(--vg-danger); }
+
+.vg-json > summary {
+  display: flex; align-items: center; gap: var(--vg-space-3);
+  cursor: pointer; list-style: none;
+  padding: var(--vg-space-1) 0;
+}
+.vg-json > summary::-webkit-details-marker { display: none; }
+/* The disclosure triangle, drawn rather than inherited, so it can sit in front
+   of the summary text and rotate. */
+.vg-json > summary::before {
+  content: '▸'; color: var(--vg-muted); font-size: 11px;
+  transition: transform var(--vg-t-fast);
+}
+.vg-json[open] > summary::before { transform: rotate(90deg); }
+
+.vg-json-copy {
+  font: inherit; font-size: var(--vg-fs-tiny); font-weight: 600;
+  color: var(--vg-text-soft); background: transparent;
+  border: 1px solid var(--vg-border); border-radius: var(--vg-radius);
+  padding: 1px 8px; cursor: pointer;
+  transition: border-color var(--vg-t-fast), color var(--vg-t-fast);
+}
+.vg-json-copy:hover { border-color: var(--vg-focus); color: var(--vg-text); }
+
+.vg-json pre {
+  margin: var(--vg-space-2) 0 0;
+  padding: var(--vg-space-3);
+  background: var(--vg-bg); border: 1px solid var(--vg-border);
+  border-radius: var(--vg-radius);
+  /* Capped and scrollable: a two-day conference is a few hundred lines, and an
+     uncapped <pre> pushes everything below it off the page. */
+  max-height: 24rem; overflow: auto;
+  font-family: var(--vg-mono); font-size: var(--vg-fs-tiny); line-height: 1.5;
+  color: var(--vg-text-soft);
+  tab-size: 2;
+}
+
+
+/* A reference whose target has no browser surface (sys/org). Still legible as
+   an identifier, but not dressed as a link to nowhere. */
+.vg-ref-flat { color: var(--vg-text-soft); font-family: var(--vg-mono); font-size: var(--vg-fs-tiny); }
