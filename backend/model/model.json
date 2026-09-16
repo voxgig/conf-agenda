@@ -507,6 +507,97 @@
             "$$": "Open"
           }
         },
+        "calendar_job": {
+          "field": {
+            "account_id": {
+              "kind": "String",
+              "label": "Account",
+              "ref": "sys/calendar_account",
+              "valid": "Skip"
+            },
+            "action": {
+              "kind": "String",
+              "label": "Action",
+              "valid": "Skip"
+            },
+            "attempts": {
+              "kind": "Number",
+              "label": "Attempts",
+              "valid": "Skip"
+            },
+            "fixture_id": {
+              "kind": "String",
+              "label": "Segment",
+              "valid": "Skip"
+            },
+            "id": {
+              "kind": "String",
+              "label": "ID"
+            },
+            "item_json": {
+              "kind": "String",
+              "label": "Item",
+              "valid": "Empty"
+            },
+            "last_error": {
+              "kind": "String",
+              "label": "Last error",
+              "valid": "Empty"
+            },
+            "next_at": {
+              "kind": "Number",
+              "label": "Next attempt",
+              "valid": "Skip"
+            },
+            "org_id": {
+              "kind": "String",
+              "label": "Org",
+              "ref": "sys/org",
+              "valid": "Skip"
+            },
+            "run_id": {
+              "kind": "String",
+              "label": "Run",
+              "ref": "sys/calendar_run",
+              "valid": "Skip"
+            },
+            "state": {
+              "kind": "String",
+              "label": "State",
+              "valid": "Skip"
+            },
+            "t_c": {
+              "kind": "Number",
+              "label": "Created",
+              "valid": "Skip"
+            },
+            "t_m": {
+              "kind": "Number",
+              "label": "Modified",
+              "valid": "Skip"
+            },
+            "top_id": {
+              "kind": "String",
+              "label": "Conference",
+              "ref": "cag/fixture",
+              "valid": "Skip"
+            },
+            "uid": {
+              "kind": "String",
+              "label": "UID",
+              "valid": "Skip"
+            }
+          },
+          "id": {
+            "field": "id"
+          },
+          "ux": {
+            "label": "uid"
+          },
+          "valid": {
+            "$$": "Open"
+          }
+        },
         "calendar_link": {
           "field": {
             "account_id": {
@@ -588,6 +679,65 @@
           },
           "ux": {
             "label": "uid"
+          },
+          "valid": {
+            "$$": "Open"
+          }
+        },
+        "calendar_run": {
+          "field": {
+            "counts_json": {
+              "kind": "String",
+              "label": "Counts",
+              "valid": "Empty"
+            },
+            "id": {
+              "kind": "String",
+              "label": "ID"
+            },
+            "org_id": {
+              "kind": "String",
+              "label": "Org",
+              "ref": "sys/org",
+              "valid": "Skip"
+            },
+            "state": {
+              "kind": "String",
+              "label": "State",
+              "valid": "Skip"
+            },
+            "t_c": {
+              "kind": "Number",
+              "label": "Created",
+              "valid": "Skip"
+            },
+            "t_end": {
+              "kind": "Number",
+              "label": "Ended",
+              "valid": "Skip"
+            },
+            "t_m": {
+              "kind": "Number",
+              "label": "Modified",
+              "valid": "Skip"
+            },
+            "t_start": {
+              "kind": "Number",
+              "label": "Started",
+              "valid": "Skip"
+            },
+            "top_id": {
+              "kind": "String",
+              "label": "Conference",
+              "ref": "cag/fixture",
+              "valid": "Skip"
+            }
+          },
+          "id": {
+            "field": "id"
+          },
+          "ux": {
+            "label": "top_id"
           },
           "valid": {
             "$$": "Open"

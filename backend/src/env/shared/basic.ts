@@ -8,6 +8,7 @@ import Model from '../../../model/model.json'
 import FixtureTree from '../../concern/FixtureTree/FixtureTree'
 import CalendarSync from '../../concern/CalendarSync/CalendarSync'
 import CalendarSafety from '../../concern/CalendarSync/CalendarSafety'
+import CalendarQueue from '../../concern/CalendarSync/CalendarQueue'
 import FakeProvider from '../../concern/CalendarSync/FakeProvider'
 
 
@@ -147,6 +148,11 @@ function basic(seneca: any, options?: any) {
   // they are destined for senecajs/Calendar upstream. No aim: surface either
   // way, so nothing here is gateway-reachable.
   seneca.use(CalendarSync, deep(base.options.calendarsync, options.calendarsync))
+
+  // The queue (SPEC 10.6). apply:sync enqueues; this is what sends. Loaded
+  // before the safety chain, because the chain wraps send:invite and the
+  // outermost wrap has to be registered last.
+  seneca.use(CalendarQueue, deep(base.options.calendarsync, options.calendarsync))
 
   // The safety chain, layered ABOVE the provider dispatch with prior-wraps:
   // cap (C5) -> redaction (C7) -> ledger gate (C2/C3). Loaded AFTER

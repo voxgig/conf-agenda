@@ -51,6 +51,21 @@ async function makeSeneca(opts: any = {}) {
   return seneca
 }
 
+
+/**
+ * apply:sync ENQUEUES; the queue sends (SPEC 10.6). Every assertion about
+ * provider calls therefore has to drain the run - which is also the point:
+ * the tested path is the real one, not a shortcut around the queue.
+ */
+async function applyAndDrain(seneca: any, fixture_id: string) {
+  const out = await seneca.post('sys:calendar,apply:sync', { fixture_id, confirm: true })
+  if (out.ok && out.run_id) {
+    await seneca.post('sys:calendar,drain:run', { run_id: out.run_id })
+    return { ...out, ...(await seneca.post('sys:calendar,get:run', { run_id: out.run_id })) }
+  }
+  return out
+}
+
 const writes = () => fakeState.calls.length
 const opsOf = (op: string) => fakeState.calls.filter((c: any) => op === c.op)
 
@@ -131,19 +146,20 @@ describe('calendar sync: the ledger', () => {
   test('C2 - a full sync twice writes NOTHING on the second pass', async () => {
     const seneca = await makeSeneca()
 
-    const first = await seneca.post('sys:calendar,apply:sync',
-      { fixture_id: 'demo_conf', confirm: true })
+    const first = await applyAndDrain(seneca, 'demo_conf')
     assert.equal(first.ok, true)
     const after_first = writes()
     assert.ok(0 < after_first, 'the first pass sent nothing at all')
 
-    const second = await seneca.post('sys:calendar,apply:sync',
-      { fixture_id: 'demo_conf', confirm: true })
+    const second = await applyAndDrain(seneca, 'demo_conf')
     assert.equal(second.ok, true)
 
     // THE test. Not "fewer calls" - zero.
     assert.equal(writes(), after_first, 'the second pass called the provider')
-    assert.ok(second.results.every((r: any) => 'noop' === r.state))
+    // And nothing was even enqueued: a no-op costs no API call by definition,
+    // so it is not a job. A queue full of no-ops hides the real work.
+    assert.equal(second.jobs.length, 0, 'the second pass queued work')
+    assert.equal(second.run.state, 'done')
 
     await seneca.close()
   })
@@ -151,7 +167,7 @@ describe('calendar sync: the ledger', () => {
   test('C3 - changing a room is ONE update and ZERO creates, same UID', async () => {
     const seneca = await makeSeneca()
 
-    await seneca.post('sys:calendar,apply:sync', { fixture_id: 'demo_conf', confirm: true })
+    await applyAndDrain(seneca, 'demo_conf')
     // The UID of the segment this test is about - not simply the first create
     // in the run, which is a different session once the plan is sorted.
     const uid = fakeState.calls
@@ -162,8 +178,7 @@ describe('calendar sync: the ledger', () => {
     seg.room_id = 'dr_studio'
     await seg.save$()
 
-    const out = await seneca.post('sys:calendar,apply:sync',
-      { fixture_id: 'demo_conf', confirm: true })
+    const out = await applyAndDrain(seneca, 'demo_conf')
     assert.equal(out.ok, true)
 
     assert.equal(opsOf('create').length, 0, 'a room change created a second invitation')
@@ -182,7 +197,7 @@ describe('calendar sync: the ledger', () => {
   test('the hash ignores what a speaker would not notice', async () => {
     const seneca = await makeSeneca()
 
-    await seneca.post('sys:calendar,apply:sync', { fixture_id: 'demo_conf', confirm: true })
+    await applyAndDrain(seneca, 'demo_conf')
     resetFake()
 
     // An abstract edit is invisible in a calendar entry. If this re-sent, every
@@ -191,7 +206,7 @@ describe('calendar sync: the ledger', () => {
     seg.desc = 'A completely rewritten abstract, at some length.'
     await seg.save$()
 
-    await seneca.post('sys:calendar,apply:sync', { fixture_id: 'demo_conf', confirm: true })
+    await applyAndDrain(seneca, 'demo_conf')
     assert.equal(writes(), 0, 'an abstract edit re-sent an invitation')
 
     await seneca.close()
@@ -200,7 +215,7 @@ describe('calendar sync: the ledger', () => {
   test('cancellation is checked BEFORE the hash', async () => {
     const seneca = await makeSeneca()
 
-    await seneca.post('sys:calendar,apply:sync', { fixture_id: 'demo_conf', confirm: true })
+    await applyAndDrain(seneca, 'demo_conf')
     resetFake()
 
     // demo_panel is confirmed and invited. Cancel it WITHOUT touching start,
@@ -211,8 +226,7 @@ describe('calendar sync: the ledger', () => {
     seg.status = 'cancelled'
     await seg.save$()
 
-    const out = await seneca.post('sys:calendar,apply:sync',
-      { fixture_id: 'demo_conf', confirm: true })
+    const out = await applyAndDrain(seneca, 'demo_conf')
     assert.equal(out.ok, true)
 
     assert.equal(opsOf('cancel').length, 1, 'a cancellation with an unchanged hash was skipped')
@@ -232,7 +246,7 @@ describe('calendar sync: the ledger', () => {
   test('C8 - deleting a DAY cancels its talks, it does not strand them', async () => {
     const seneca = await makeSeneca()
 
-    await seneca.post('sys:calendar,apply:sync', { fixture_id: 'demo_conf', confirm: true })
+    await applyAndDrain(seneca, 'demo_conf')
     const live = (await seneca.entity('sys/calendar_link').list$({ state: 'active' })).length
     assert.ok(1 < live)
     resetFake()
@@ -245,8 +259,7 @@ describe('calendar sync: the ledger', () => {
     for (const id of doomed) await seneca.entity('cag/fixture').remove$(id)
     await seneca.entity('cag/fixture').remove$('demo_day1')
 
-    const out = await seneca.post('sys:calendar,apply:sync',
-      { fixture_id: 'demo_conf', confirm: true })
+    const out = await applyAndDrain(seneca, 'demo_conf')
     assert.equal(out.ok, true)
 
     assert.ok(0 < opsOf('cancel').length, 'deleted segments left orphaned provider events')
@@ -271,8 +284,7 @@ describe('calendar sync: the ledger', () => {
     const plan = await seneca.post('sys:calendar,plan:sync', { fixture_id: 'demo_conf' })
     assert.equal(plan.capped, true)
 
-    const out = await seneca.post('sys:calendar,apply:sync',
-      { fixture_id: 'demo_conf', confirm: true })
+    const out = await applyAndDrain(seneca, 'demo_conf')
     assert.equal(out.ok, false)
     assert.equal(out.why, 'outbound-cap-exceeded')
     assert.ok(2 < out.would_send)
@@ -289,17 +301,23 @@ describe('calendar sync: the ledger', () => {
     const seneca = await makeSeneca()
 
     fakeState.failNext = 'create'
-    const out = await seneca.post('sys:calendar,apply:sync',
-      { fixture_id: 'demo_conf', confirm: true })
+    const out = await applyAndDrain(seneca, 'demo_conf')
     assert.equal(out.ok, true, 'one rejection abandoned the whole run')
 
-    const failed = out.results.filter((r: any) => 'failed' === r.state)
+    // The failure is ISOLATED TO ITS JOB (SPEC 10.6). It is still pending,
+    // with an attempt recorded and a reason the organiser can read - not
+    // swallowed, and not retried instantly.
+    const failed = out.jobs.filter((j: any) => 'pending' === j.state)
     assert.equal(failed.length, 1)
-    assert.equal(failed[0].why, 'provider-rejected')
+    assert.equal(failed[0].attempts, 1)
+    assert.equal(failed[0].last_error, 'provider-rejected')
+    assert.ok(0 < failed[0].next_at, 'a failed job was not backed off')
 
     // The others still went. One provider saying no must not silently drop
     // every remaining speaker.
-    assert.ok(0 < out.results.filter((r: any) => 'sent' === r.state).length)
+    assert.ok(0 < out.jobs.filter((j: any) => 'sent' === j.state).length)
+    // The run stays open while anything is still retriable.
+    assert.equal(out.run.state, 'running')
 
     await seneca.close()
   })
@@ -310,11 +328,11 @@ describe('calendar sync: the ledger', () => {
     acct.provider = 'google'
     await acct.save$()
 
-    const out = await seneca.post('sys:calendar,apply:sync',
-      { fixture_id: 'demo_conf', confirm: true })
+    const out = await applyAndDrain(seneca, 'demo_conf')
     assert.equal(out.ok, true)
-    assert.ok(out.results.every((r: any) => 'noop' === r.state || 'failed' === r.state))
-    assert.ok(out.results.some((r: any) => String(r.why || '').startsWith('no-provider')))
+    assert.ok(0 < out.jobs.length)
+    assert.ok(out.jobs.every((j: any) => 'sent' !== j.state))
+    assert.ok(out.jobs.every((j: any) => String(j.last_error).startsWith('no-provider')))
     assert.equal(writes(), 0)
 
     await seneca.close()

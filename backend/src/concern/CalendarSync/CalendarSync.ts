@@ -25,7 +25,6 @@
 import {
   buildSpec, hashSpec, invitable, EventSpec, SpecFixture,
 } from '../../lib/eventspec'
-import { redactReason } from '../../lib/redact'
 
 /** SPEC C5: a per-run outbound cap. Exceeding it aborts BEFORE the first send. */
 const DEFAULT_CAP = 100
@@ -324,68 +323,53 @@ export default function CalendarSync(this: any, options: any) {
 
       // C10: ONE SYNC AT A TIME PER CONFERENCE. Concurrent syncs are the other
       // way duplicates appear - two runs both read "no link", both create.
+      //
+      // TWO HALVES, and both are needed. The advisory lock makes the
+      // check-and-create below atomic within a process; the RUN ROW is what
+      // survives a restart, and "one sync at a time" has to survive one.
       const lock = await this.post('sys:calendar,acquire:lock', { top_id: plan.top_id })
       if (!lock.ok) return { ...plan, ok: false, why: 'sync-in-progress' }
 
       try {
-        return await runPlan.call(this, plan, lock.token)
+        const live = (await this.entity('sys/calendar_run')
+          .list$({ top_id: plan.top_id, state: 'running' })).length
+        if (0 < live) return { ...plan, ok: false, why: 'sync-in-progress' }
+
+        // Enqueue and return. The sending happens in the queue, not in this
+        // request (SPEC 10.6) - which is what makes the run observable per
+        // segment and resumable after a crash.
+        const top = await this.entity('cag/fixture').load$(plan.top_id)
+        const enq = await this.post('sys:calendar,enqueue:run', {
+          plan, org_id: String((top && top.org_id) || ''),
+        })
+        return { ok: true, top_id: plan.top_id, counts: plan.counts, run_id: enq.run_id }
       }
       finally {
-        // ALWAYS. A run that throws must not leave the conference locked out
-        // of syncing until the TTL expires.
+        // ALWAYS. A failure here must not leave the conference locked out of
+        // syncing until the TTL expires.
         await this.post('sys:calendar,release:lock',
           { top_id: plan.top_id, token: lock.token })
       }
     })
 
-
-  async function runPlan(this: any, plan: SyncPlan, run_id: string) {
-      const accounts = new Map((await this.entity('sys/calendar_account')
-        .list$({})).map((r: any) => [r.id, r.data$(false)]))
-
-      const results: any[] = []
-      for (const item of plan.items) {
-        if ('noop' === item.action) {
-          results.push({ ...brief(item), state: 'noop' })
-          continue
-        }
-        const account = accounts.get(item.account_id)
-        // run_id is what the outbound cap counts against (C5).
-        const out = await this.post('sys:calendar,send:invite', { item, account, run_id })
-
-        if (!out.ok) {
-          // Record the failure ON THE LINK and keep going: one provider
-          // rejecting must not abandon the other segments (C9).
-          if (item.link_id) {
-            // C7 at the sink. The safety wrap already redacted this, and it
-            // is applied again here rather than trusted: the marker matches
-            // nothing, so scrubbing twice is free, and a future caller that
-            // bypasses the wrap still cannot write a token into a row that
-            // anyone who can read the org can read.
-            const row = await this.entity('sys/calendar_link').load$(item.link_id)
-            if (row) await row.data$({ last_error: redactReason(out.why) }).save$()
-          }
-          results.push({ ...brief(item), state: 'failed', why: out.why })
-          continue
-        }
-
-        await writeLink.call(this, plan.top_id, item, out)
-        results.push({ ...brief(item), state: 'sent' })
-      }
-
-      return { ok: true, top_id: plan.top_id, counts: plan.counts, results }
-  }
-
-
-  function brief(item: PlanItem) {
-    return {
-      action: item.action, fixture_id: item.fixture_id,
-      account_id: item.account_id, uid: item.uid, title: item.title,
-    }
-  }
+    // Write the ledger for one settled job. Split out of the run loop because
+    // the QUEUE is what settles jobs now, and the ledger write has to happen
+    // wherever that is - never twice, and never in the caller.
+    .message('record:link', { top_id: String, item: Object, out: Object }, async function (
+      this: any, msg: any,
+    ) {
+      await writeLink.call(this, msg.top_id, msg.item, msg.out, msg.org_id)
+      return { ok: true }
+    })
 
   /** Upsert by identity, exactly as the upstream outbox does (SPEC 10.1). */
-  async function writeLink(this: any, top_id: string, item: PlanItem, out: any) {
+  async function writeLink(
+    this: any, top_id: string, item: PlanItem, out: any, org_id?: string,
+  ) {
+    // A no-op reached no provider, so there is nothing to record. Writing here
+    // would bump t_m on a link nothing happened to.
+    if (out && true === out.noop) return
+
     const ent = this.entity('sys/calendar_link')
 
     if ('cancel' === item.action) {
@@ -400,9 +384,10 @@ export default function CalendarSync(this: any, options: any) {
       return
     }
 
-    const fields = {
+    const fields: any = {
       fixture_id: item.fixture_id,
       top_id,
+      ...(null == org_id || '' === org_id ? {} : { org_id }),
       account_id: item.account_id,
       uid: item.uid,
       sequence: item.sequence,

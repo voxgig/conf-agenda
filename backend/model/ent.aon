@@ -253,6 +253,67 @@ sys: calendar_link: {
 }
 
 
+## A sync RUN. Sync goes through a queue, not the request (SPEC 10.6), so the
+## organiser sees per-segment state rather than a spinner - and a crash
+## resumes instead of starting over.
+##
+## An active run for a top fixture IS the durable half of C10: the in-process
+## advisory lock makes the check-and-create atomic, but only a row survives a
+## restart, and "one sync at a time per conference" has to survive one.
+sys: calendar_run: {
+  ux: { label: 'top_id' }
+  field: {
+    id: { label: 'ID' kind: String }
+    org_id: { label: 'Org' kind: String ref: 'sys/org' valid: Skip }
+    top_id: { label: 'Conference' kind: String ref: 'cag/fixture' valid: Skip }
+    ## running | done | aborted
+    state: { label: 'State' kind: String valid: Skip }
+    t_start: { label: 'Started' kind: Number valid: Skip }
+    t_end: { label: 'Ended' kind: Number valid: Skip }
+    ## Counts by action, as a frozen JSON string - the same reasoning as
+    ## cag/snapshot.agenda_json: bytes are what a store preserves.
+    counts_json: { label: 'Counts' kind: String valid: 'Empty' }
+    t_c: { label: 'Created' kind: Number valid: Skip }
+    t_m: { label: 'Modified' kind: Number valid: Skip }
+  }
+  valid: '$$': 'Open'
+}
+
+
+## ONE JOB PER (segment fixture x account). That granularity is the point: a
+## single provider rejection is isolated and retriable without touching the
+## other speakers (SPEC 10.6, C9).
+sys: calendar_job: {
+  ux: { label: 'uid' }
+  field: {
+    id: { label: 'ID' kind: String }
+    org_id: { label: 'Org' kind: String ref: 'sys/org' valid: Skip }
+    run_id: { label: 'Run' kind: String ref: 'sys/calendar_run' valid: Skip }
+    top_id: { label: 'Conference' kind: String ref: 'cag/fixture' valid: Skip }
+    fixture_id: { label: 'Segment' kind: String valid: Skip }
+    account_id: { label: 'Account' kind: String ref: 'sys/calendar_account' valid: Skip }
+    ## create | update | cancel
+    action: { label: 'Action' kind: String valid: Skip }
+    uid: { label: 'UID' kind: String valid: Skip }
+    ## The decided PlanItem, frozen at enqueue time. The job carries what was
+    ## confirmed (C4), so a plan that changes mid-run cannot quietly alter what
+    ## the organiser agreed to send.
+    item_json: { label: 'Item' kind: String valid: 'Empty' }
+    ## pending | sent | noop | failed | abandoned
+    state: { label: 'State' kind: String valid: Skip }
+    attempts: { label: 'Attempts' kind: Number valid: Skip }
+    ## Earliest next try. Backoff is exponential WITH JITTER, so a provider
+    ## that rejected a hundred jobs at once does not get all hundred retries
+    ## back in the same instant.
+    next_at: { label: 'Next attempt' kind: Number valid: Skip }
+    last_error: { label: 'Last error' kind: String valid: 'Empty' }
+    t_c: { label: 'Created' kind: Number valid: Skip }
+    t_m: { label: 'Modified' kind: Number valid: Skip }
+  }
+  valid: '$$': 'Open'
+}
+
+
 cag: snapshot: {
   ## Without this the app picks the first non-ref String field in key order -
   ## `agenda_json` - and renders the entire published document as the page

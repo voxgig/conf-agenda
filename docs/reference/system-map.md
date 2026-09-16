@@ -42,7 +42,9 @@ flowchart TB
     end
     subgraph zone_sys[zone sys]
       sys_calendar_account[calendar_account]
+      sys_calendar_job[calendar_job]
       sys_calendar_link[calendar_link]
+      sys_calendar_run[calendar_run]
       sys_login[login]
       sys_user[user]
     end

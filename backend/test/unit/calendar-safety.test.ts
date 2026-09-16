@@ -50,6 +50,21 @@ async function makeSeneca(opts: any = {}) {
 }
 
 
+/**
+ * apply:sync ENQUEUES; the queue sends (SPEC 10.6). Every assertion about
+ * provider calls therefore has to drain the run - which is also the point:
+ * the tested path is the real one, not a shortcut around the queue.
+ */
+async function applyAndDrain(seneca: any, fixture_id: string) {
+  const out = await seneca.post('sys:calendar,apply:sync', { fixture_id, confirm: true })
+  if (out.ok && out.run_id) {
+    await seneca.post('sys:calendar,drain:run', { run_id: out.run_id })
+    return { ...out, ...(await seneca.post('sys:calendar,get:run', { run_id: out.run_id })) }
+  }
+  return out
+}
+
+
 describe('C7 - the redactor', () => {
   // A unit test, because this is the one piece that has to hold for input
   // nobody anticipated. The threat is not a developer logging a secret on
@@ -106,7 +121,7 @@ describe('the safety chain sits above the dispatch', () => {
 
   test('C2 - the ledger gate refuses a stale send posted DIRECTLY', async () => {
     const seneca = await makeSeneca()
-    await seneca.post('sys:calendar,apply:sync', { fixture_id: 'demo_conf', confirm: true })
+    await applyAndDrain(seneca, 'demo_conf')
 
     const link = (await seneca.entity('sys/calendar_link').list$({ state: 'active' }))
       .map((r: any) => r.data$(false))[0]
@@ -158,7 +173,7 @@ describe('the safety chain sits above the dispatch', () => {
 
   test('C7 - and it reaches the LEDGER ROW, not just the return value', async () => {
     const seneca = await makeSeneca()
-    await seneca.post('sys:calendar,apply:sync', { fixture_id: 'demo_conf', confirm: true })
+    await applyAndDrain(seneca, 'demo_conf')
 
     // Break the provider with a leaky error, then force a real update.
     const seg = await seneca.entity('cag/fixture').load$('demo_open')
@@ -166,14 +181,15 @@ describe('the safety chain sits above the dispatch', () => {
     await seg.save$()
     fakeState.failNext = 'update'
 
-    await seneca.post('sys:calendar,apply:sync', { fixture_id: 'demo_conf', confirm: true })
+    await applyAndDrain(seneca, 'demo_conf')
 
-    const errored = (await seneca.entity('sys/calendar_link').list$({}))
+    // The queue records a failure on the JOB - that is the unit of retry.
+    const errored = (await seneca.entity('sys/calendar_job').list$({}))
       .map((r: any) => r.data$(false))
-      .filter((l: any) => l.last_error)
+      .filter((j: any) => j.last_error)
     assert.ok(0 < errored.length, 'the failure was not recorded at all (C9)')
-    for (const l of errored) {
-      assert.ok(!/ya29\.|Bearer /.test(String(l.last_error)),
+    for (const j of errored) {
+      assert.ok(!/ya29\.|Bearer /.test(String(j.last_error)),
         'a row anyone who can read the org can read carries a token')
     }
 
@@ -214,15 +230,13 @@ describe('C10 - one sync at a time per conference', () => {
     const lock = await seneca.post('sys:calendar,acquire:lock', { top_id: 'demo_conf' })
     assert.equal(lock.ok, true)
 
-    const out = await seneca.post('sys:calendar,apply:sync',
-      { fixture_id: 'demo_conf', confirm: true })
+    const out = await applyAndDrain(seneca, 'demo_conf')
     assert.equal(out.ok, false)
     assert.equal(out.why, 'sync-in-progress')
     assert.equal(fakeState.calls.length, 0, 'a concurrent run reached the provider')
 
     await seneca.post('sys:calendar,release:lock', { top_id: 'demo_conf', token: lock.token })
-    const after = await seneca.post('sys:calendar,apply:sync',
-      { fixture_id: 'demo_conf', confirm: true })
+    const after = await applyAndDrain(seneca, 'demo_conf')
     assert.equal(after.ok, true, 'the lock was never released')
 
     await seneca.close()
@@ -232,7 +246,7 @@ describe('C10 - one sync at a time per conference', () => {
     const seneca = await makeSeneca()
 
     fakeState.failNext = 'create'
-    await seneca.post('sys:calendar,apply:sync', { fixture_id: 'demo_conf', confirm: true })
+    await applyAndDrain(seneca, 'demo_conf')
 
     // A run that leaves the conference locked would lock it out until the TTL.
     const lock = await seneca.post('sys:calendar,acquire:lock', { top_id: 'demo_conf' })

@@ -98,13 +98,47 @@ first holds it is refused before any provider call.
 no `Map`. The message shape is what survives — `acquire:lock` / `release:lock` become a Durable
 Object behind the same patterns, which is the point of putting it behind messages at all.
 
+## The queue (§10.6)
+
+`apply:sync` **enqueues and returns**; `work:queue` sends. One job per (segment × account), and
+that granularity is the point: a provider rejecting one speaker's invitation does not touch the
+other thirty-nine, and retrying it does not re-send theirs. A run-level retry would do both.
+
+**Jobs are rows, not promises.** A run that survives a restart is the difference between "resume
+where it stopped" and "start again", and starting again is how a crash becomes a second invitation.
+
+**The job carries the item that was confirmed**, frozen at enqueue time. The organiser confirmed a
+specific plan (C4); recomputing it at execution time could send something they never agreed to
+because somebody saved a fixture in between. A test retitles a session after confirmation and
+asserts the queued job still sends the old title — and that the change is picked up by the *next*
+plan, so nothing is lost.
+
+**Backoff is exponential with jitter, and both the clock and the random source are injected.** The
+jitter is not decoration: a provider that rejected a hundred jobs in one tick would otherwise get
+all hundred retries back in the same instant, which is how a rate limit becomes an outage. A
+backoff test on the wall clock fails on a slow machine, and a jitter test on `Math.random` is a
+coin flip that eventually lands wrong in CI.
+
+`drain:run` works a run until nothing is **due** — not until nothing is pending. Draining past a
+job's `next_at` would defeat the backoff it was just given. It is the local monolith's stand-in for
+a scheduler; Stage 4 replaces the *caller* with cron, not the message.
+
+**Two sinks for a failure, on purpose.** The job records every attempt, because the job is the unit
+of retry. When a job is finally *abandoned* the reason is stamped on the **link** as well — a job
+dies with its run, and "this segment's invitation never went" must not disappear with the run that
+discovered it.
+
+**C10 now has two halves.** The advisory lock makes the check-and-create atomic within a process;
+an active **run row** is what survives a restart, and "one sync at a time per conference" has to
+survive one.
+
 ## Not built yet, and deliberately
 
-- **`apply:sync` has no `aim:` surface.** Applying reaches real speakers. The confirmed surface
-  lands with the queue (§10.6) and per-segment progress, not before. Only `aim:cag,plan:sync` is
-  declared, and it is read-only.
-- **The queue.** §10.6 wants one job per (segment × account) with backoff and jitter, so a single
-  failure is isolated and retriable. Today `apply:sync` runs the plan in a loop, in the request.
+- **`apply:sync` has no `aim:` surface.** Applying reaches real speakers. Only `aim:cag,plan:sync`
+  is declared, and it is read-only. The confirmed surface lands with the sync-plan and sync-run
+  screens (mockups `SyncPlan.dc.html`, `SyncRun.dc.html`).
+- **No scheduler.** `drain:run` has to be called; nothing ticks on its own yet. The plugin's `tick`
+  locally and Cloudflare cron deployed (§10.6).
 - **RSVPs.** The fake answers `not-supported`, which is the honest answer — a silent success would
   read as "nobody has responded yet" forever.
 - **Any real provider.** Google is last, on purpose.
