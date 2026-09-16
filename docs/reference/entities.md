@@ -94,6 +94,33 @@ erDiagram
     Number t_c
     Number t_m
   }
+  sys_calendar_account {
+    String calendar_id
+    String id
+    String name
+    String org_id FK
+    String provider
+    String secret_ref
+    String status
+    Number t_c
+    Number t_m
+  }
+  sys_calendar_link {
+    String account_id FK
+    String content_hash
+    String fixture_id FK
+    String id
+    String last_error
+    Number last_sync
+    String org_id FK
+    String provider_event_id
+    Number sequence
+    String state
+    Number t_c
+    Number t_m
+    String top_id FK
+    String uid
+  }
   sys_login {
     String id
   }
@@ -113,6 +140,11 @@ erDiagram
   cag_fixture ||--o{ cag_snapshot : "top_id"
   sys_org ||--o{ cag_speaker : "org_id"
   sys_org ||--o{ cag_track : "org_id"
+  sys_org ||--o{ sys_calendar_account : "org_id"
+  sys_calendar_account ||--o{ sys_calendar_link : "account_id"
+  cag_fixture ||--o{ sys_calendar_link : "fixture_id"
+  sys_org ||--o{ sys_calendar_link : "org_id"
+  cag_fixture ||--o{ sys_calendar_link : "top_id"
 ```
 
 (Entity ids are canons with `/` shown as `_`.)
@@ -127,5 +159,7 @@ erDiagram
 | `cag/snapshot` | agenda_json, id, org_id, published_at, schema_version, slug, t_c, t_m, top_id | org_id → sys/org<br>top_id → cag/fixture | generic admin |
 | `cag/speaker` | bio, email, id, name, org_id, org_name, photo, t_c, t_m, w_site | org_id → sys/org | generic admin |
 | `cag/track` | color, desc, id, name, order, org_id, t_c, t_m | org_id → sys/org | generic admin |
+| `sys/calendar_account` | calendar_id, id, name, org_id, provider, secret_ref, status, t_c, t_m | org_id → sys/org | generic admin |
+| `sys/calendar_link` | account_id, content_hash, fixture_id, id, last_error, last_sync, org_id, provider_event_id, sequence, state, t_c, t_m, top_id, uid | account_id → sys/calendar_account<br>fixture_id → cag/fixture<br>org_id → sys/org<br>top_id → cag/fixture | generic admin |
 | `sys/login` | id | — | generic admin |
 | `sys/user` | id | — | generic admin |

@@ -180,6 +180,79 @@ cag: appearance: {
 ##
 ## id is '<org_id>:<slug>', so the public read is a load by id.
 
+## ---------------------------------------------------------------------------
+## THE SYNC LEDGER (SPEC 10.3). `sys/` and not `cag/`, because this is the
+## extension of @seneca/calendar rather than conference data - it is destined
+## for senecajs/Calendar, and the namespace is what makes that a move rather
+## than a rename (SPEC 10.1).
+
+## A connected calendar. Carries a SECRET NAME, never token material (C7):
+## the value lives in sekreto and exists only at the SDK transport seam.
+sys: calendar_account: {
+  ux: { label: 'name' }
+  field: {
+    id: { label: 'ID' kind: String }
+    org_id: { label: 'Org' kind: String ref: 'sys/org' valid: Skip }
+    name: { label: 'Name' kind: String valid: 'Min(1).Max(200)' }
+    ## google | microsoft | caldav | zoho | ics | fake
+    provider: { label: 'Provider' kind: String valid: Skip }
+    ## The provider's own id for the chosen calendar.
+    calendar_id: { label: 'Calendar' kind: String valid: Skip }
+    ## A sekreto NAME. If a token ever appears in this row, C7 has been
+    ## broken - the row is readable by anything that can read the org.
+    secret_ref: { label: 'Secret' kind: String valid: Skip }
+    status: { label: 'Status' kind: String valid: Skip }
+    t_c: { label: 'Created' kind: Number valid: Skip }
+    t_m: { label: 'Modified' kind: Number valid: Skip }
+  }
+  valid: '$$': 'Open'
+}
+
+
+## ONE ROW PER (segment fixture x account). Generalises the upstream outbox's
+## discipline - one row per identity, upserted in place - from notification
+## stages to provider events (SPEC 10.1, 10.3).
+##
+## NEVER DELETED. A cancelled link is a tombstone, and the tombstone is what
+## stops a resurrection creating a duplicate.
+sys: calendar_link: {
+  ux: { label: 'uid' }
+  field: {
+    id: { label: 'ID' kind: String }
+    org_id: { label: 'Org' kind: String ref: 'sys/org' valid: Skip }
+    fixture_id: { label: 'Segment' kind: String ref: 'cag/fixture' valid: Skip }
+    ## Denormalised ON PURPOSE. Reconciliation scopes by top_id rather than by
+    ## walking the live tree, so links whose fixtures have vanished are still
+    ## found and still cancelled - a resolver that discovers events through
+    ## surviving parent_id chains loses exactly the events whose ancestors
+    ## were deleted, which is the C8 failure. An orphaned event is a meeting a
+    ## speaker still turns up to.
+    top_id: { label: 'Conference' kind: String ref: 'cag/fixture' valid: Skip }
+    account_id: { label: 'Account' kind: String ref: 'sys/calendar_account' valid: Skip }
+    provider_event_id: { label: 'Provider event' kind: String valid: Skip }
+    ## Stable iCal UID: <fixture-id>@<top-slug>. Same UID forever, so a change
+    ## is an update in the speaker's calendar and never a second entry (C3).
+    uid: { label: 'UID' kind: String valid: Skip }
+    sequence: { label: 'Sequence' kind: Number valid: Skip }
+    ## Hash of the EventSpec - and the spec covers ONLY what a speaker would
+    ## notice about a live event. See src/lib/eventspec.ts for why that
+    ## narrowness is load-bearing.
+    content_hash: { label: 'Hash' kind: String valid: Skip }
+    ## active | cancelled
+    state: { label: 'State' kind: String valid: Skip }
+    last_sync: { label: 'Last sync' kind: Number valid: Skip }
+    ## Empty, not Skip: the generated validator rejects BOTH an explicit null
+    ## and an empty string in a plain String field, and "no error" has to be
+    ## expressible - otherwise a link that once failed carries that failure
+    ## for ever, and the console shows an error against a link that is fine.
+    last_error: { label: 'Last error' kind: String valid: 'Empty' }
+    t_c: { label: 'Created' kind: Number valid: Skip }
+    t_m: { label: 'Modified' kind: Number valid: Skip }
+  }
+  valid: '$$': 'Open'
+}
+
+
 cag: snapshot: {
   ## Without this the app picks the first non-ref String field in key order -
   ## `agenda_json` - and renders the entire published document as the page

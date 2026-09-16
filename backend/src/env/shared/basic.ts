@@ -6,6 +6,8 @@ import { entity } from '@voxgig/util'
 import Model from '../../../model/model.json'
 
 import FixtureTree from '../../concern/FixtureTree/FixtureTree'
+import CalendarSync from '../../concern/CalendarSync/CalendarSync'
+import FakeProvider from '../../concern/CalendarSync/FakeProvider'
 
 
 // Core seneca setup shared by the local runner and (optionally) tests.
@@ -49,6 +51,7 @@ const base = {
       },
     },
     fixturetree: {},
+    calendarsync: {},
     reload: {},
 
     // Access control, enforced by @seneca/owner at the entity layer rather
@@ -137,6 +140,17 @@ function basic(seneca: any, options?: any) {
   // never imported by a service. No `aim:` surface, so never gateway- or
   // API-reachable.
   seneca.use(FixtureTree, deep(base.options.fixturetree, options.fixturetree))
+
+  // The sync ledger and reconciliation (SPEC 10.3). Answers sys:calendar,*
+  // rather than concern:* because those are the patterns SPEC 10.2 names and
+  // they are destined for senecajs/Calendar upstream. No aim: surface either
+  // way, so nothing here is gateway-reachable.
+  seneca.use(CalendarSync, deep(base.options.calendarsync, options.calendarsync))
+
+  // The recording provider. Loaded ALWAYS, not only in tests: the ledger is
+  // proven against it before any real provider exists, and Stage 1 has no
+  // other provider to dispatch to. It sends nothing anywhere.
+  seneca.use(FakeProvider)
 
   return seneca
 }

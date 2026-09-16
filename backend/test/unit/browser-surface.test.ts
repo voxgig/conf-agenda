@@ -72,3 +72,32 @@ describe('browser surface', () => {
     }
   })
 })
+
+describe('the calendar surface', () => {
+  // This subsystem emails real people, so what is NOT reachable matters more
+  // than what is. The safety rules (C4, C5, C10) sit in sys:calendar, which
+  // has no aim: surface at all - the only way to reach sync is through the one
+  // read-only proxy below.
+
+  test('known-PRESENT: the sync PLAN is browser-reachable', () => {
+    assert.ok(patterns().includes('aim:web,on:cag,plan:sync'))
+  })
+
+  test('known-ABSENT: nothing that SENDS is reachable from anywhere', () => {
+    for (const p of patterns()) {
+      // apply:sync reaches real speakers. It is not declared on any surface
+      // yet - it lands with the lock (C10) and the queue, confirmed, or not at
+      // all. send:invite and the provider verbs are lower still.
+      assert.ok(!/apply:sync/.test(p), 'a sending message is declared: ' + p)
+      assert.ok(!/send:invite/.test(p), 'the send gate is declared: ' + p)
+      assert.ok(!/:extevent/.test(p), 'a provider verb is declared: ' + p)
+    }
+  })
+
+  test('known-ABSENT: sys:calendar is not an aim: namespace', () => {
+    for (const p of patterns()) {
+      assert.ok(!/^aim:calendar/.test(p), p)
+      assert.ok(!/sys:calendar/.test(p), 'sys:calendar leaked onto a declared surface: ' + p)
+    }
+  })
+})
