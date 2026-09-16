@@ -23,7 +23,9 @@ class VgShell extends HTMLElement {
     this.collapsed = false
 
     this.renderFrame()
-    await this.loadProjects()
+    if (this.hasProjects()) {
+      await this.loadProjects()
+    }
 
     // Land on projects if present, else the first entity.
     const ents = Model.entities()
@@ -36,13 +38,22 @@ class VgShell extends HTMLElement {
     // created). Guard with isConnected: bus.sub has no auto-unsubscribe, so a
     // torn-down shell (sign-out→in re-mounts it) must not act on stale events.
     onEvent('projects-changed', () => {
-      if (this.isConnected) {
+      if (this.isConnected && this.hasProjects()) {
         this.loadProjects()
       }
     })
   }
 
   // ---- data ----
+
+  // The project picker is part of the generated shell, but `proj/project` is
+  // an entity a project may simply not have - conf-agenda does not. Listing a
+  // canon the model never declared fetches nothing and leaves a permanently
+  // empty "(no projects)" dropdown in the top bar, so the whole path is
+  // skipped rather than the component forked.
+  hasProjects() {
+    return Model.entities().some((e) => 'proj/project' === e.canon)
+  }
 
   async loadProjects() {
     this.projects = await Api.list('proj/project')
@@ -102,11 +113,12 @@ class VgShell extends HTMLElement {
       <div class="vg-shell${this.collapsed ? ' vg-collapsed' : ''}">
         <header class="vg-topbar">
           <button class="vg-icon-btn" id="vg-toggle" title="Menu">☰</button>
-          <span class="vg-brand">📋 ConfAgenda</span>
+          <span class="vg-brand"><span class="vg-brand-mark"></span>conf-agenda</span>
+          ${this.hasProjects() ? `
           <div class="vg-project-picker">
             <label>Project</label>
             <select id="vg-project"></select>
-          </div>
+          </div>` : ''}
           <div class="vg-spacer"></div>
           ${Hooks.html('shell:topbar:right', { user: this.user })}
           <div class="vg-usermenu" id="vg-usermenu">
@@ -162,11 +174,14 @@ class VgShell extends HTMLElement {
       await bus.post('cmp:auth,signout:user')
     }
 
-    this.querySelector('#vg-project').onchange = (ev) => {
-      this.currentProjectId = ev.target.value
-      if ('entity' === this.view && Model.isProjectScoped(this.currentCanon)) {
-        this.admin.projectId = this.currentProjectId
-        this.admin.reload()
+    const proj = this.querySelector('#vg-project')
+    if (proj) {
+      proj.onchange = (ev) => {
+        this.currentProjectId = ev.target.value
+        if ('entity' === this.view && Model.isProjectScoped(this.currentCanon)) {
+          this.admin.projectId = this.currentProjectId
+          this.admin.reload()
+        }
       }
     }
 

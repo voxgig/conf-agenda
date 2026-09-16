@@ -74,7 +74,15 @@ Sign in as `alice@example.com` / `alice-pass-01`.
 
 ## The nine minutes
 
-Signed in, the sidebar has six items, alphabetical:
+**Before you sign in, pause on the page you are looking at.** It is light, with the voxgig red
+accent, the oversized hero and the patterned feature cards — because voxgig.com is light, and this
+is the marketing side of the house. The app behind it is dark, because the conf-agenda mockups in
+the spec are dark. Two grounds, one brand ramp, one set of tokens in the model.
+
+> "Both of those are the voxgig design language. The public page matches voxgig.com; the app
+> matches the mockups my spec ships. They are the same palette playing two roles."
+
+Then sign in. The sidebar has six items, alphabetical:
 
 > **Appearance · Fixture · Room · Snapshot · Speaker · Track**
 
@@ -100,8 +108,10 @@ Point at the **`invite`** column — `none` everywhere today.
 
 ### 2 · Fixture — the agenda grid (2 min)
 
-**The centrepiece.** This is the one custom screen, and it opens on **Tiny Conf 2027**: rooms
-across, time down, a 30-minute ladder, four sessions.
+**The centrepiece.** This is the one custom screen. Rooms across, time down, sessions as cards
+with their track's colour along the top. It opens on **Tiny Conf 2027** (four sessions, two rooms);
+the picker beside the title switches to **Demo Conf 2027**, which is the two-day one — start there,
+it has three rooms, three tracks and a cancelled session, and it looks like the mockup.
 
 First, what a fixture *is* — this is the idea the whole product rests on:
 
@@ -126,12 +136,13 @@ Then drive it from the keyboard, because that is the product's claim:
 > "Every action is a key. PLATFORM §5.2 — `j`/`k`/`Enter` mean the same thing in both of our apps,
 > so you learn the vocabulary once."
 
-Now point at the **crimson-tinted cell**: two sessions in one room at one time, stacked in the
-same cell rather than one quietly hiding the other.
+Switch to **Tiny Conf** and point at the **crimson-ruled block**: two sessions in one room at one
+time, both cards visible inside one tinted container.
 
-> "That is a room double-booking, and it is *rendered* rather than swallowed. An earlier version
-> of this grid skipped the covered slot and the second session vanished — the bug hid exactly the
-> thing the product exists to find."
+> "That is a room double-booking, and it is *rendered* rather than swallowed. The grid used to be
+> an HTML table, and a table's rowspan bookkeeping once hid the second session completely — the bug
+> hid exactly the thing the product exists to find. It is a CSS grid now: cards are placed by
+> coordinate, so nothing can be covered by anything else."
 
 One more, if they are paying attention: the keynote ends at 10:00 and the next session starts at
 10:00, same room, and that is **not** flagged.
@@ -141,11 +152,15 @@ One more, if they are paying attention: the keynote ends at 10:00 and the next s
 
 **Say it is read-only.** Editing is Stage 2. Do not let anyone discover that by dragging.
 
-**If someone asks for the two-day conference:** the grid opens the first conference by id and
-there is no picker yet. The message already takes one (`aim:web,on:cag,load:tree` with a
-`fixture_id`, and it returns the list of conferences) — only the control is missing. The two-day
-programme is what the embed, the feeds and the agent tool are all showing later in this demo, so
-it is two minutes away rather than absent.
+**Two more things in the header**, both computed rather than decorative:
+
+- **Day pills.** Demo Conf has real `kind: 'day'` fixtures, so the pills are the tree, not a date
+  grouping invented by the view. Tiny Conf has none and gets no pills — a day is an ordinary
+  fixture, not an entity, so a conference may simply not have any.
+- **`Published 6m ago · 6 sessions`**, or **`Not published`** on Tiny. The timestamp is the
+  snapshot's; the change count is segments edited since it was written. A conference that has never
+  published says so rather than showing a zero — "no changes" and "never published" are different
+  facts.
 
 ### 3 · Room — where things happen (20s)
 
@@ -378,6 +393,12 @@ ledger and the reconciliation loop get built against a fake provider that record
 the outbound cap, the redaction and the dedup gate layered above the dispatch, *before* a real
 provider exists. Google comes last, once the safety machinery already holds.
 
+**"Where did the design come from?"**
+voxgig.com's own stylesheet, read rather than eyeballed — the brand ramp, the type scale, the
+spacing, the 4px radius, the eyebrow labels, the patterned cards. Nunito is self-hosted the same
+way the site self-hosts it. The app screens follow `Main.dc.html` from the spec's mockups, which is
+their acceptance criteria.
+
 **"Why not React?"**
 PLATFORM §5.3. The embed goes on other people's sites; a framework would arrive with it. 3.2KB, no
 dependencies, works in any page.
@@ -403,8 +424,6 @@ browser.
   require. Written up in `sdk/README.md`.
 - **Multi-tenancy as a feature.** Org scoping is real and tested, but there is no self-serve signup
   and no tenant switcher.
-- **Switching conferences in the grid.** No picker — it opens the first by id (Tiny Conf). The
-  message takes a `fixture_id` already; the control is not built.
 - **Cloudflare.** The spike says it works (`docs/decisions/cloudflare-spike.md`); nothing is
   deployed. Stage 4.
 

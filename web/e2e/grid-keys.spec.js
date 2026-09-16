@@ -67,3 +67,39 @@ test('? toggles the shortcut list', async ({ page }) => {
   await page.keyboard.press('?')
   await expect(page.locator('[data-help]')).toBeHidden()
 })
+
+// The focus ring and the detail panel must describe the SAME session.
+//
+// This exists because they did not. Cards are appended to the CSS grid room by
+// room, so DOM order is room-major, while j/k walk the sessions in time order.
+// paintFocus compared DOM POSITION against focusIndex, which agrees only when
+// every session is in one room - which is exactly what the single-room default
+// conference looks like, so all three tests above stayed green while the ring
+// sat on one card and the panel described another.
+//
+// So it switches to the multi-room conference on purpose. A test that only
+// ever sees the easy fixture is the vacuously-green failure this project has
+// already been bitten by once.
+test('on a multi-room conference, the ring and the panel agree', async ({ page }) => {
+  await signIn(page)
+
+  const picker = page.locator('.ca-confsel')
+  await expect(picker).toHaveCount(1)
+  const values = await picker.locator('option').evaluateAll((os) => os.map((o) => o.value))
+  expect(values.length).toBeGreaterThan(1)
+
+  const current = await picker.inputValue()
+  await picker.selectOption(values.find((v) => v !== current))
+  await page.waitForTimeout(500)
+
+  // More than one room, or this asserts nothing.
+  expect(await page.locator('.ca-roomh').count()).toBeGreaterThan(1)
+
+  // Walk a few sessions; at every step the ring and the panel must match.
+  for (let i = 0; i < 4; i++) {
+    await page.keyboard.press('j')
+    await page.keyboard.press('Enter')
+    const focused = await focusTitle(page)
+    await expect(page.locator('[data-detail] h3')).toHaveText(focused)
+  }
+})

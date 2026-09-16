@@ -1,8 +1,16 @@
-// Todo SPA entry: web components on a Seneca service bus. No framework —
+// conf-agenda SPA entry: web components on a Seneca service bus. No framework —
 // each component is a custom element; all data flows are bus messages, with
 // aim:* travelling to the backend gateway via the seneca-browser transport.
 // The UI is model-driven (see model.js): navigation, forms and entity
 // relationships are generated from /model.json.
+
+// The typeface, self-hosted the way voxgig.com self-hosts it - no CDN, no
+// external request, works offline. `wght.css` is the variable normal-weight
+// face across all subsets; each @font-face carries a unicode-range, so a
+// browser fetches only the subset it needs (latin ~38KB, latin-ext another
+// ~35KB for names like Kovac and Fontaine). Italics are not imported: the
+// design does not use them.
+import '@fontsource-variable/nunito/wght.css'
 
 import './theme.css'
 import './style.css'

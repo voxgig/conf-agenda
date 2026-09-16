@@ -64,20 +64,25 @@ table { border-collapse: collapse; width: 100%; min-width: 480px; }
 
 caption {
   text-align: left;
-  padding: 0 0 10px;
-  font-weight: 600;
-  font-size: 15px;
+  padding: 0 0 12px;
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.02em;
 }
 
+/* Horizontal rules only. Vertical rules are what make a schedule read as a
+   spreadsheet rather than as a programme. */
 th, td {
-  border: 1px solid var(--ca-border);
-  padding: 6px 8px;
+  border: 0;
+  border-bottom: 1px solid var(--ca-border);
+  padding: 7px 9px;
   text-align: left;
   vertical-align: top;
 }
 
-thead th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
-  color: var(--ca-muted); border-bottom: 1px solid var(--ca-border-strong); }
+thead th { font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--ca-muted);
+  border-bottom: 1px solid var(--ca-border-strong); }
 
 th[scope='row'] {
   font-family: var(--ca-mono);
@@ -90,9 +95,36 @@ th[scope='row'] {
 
 td.empty { background: transparent; }
 
-.session { background: var(--ca-surface); border-radius: var(--ca-radius); padding: 2px 0; }
-.title { font-weight: 600; }
+/* A session card, on the same lines as the app's - the voxgig product
+   language: a surface, a hairline, and the organiser's track colour as a 3px
+   strip along the top with a matching pill. The colour is DATA (each track
+   carries one in agenda.json), not theme, so it survives any host styling. */
+.session {
+  position: relative;
+  background: var(--ca-surface);
+  border-radius: var(--ca-radius);
+  padding: 2px 0;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.session .strip {
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  border-radius: var(--ca-radius) var(--ca-radius) 0 0;
+  background: var(--ca-track, var(--ca-border-strong));
+}
+.session:has(.strip) { padding-top: 7px; }
+.title { font-weight: 700; line-height: 1.25; }
 .meta { color: var(--ca-muted); font-size: 12px; }
+.chip {
+  align-self: flex-start;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.03em;
+  border-radius: 999px; padding: 1px 8px; margin-top: 1px;
+  background: color-mix(in srgb, var(--ca-track, var(--ca-muted)) 14%, transparent);
+  /* Mixed toward the body colour, so it lightens on a dark ground and darkens
+     on a light one - one rule, both schemes. */
+  color: color-mix(in srgb, var(--ca-track, var(--ca-muted)) 62%, var(--ca-fg));
+}
+.session.cancelled .strip { background: var(--ca-muted); }
+.session.cancelled { opacity: 0.62; }
 
 /* Cancelled sessions stay visible and keep their slot (SPEC 9.1). Colour is
    never the sole carrier of meaning - the strike-through and the word
