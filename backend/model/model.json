@@ -647,6 +647,11 @@
               "label": "Sequence",
               "valid": "Skip"
             },
+            "spec_json": {
+              "kind": "String",
+              "label": "Spec",
+              "valid": "Empty"
+            },
             "state": {
               "kind": "String",
               "label": "State",

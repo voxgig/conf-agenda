@@ -132,6 +132,45 @@ discovered it.
 an active **run row** is what survives a restart, and "one sync at a time per conference" has to
 survive one.
 
+## The sync plan screen
+
+`mockups/src/SyncPlan.dc.html`, reached with **`S`** from the agenda grid — it is something you do
+*to* a conference, not a place, so it is a keystroke rather than a nav item.
+
+**The screen exists to make the ledger visible.** Everything the reconciliation does is invisible
+by construction: its job is to *not* send things. Without this page "we never send a duplicate" is
+a claim an organiser has to take on faith. The most important element is the quiet grey row —
+*"6 further segments · hash unchanged · no-op · zero provider calls"* — which is C2 shown rather
+than claimed.
+
+Two things the backend had to grow for it:
+
+- **`sys/calendar_link.spec_json`.** The hash answers *whether* something changed; only the stored
+  spec answers *what*. An organiser told "hash differs" has been told nothing and will either apply
+  blindly or not at all. `diffSpecs()` turns it into "room + start time".
+- **Recipient names, not emails.** C6 is about the public path, but a screen that doesn't need an
+  address shouldn't carry one. `plan:sync` also returns the connected accounts — without their
+  `secret_ref`, since the object goes to a browser.
+
+**The Apply button is disabled and says why.** There is no `apply:sync` on the browser surface at
+all; applying reaches real speakers.
+
+### The dev seed replays a real history
+
+The screen can otherwise only ever show one thing: every row a `create` before the first sync,
+every row a `noop` after it. Neither shows what the plan is *for*. So the seed replays the sequence
+an organiser is actually in — **you synced, then things changed**:
+
+1. "Undo as a Contract" was **confirmed** when invitations went out. The fixture stores it cancelled
+   because that is where it ends up; the cancellation happened *after* the sync.
+2. Then it was cancelled — so the plan must cancel a provider event, and its hash is **unchanged**,
+   which is exactly the case a hash-first reconciliation would silently skip.
+3. A co-mentor joined the workshop: invisible in the grid, material to a calendar entry, so the plan
+   reads "attendee set".
+
+Each step is a real product event replayed in order, against the recording fake, and the end state
+of the fixture data is unchanged.
+
 ## Not built yet, and deliberately
 
 - **`apply:sync` has no `aim:` surface.** Applying reaches real speakers. Only `aim:cag,plan:sync`

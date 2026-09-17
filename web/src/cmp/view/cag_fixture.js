@@ -21,6 +21,7 @@
 // organiser must see drafts, which agenda.json deliberately never contains.
 
 import { bus } from '../../bus.js'
+import { renderSyncPlan } from './sync_plan.js'
 
 const STATUS_LABEL = { draft: 'Draft', confirmed: '', cancelled: 'Cancelled' }
 
@@ -95,6 +96,9 @@ class VgViewCagFixture extends HTMLElement {
     this.focusIndex = 0
     this.fixtureId = null
     this.dayId = null
+    // 'grid' | 'sync'. The sync plan is one keystroke away rather than a nav
+    // item, because it is a thing you do TO a conference, not a place.
+    this.mode = 'grid'
     this.onKey = this.onKey.bind(this)
   }
 
@@ -150,8 +154,20 @@ class VgViewCagFixture extends HTMLElement {
   }
 
   onKey(ev) {
+    if ('sync' === this.mode) {
+      if ('Escape' === ev.key) { ev.preventDefault(); this.showGrid() }
+      return
+    }
+
     const list = this.sessions
     if (0 === list.length) return
+
+    // S: the sync plan. Read-only and it sends nothing - see sync_plan.js.
+    if ('S' === ev.key) {
+      ev.preventDefault()
+      this.showSync()
+      return
+    }
 
     // Cmd-K/Ctrl-K FIRST. The modifier check has to come before the bare
     // 'k' case, because ev.key is still 'k' when the modifier is held - test
@@ -181,6 +197,26 @@ class VgViewCagFixture extends HTMLElement {
     }
     ev.preventDefault()
     this.paintFocus()
+  }
+
+  showGrid() {
+    this.mode = 'grid'
+    this.render()
+    this.focus()
+  }
+
+  async showSync() {
+    const r = await bus.post({ aim: 'web', on: 'cag', plan: 'sync', fixture_id: this.fixtureId })
+    if (!r || !r.ok) {
+      // Say which failure it was. "Could not load" covers a missing
+      // conference and a broken backend equally badly.
+      this.replaceChildren(el('div', { class: 'vg-entity' }, [
+        el('p', { class: 'vg-muted', text: 'The sync plan could not be built: ' + ((r && r.why) || 'unknown') }),
+      ]))
+      return
+    }
+    this.mode = 'sync'
+    renderSyncPlan(this, r, () => this.showGrid())
   }
 
   paintFocus() {
@@ -470,7 +506,7 @@ class VgViewCagFixture extends HTMLElement {
     })
 
     const help = el('div', { 'data-help': '', hidden: '', class: 'vg-help' }, [
-      el('p', { text: 'j / k  move · Enter  open · ?  this list · Cmd-K  commands' }),
+      el('p', { text: 'j / k  move · Enter  open · S  sync plan · ?  this list · Cmd-K  commands' }),
     ])
 
     // The mockup's footer hint bar. Only keys that WORK are listed: a hint for
@@ -484,6 +520,7 @@ class VgViewCagFixture extends HTMLElement {
       hint('j k', 'move'),
       hint('Enter', 'open'),
       hint('⌘K', 'commands'),
+      hint('S', 'sync plan'),
       el('div', { class: 'vg-spacer' }),
       hint('?', 'all shortcuts'),
     ])

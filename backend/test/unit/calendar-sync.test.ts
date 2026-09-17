@@ -348,3 +348,85 @@ describe('calendar sync: the ledger', () => {
     await seneca.close()
   })
 })
+
+describe('the plan an organiser reads', () => {
+  beforeEach(() => resetFake())
+
+  test('it says WHAT changed, not that a hash differs', async () => {
+    const seneca = await makeSeneca()
+    await applyAndDrain(seneca, 'demo_conf')
+
+    const seg = await seneca.entity('cag/fixture').load$('demo_open')
+    seg.room_id = 'dr_studio'
+    seg.t_start = (seg.t_start as number) + 15 * 60 * 1000
+    await seg.save$()
+
+    const plan = await seneca.post('sys:calendar,plan:sync', { fixture_id: 'demo_conf' })
+    const item = plan.items.find((i: any) => 'demo_open' === i.fixture_id)
+
+    assert.equal(item.action, 'update')
+    // "room + start time", not "hash-changed". An organiser shown a hash has
+    // been told nothing and will either apply blindly or not at all.
+    assert.deepEqual(item.changed.sort(), ['room', 'start time'])
+
+    await seneca.close()
+  })
+
+  test('a changed speaker reads as the attendee set', async () => {
+    const seneca = await makeSeneca()
+    await applyAndDrain(seneca, 'demo_conf')
+
+    const app = (await seneca.entity('cag/appearance').list$({ fixture_id: 'demo_open' }))[0]
+    app.speaker_id = 'ds_priya'
+    await app.save$()
+
+    const plan = await seneca.post('sys:calendar,plan:sync', { fixture_id: 'demo_conf' })
+    const item = plan.items.find((i: any) => 'demo_open' === i.fixture_id)
+    assert.deepEqual(item.changed, ['attendee set'])
+    assert.deepEqual(item.recipients, ['Priya Nair'])
+
+    await seneca.close()
+  })
+
+  test('recipients are NAMES - the screen has no use for an email', async () => {
+    const seneca = await makeSeneca()
+
+    const plan = await seneca.post('sys:calendar,plan:sync', { fixture_id: 'demo_conf' })
+    const withPeople = plan.items.filter((i: any) => 0 < i.recipients.length)
+    assert.ok(0 < withPeople.length)
+    for (const i of withPeople) {
+      for (const r of i.recipients) {
+        assert.ok(!String(r).includes('@'), 'an email reached the plan: ' + r)
+      }
+    }
+
+    await seneca.close()
+  })
+
+  test('the no-op count is carried, because C2 has to be VISIBLE', async () => {
+    const seneca = await makeSeneca()
+    await applyAndDrain(seneca, 'demo_conf')
+
+    const plan = await seneca.post('sys:calendar,plan:sync', { fixture_id: 'demo_conf' })
+    // "13 further segments - hash unchanged - no-op - zero provider calls" is
+    // the line the mockup puts on screen, and it is the only place the
+    // organiser ever sees that nothing was sent.
+    assert.ok(0 < plan.unchanged)
+    assert.equal(plan.unchanged, plan.counts.noop)
+
+    await seneca.close()
+  })
+
+  test('the accounts come back WITHOUT their secret refs', async () => {
+    const seneca = await makeSeneca()
+
+    const plan = await seneca.post('sys:calendar,plan:sync', { fixture_id: 'demo_conf' })
+    assert.equal(plan.accounts.length, 1)
+    assert.equal(plan.accounts[0].provider, 'fake')
+    // This object is on its way to a browser (C7).
+    assert.equal(plan.accounts[0].secret_ref, undefined)
+    assert.ok(!JSON.stringify(plan.accounts).includes('sekreto'))
+
+    await seneca.close()
+  })
+})

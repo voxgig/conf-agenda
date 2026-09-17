@@ -23,7 +23,7 @@
  * afterwards and you have shipped a thing that double-invites.
  */
 import {
-  buildSpec, hashSpec, invitable, EventSpec, SpecFixture,
+  buildSpec, hashSpec, invitable, diffSpecs, EventSpec, SpecFixture,
 } from '../../lib/eventspec'
 
 /** SPEC C5: a per-run outbound cap. Exceeding it aborts BEFORE the first send. */
@@ -55,6 +55,12 @@ export type PlanItem = {
   sequence: number
   hash: string
   why: string
+  /** WHAT changed, in words: ['room', 'start time']. Empty on a create. */
+  changed: string[]
+  /** Speaker NAMES, not emails. This is the organiser's screen, and C6 is
+   *  about the PUBLIC path - but there is no reason to put emails on a screen
+   *  that does not need them. */
+  recipients: string[]
   spec?: EventSpec
   link_id?: string
   provider_event_id?: string
@@ -63,8 +69,15 @@ export type PlanItem = {
 export type SyncPlan = {
   ok: boolean
   top_id: string
+  title?: string
   items: PlanItem[]
   counts: Record<string, number>
+  /** The accounts this plan was computed against, for the connected-accounts
+   *  row on the sync screen. Never a secret_ref. */
+  accounts?: { id: string; name: string; provider: string; status: string }[]
+  /** Segments that need nothing. Shown as ONE line - "13 further segments,
+   *  hash unchanged, no-op, zero provider calls" - which is C2 made visible. */
+  unchanged?: number
   /** Distinct speakers across every sending action - what C4 makes the
    *  organiser confirm. */
   recipients: number
@@ -85,7 +98,8 @@ export default function CalendarSync(this: any, options: any) {
    */
   async function planFor(this: any, fixture_id: string): Promise<SyncPlan> {
     const empty = (why: string): SyncPlan => ({
-      ok: false, top_id: '', items: [], counts: {}, recipients: 0, cap, capped: false, why,
+      ok: false, top_id: '', items: [], counts: {}, recipients: 0, cap,
+      capped: false, accounts: [], unchanged: 0, why,
     })
 
     const tree = await this.post('concern:fixture,resolve:tree', { fixture_id })
@@ -122,11 +136,17 @@ export default function CalendarSync(this: any, options: any) {
     const items: PlanItem[] = []
     const recipients = new Set<string>()
 
-    const attendeesOf = (fid: string) => appearances
+    const speakersOf = (fid: string) => appearances
       .filter((a: any) => a.fixture_id === fid)
       .map((a: any) => speakers.get(a.speaker_id))
+      .filter(Boolean)
+    const attendeesOf = (fid: string) => speakersOf(fid)
       .map((s: any) => (s && s.email ? String(s.email) : ''))
       .filter(Boolean)
+    const namesOf = (fid: string) => speakersOf(fid)
+      .map((s: any) => String((s && s.name) || ''))
+      .filter(Boolean)
+      .sort()
 
     for (const account of accounts) {
       // --- segments that still exist -----------------------------------
@@ -149,6 +169,8 @@ export default function CalendarSync(this: any, options: any) {
               why: 'cancelled' === f.effective_status
                 ? 'segment-cancelled'
                 : 'no-longer-invitable',
+              changed: ['cancelled'],
+              recipients: namesOf(f.id),
               link_id: link.id, provider_event_id: link.provider_event_id,
             })
           }
@@ -164,13 +186,17 @@ export default function CalendarSync(this: any, options: any) {
           attendees: attendeesOf(f.id),
         })
         const hash = hashSpec(spec)
+        const names = namesOf(f.id)
+        const prevSpec: EventSpec | null = link && link.spec_json
+          ? (() => { try { return JSON.parse(String(link.spec_json)) } catch (e) { return null } })()
+          : null
 
         if (null == link) {
           spec.attendees.forEach((e) => recipients.add(e))
           items.push({
             action: 'create', fixture_id: f.id, account_id: account.id,
             uid: spec.uid, title: spec.title, sequence: 0, hash,
-            why: 'no-link', spec,
+            why: 'no-link', changed: [], recipients: names, spec,
           })
         }
         else if ('cancelled' === link.state) {
@@ -180,7 +206,8 @@ export default function CalendarSync(this: any, options: any) {
           items.push({
             action: 'create', fixture_id: f.id, account_id: account.id,
             uid: link.uid, title: spec.title, sequence: (link.sequence || 0) + 1,
-            hash, why: 'resurrected', spec, link_id: link.id,
+            hash, why: 'resurrected', changed: [], recipients: names,
+            spec, link_id: link.id,
           })
         }
         else if (link.content_hash === hash) {
@@ -190,8 +217,8 @@ export default function CalendarSync(this: any, options: any) {
           items.push({
             action: 'noop', fixture_id: f.id, account_id: account.id,
             uid: link.uid, title: spec.title, sequence: link.sequence, hash,
-            why: 'hash-unchanged', link_id: link.id,
-            provider_event_id: link.provider_event_id,
+            why: 'hash-unchanged', changed: [], recipients: names,
+            link_id: link.id, provider_event_id: link.provider_event_id,
           })
         }
         else {
@@ -199,7 +226,11 @@ export default function CalendarSync(this: any, options: any) {
           items.push({
             action: 'update', fixture_id: f.id, account_id: account.id,
             uid: link.uid, title: spec.title, sequence: (link.sequence || 0) + 1,
-            hash, why: 'hash-changed', spec, link_id: link.id,
+            hash, why: 'hash-changed',
+            // The stored spec is what makes this answerable. Without it the
+            // organiser is told "hash differs", which tells them nothing.
+            changed: diffSpecs(prevSpec, spec),
+            recipients: names, spec, link_id: link.id,
             provider_event_id: link.provider_event_id,
           })
         }
@@ -216,6 +247,7 @@ export default function CalendarSync(this: any, options: any) {
           action: 'cancel', fixture_id: link.fixture_id, account_id: account.id,
           uid: link.uid, title: link.uid, sequence: (link.sequence || 0) + 1,
           hash: link.content_hash, why: 'segment-deleted',
+          changed: ['deleted'], recipients: [],
           link_id: link.id, provider_event_id: link.provider_event_id,
         })
       }
@@ -234,9 +266,16 @@ export default function CalendarSync(this: any, options: any) {
 
     const sending = items.filter((i) => 'noop' !== i.action).length
     return {
-      ok: true, top_id, items, counts,
+      ok: true, top_id, title: String((top as any).title || top_id),
+      items, counts,
       recipients: recipients.size,
       cap, capped: sending > cap,
+      unchanged: items.filter((i) => 'noop' === i.action).length,
+      // Never secret_ref: this goes to a browser.
+      accounts: accounts.map((a) => ({
+        id: a.id, name: String(a.name || a.id),
+        provider: String(a.provider || ''), status: String(a.status || 'active'),
+      })),
     }
   }
 
@@ -392,6 +431,7 @@ export default function CalendarSync(this: any, options: any) {
       uid: item.uid,
       sequence: item.sequence,
       content_hash: item.hash,
+      spec_json: item.spec ? JSON.stringify(item.spec) : '',
       state: 'active',
       provider_event_id: String(out.provider_event_id || item.provider_event_id || ''),
       // '' and not null: the entity validator built from the model rejects an

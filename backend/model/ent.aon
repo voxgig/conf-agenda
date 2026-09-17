@@ -238,6 +238,11 @@ sys: calendar_link: {
     ## notice about a live event. See src/lib/eventspec.ts for why that
     ## narrowness is load-bearing.
     content_hash: { label: 'Hash' kind: String valid: Skip }
+    ## The spec the hash was taken of, frozen. The hash answers "did anything
+    ## change"; only the spec itself answers "WHAT changed" - and the sync plan
+    ## has to tell the organiser "room + start time", not "hash differs"
+    ## (mockups/src/SyncPlan.dc.html).
+    spec_json: { label: 'Spec' kind: String valid: 'Empty' }
     ## active | cancelled
     state: { label: 'State' kind: String valid: Skip }
     last_sync: { label: 'Last sync' kind: Number valid: Skip }

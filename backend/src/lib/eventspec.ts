@@ -122,3 +122,37 @@ export function hashSpec(spec: EventSpec): string {
     .digest('hex')
     .slice(0, 32)
 }
+
+
+/** Human labels for the spec fields, in the order an organiser reads them. */
+const FIELD_LABEL: [keyof EventSpec, string][] = [
+  ['t_start', 'start time'],
+  ['t_end', 'end time'],
+  ['room', 'room'],
+  ['title', 'title'],
+  ['t_tzn', 'timezone'],
+  ['attendees', 'attendee set'],
+]
+
+/**
+ * WHAT changed, not merely THAT something did.
+ *
+ * The hash answers "does this need sending"; it cannot answer "why am I about
+ * to email forty people", which is the question the sync plan exists to
+ * answer (SPEC 10.3, mockups/src/SyncPlan.dc.html). An organiser shown
+ * "hash differs" has been told nothing and will either apply blindly or not
+ * at all.
+ */
+export function diffSpecs(prev: EventSpec | null, next: EventSpec): string[] {
+  if (null == prev) return []
+  const out: string[] = []
+  for (const [key, label] of FIELD_LABEL) {
+    const a = prev[key]
+    const b = next[key]
+    const same = Array.isArray(a) || Array.isArray(b)
+      ? stableStringify(a || []) === stableStringify(b || [])
+      : a === b
+    if (!same) out.push(label)
+  }
+  return out
+}
