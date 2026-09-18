@@ -10,6 +10,7 @@ import CalendarSync from '../../concern/CalendarSync/CalendarSync'
 import CalendarSafety from '../../concern/CalendarSync/CalendarSafety'
 import CalendarQueue from '../../concern/CalendarSync/CalendarQueue'
 import FakeProvider from '../../concern/CalendarSync/FakeProvider'
+import IcsProvider from '../../concern/CalendarSync/IcsProvider'
 
 
 // Core seneca setup shared by the local runner and (optionally) tests.
@@ -54,6 +55,7 @@ const base = {
     },
     fixturetree: {},
     calendarsync: {},
+    icsprovider: {},
     reload: {},
 
     // Access control, enforced by @seneca/owner at the entity layer rather
@@ -166,6 +168,12 @@ function basic(seneca: any, options?: any) {
   // proven against it before any real provider exists, and Stage 1 has no
   // other provider to dispatch to. It sends nothing anywhere.
   seneca.use(FakeProvider)
+
+  // provider:ics - the always-available fallback (SPEC 10.2). No OAuth, no
+  // API client; it builds real iTIP invitations and hands them to the
+  // `deliver:invite` seam. With nothing registered to deliver, that seam
+  // REFUSES rather than reporting success over a file nobody received.
+  seneca.use(IcsProvider, deep(base.options.icsprovider, options.icsprovider))
 
   return seneca
 }

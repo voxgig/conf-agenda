@@ -347,7 +347,7 @@
             "email": {
               "kind": "String",
               "label": "Email",
-              "valid": "Skip"
+              "valid": "Empty"
             },
             "id": {
               "kind": "String",
@@ -454,7 +454,7 @@
             "calendar_id": {
               "kind": "String",
               "label": "Calendar",
-              "valid": "Skip"
+              "valid": "Empty"
             },
             "id": {
               "kind": "String",
@@ -479,7 +479,7 @@
             "secret_ref": {
               "kind": "String",
               "label": "Secret",
-              "valid": "Skip"
+              "valid": "Empty"
             },
             "status": {
               "kind": "String",

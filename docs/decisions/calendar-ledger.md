@@ -204,6 +204,54 @@ The fix is the **message name**. A verb outside both the read and write lists is
 uncached, so the message is **`watch:run`**, not `get:run` — and the name now says what it is. An
 e2e test asserts the run screen reaches `SENT`, which is what catches a rename back.
 
+## provider:ics — the first real provider
+
+SPEC §10.2 lists `ics` as the **always-available fallback**: no OAuth, no API client, and the
+honest answer for services with no third-party calendar API at all. That makes it the right
+provider to build *first* among the real ones — it proves the seam works for something that is not
+a test double, and unlike Google it can be proven **offline**.
+
+It forced the substantive missing piece: **iTIP invitations** (`src/lib/invite.ts`), which are not
+the same thing as the `.ics` feed and must not be confused with it.
+
+| | |
+|---|---|
+| `ics.ts` | `METHOD:PUBLISH` — a feed somebody *subscribes* to. No attendees, no sequence, nobody is asked anything. |
+| `invite.ts` | `METHOD:REQUEST` / `CANCEL` — an invitation *addressed to named people*, which their client matches against an existing entry by UID and SEQUENCE. |
+
+**Three fields carry the whole of C3**, and each has a test: `UID` stable for the life of the
+segment; `SEQUENCE` advancing on every material change — a client *ignores* a REQUEST whose
+sequence is not greater than the one it holds, so a sequence that fails to advance is an update
+silently dropped; and `METHOD` matching the intent — a cancellation sent as REQUEST is a meeting
+that never goes away.
+
+**Delivery is a separate seam.** The provider builds the invitation; `sys:calendar,deliver:invite`
+puts it in front of a person. With nothing registered, the default **refuses** — a provider that
+builds a file, drops it on the floor and reports success is the exact lie C9 exists to prevent, and
+there is a test for it. A recording deliverer (`record: true`) is what lets the whole path be
+proven with no mail server anywhere.
+
+**A cancellation reads its spec from the link, not the live segment.** By the time you cancel, the
+segment may be cancelled, re-timed or deleted — it no longer says who was invited. Only the stored
+spec does. A test strips every appearance before cancelling and asserts the CANCEL still reaches
+the original recipients.
+
+### `valid: Skip` does not mean optional
+
+Four fields hit this in one sitting, and it is worth stating plainly: **`Skip` lets a field be
+absent but still rejects an empty string.** So a form that clears a box cannot save, and any state
+defined by "this value is missing" is unstorable.
+
+- `calendar_account.calendar_id` / `.secret_ref` — `provider:ics` has neither. That it needs no
+  credentials at all is part of why it is the fallback.
+- `speaker.email` — a speaker with no address is exactly what the `speaker-no-email` warning
+  (§16.2) reports. A rule about a missing value needs the missing value to be storable.
+- `calendar_link.last_error`, `calendar_job.last_error` — "no error" has to be expressible, or a
+  link that once failed carries that failure for ever.
+
+The fix is `valid: 'Empty'`. Worth auditing the rest of the model for optional text fields a form
+can clear.
+
 ## Not built yet, and deliberately
 
 - **`apply:sync` has no `aim:` surface.** Applying reaches real speakers. Only `aim:cag,plan:sync`
@@ -213,7 +261,9 @@ e2e test asserts the run screen reaches `SENT`, which is what catches a rename b
   locally and Cloudflare cron deployed (§10.6).
 - **RSVPs.** The fake answers `not-supported`, which is the honest answer — a silent success would
   read as "nobody has responded yet" forever.
-- **Any real provider.** Google is last, on purpose.
+- **Google, Microsoft, CalDAV, Zoho.** Google is next and is last among the ones that need OAuth,
+  on purpose — it cannot be proven offline, and the machinery it plugs into is now proven by two
+  providers that can.
 
 ## One toolchain note, unrelated but found here
 

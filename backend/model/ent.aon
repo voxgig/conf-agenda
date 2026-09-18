@@ -140,7 +140,12 @@ cag: speaker: {
     id: { label: 'ID' kind: String }
     org_id: { label: 'Org' kind: String ref: 'sys/org' valid: Skip }
     name: { label: 'Name' kind: String valid: 'Min(1).Max(200)' }
-    email: { label: 'Email' kind: String valid: Skip }
+    ## Empty, not Skip. `Skip` lets the field be ABSENT but still rejects an
+    ## empty string - so a form that clears the box cannot save, and a speaker
+    ## with no address is exactly the state the `speaker-no-email` warning
+    ## (SPEC 16.2) exists to report. A rule about a missing value needs the
+    ## missing value to be storable.
+    email: { label: 'Email' kind: String valid: 'Empty' }
     bio: { label: 'Bio' kind: String valid: Skip }
     photo: { label: 'Photo' kind: String valid: Skip }
     org_name: { label: 'Organisation' kind: String valid: Skip }
@@ -196,11 +201,14 @@ sys: calendar_account: {
     name: { label: 'Name' kind: String valid: 'Min(1).Max(200)' }
     ## google | microsoft | caldav | zoho | ics | fake
     provider: { label: 'Provider' kind: String valid: Skip }
-    ## The provider's own id for the chosen calendar.
-    calendar_id: { label: 'Calendar' kind: String valid: Skip }
+    ## The provider's own id for the chosen calendar. EMPTY is legitimate:
+    ## provider:ics has no calendar to choose - the mail IS the event.
+    calendar_id: { label: 'Calendar' kind: String valid: 'Empty' }
     ## A sekreto NAME. If a token ever appears in this row, C7 has been
     ## broken - the row is readable by anything that can read the org.
-    secret_ref: { label: 'Secret' kind: String valid: Skip }
+    ## Empty for provider:ics, which has no credentials at all, and that is
+    ## part of why it is the always-available fallback (SPEC 10.2).
+    secret_ref: { label: 'Secret' kind: String valid: 'Empty' }
     status: { label: 'Status' kind: String valid: Skip }
     t_c: { label: 'Created' kind: Number valid: Skip }
     t_m: { label: 'Modified' kind: Number valid: Skip }

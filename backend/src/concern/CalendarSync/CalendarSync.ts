@@ -131,6 +131,19 @@ export default function CalendarSync(this: any, options: any) {
     const linkOf = (f: string, a: string) =>
       links.find((l) => l.fixture_id === f && l.account_id === a)
 
+    /** The spec a link was last synced with, or null if it predates spec_json. */
+    const storedSpec = (link: any): EventSpec | undefined => {
+      if (!link || !link.spec_json) return undefined
+      try { return JSON.parse(String(link.spec_json)) }
+      catch (e) { return undefined }
+    }
+    // Addresses, not names - the stored spec carries no names. Shown as a
+    // count on the plan rather than pretending to know who they are.
+    const storedNames = (link: any): string[] => {
+      const sp = storedSpec(link)
+      return sp && sp.attendees ? sp.attendees.map(() => 'invited speaker') : []
+    }
+
     const nodes: SpecFixture[] = tree.nodes
     const byId = new Map(nodes.map((n) => [n.id, n]))
     const items: PlanItem[] = []
@@ -163,6 +176,11 @@ export default function CalendarSync(this: any, options: any) {
           if (link && 'active' === link.state) {
             items.push({
               action: 'cancel',
+              // The spec as it was when the invitation went out, from the
+              // link. NOT rebuilt from the live segment: the people to tell
+              // are the ones who were invited, and a segment that is cancelled
+              // or re-timed no longer says who that was.
+              spec: storedSpec(link),
               fixture_id: f.id, account_id: account.id,
               uid: link.uid, title: String(f.title || f.id),
               sequence: (link.sequence || 0) + 1, hash: link.content_hash,
@@ -247,7 +265,10 @@ export default function CalendarSync(this: any, options: any) {
           action: 'cancel', fixture_id: link.fixture_id, account_id: account.id,
           uid: link.uid, title: link.uid, sequence: (link.sequence || 0) + 1,
           hash: link.content_hash, why: 'segment-deleted',
-          changed: ['deleted'], recipients: [],
+          // Same reason: the segment is GONE, so the link's stored spec is the
+          // only remaining record of who was invited.
+          spec: storedSpec(link),
+          changed: ['deleted'], recipients: storedNames(link),
           link_id: link.id, provider_event_id: link.provider_event_id,
         })
       }
