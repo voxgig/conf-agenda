@@ -579,6 +579,7 @@ components:
           type: string
           title: Site
       required:
+        - email
         - name
     CagSpeakerCreate:
       type: object
@@ -607,6 +608,7 @@ components:
           type: string
           title: Site
       required:
+        - email
         - name
     CagSpeakerUpdate:
       type: object

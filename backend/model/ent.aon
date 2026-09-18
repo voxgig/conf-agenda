@@ -140,7 +140,12 @@ cag: speaker: {
     id: { label: 'ID' kind: String }
     org_id: { label: 'Org' kind: String ref: 'sys/org' valid: Skip }
     name: { label: 'Name' kind: String valid: 'Min(1).Max(200)' }
-    email: { label: 'Email' kind: String valid: Skip }
+    ## Empty, not Skip. `Skip` lets the field be ABSENT but still rejects an
+    ## empty string - so a form that clears the box cannot save, and a speaker
+    ## with no address is exactly the state the `speaker-no-email` warning
+    ## (SPEC 16.2) exists to report. A rule about a missing value needs the
+    ## missing value to be storable.
+    email: { label: 'Email' kind: String valid: 'Empty' }
     bio: { label: 'Bio' kind: String valid: Skip }
     photo: { label: 'Photo' kind: String valid: Skip }
     org_name: { label: 'Organisation' kind: String valid: Skip }
@@ -179,6 +184,152 @@ cag: appearance: {
 ## application change.
 ##
 ## id is '<org_id>:<slug>', so the public read is a load by id.
+
+## ---------------------------------------------------------------------------
+## THE SYNC LEDGER (SPEC 10.3). `sys/` and not `cag/`, because this is the
+## extension of @seneca/calendar rather than conference data - it is destined
+## for senecajs/Calendar, and the namespace is what makes that a move rather
+## than a rename (SPEC 10.1).
+
+## A connected calendar. Carries a SECRET NAME, never token material (C7):
+## the value lives in sekreto and exists only at the SDK transport seam.
+sys: calendar_account: {
+  ux: { label: 'name' }
+  field: {
+    id: { label: 'ID' kind: String }
+    org_id: { label: 'Org' kind: String ref: 'sys/org' valid: Skip }
+    name: { label: 'Name' kind: String valid: 'Min(1).Max(200)' }
+    ## google | microsoft | caldav | zoho | ics | fake
+    provider: { label: 'Provider' kind: String valid: Skip }
+    ## The provider's own id for the chosen calendar. EMPTY is legitimate:
+    ## provider:ics has no calendar to choose - the mail IS the event.
+    calendar_id: { label: 'Calendar' kind: String valid: 'Empty' }
+    ## A sekreto NAME. If a token ever appears in this row, C7 has been
+    ## broken - the row is readable by anything that can read the org.
+    ## Empty for provider:ics, which has no credentials at all, and that is
+    ## part of why it is the always-available fallback (SPEC 10.2).
+    secret_ref: { label: 'Secret' kind: String valid: 'Empty' }
+    status: { label: 'Status' kind: String valid: Skip }
+    t_c: { label: 'Created' kind: Number valid: Skip }
+    t_m: { label: 'Modified' kind: Number valid: Skip }
+  }
+  valid: '$$': 'Open'
+}
+
+
+## ONE ROW PER (segment fixture x account). Generalises the upstream outbox's
+## discipline - one row per identity, upserted in place - from notification
+## stages to provider events (SPEC 10.1, 10.3).
+##
+## NEVER DELETED. A cancelled link is a tombstone, and the tombstone is what
+## stops a resurrection creating a duplicate.
+sys: calendar_link: {
+  ux: { label: 'uid' }
+  field: {
+    id: { label: 'ID' kind: String }
+    org_id: { label: 'Org' kind: String ref: 'sys/org' valid: Skip }
+    fixture_id: { label: 'Segment' kind: String ref: 'cag/fixture' valid: Skip }
+    ## Denormalised ON PURPOSE. Reconciliation scopes by top_id rather than by
+    ## walking the live tree, so links whose fixtures have vanished are still
+    ## found and still cancelled - a resolver that discovers events through
+    ## surviving parent_id chains loses exactly the events whose ancestors
+    ## were deleted, which is the C8 failure. An orphaned event is a meeting a
+    ## speaker still turns up to.
+    top_id: { label: 'Conference' kind: String ref: 'cag/fixture' valid: Skip }
+    account_id: { label: 'Account' kind: String ref: 'sys/calendar_account' valid: Skip }
+    provider_event_id: { label: 'Provider event' kind: String valid: Skip }
+    ## Stable iCal UID: <fixture-id>@<top-slug>. Same UID forever, so a change
+    ## is an update in the speaker's calendar and never a second entry (C3).
+    uid: { label: 'UID' kind: String valid: Skip }
+    sequence: { label: 'Sequence' kind: Number valid: Skip }
+    ## Hash of the EventSpec - and the spec covers ONLY what a speaker would
+    ## notice about a live event. See src/lib/eventspec.ts for why that
+    ## narrowness is load-bearing.
+    content_hash: { label: 'Hash' kind: String valid: Skip }
+    ## The spec the hash was taken of, frozen. The hash answers "did anything
+    ## change"; only the spec itself answers "WHAT changed" - and the sync plan
+    ## has to tell the organiser "room + start time", not "hash differs"
+    ## (mockups/src/SyncPlan.dc.html).
+    spec_json: { label: 'Spec' kind: String valid: 'Empty' }
+    ## active | cancelled
+    state: { label: 'State' kind: String valid: Skip }
+    last_sync: { label: 'Last sync' kind: Number valid: Skip }
+    ## Empty, not Skip: the generated validator rejects BOTH an explicit null
+    ## and an empty string in a plain String field, and "no error" has to be
+    ## expressible - otherwise a link that once failed carries that failure
+    ## for ever, and the console shows an error against a link that is fine.
+    last_error: { label: 'Last error' kind: String valid: 'Empty' }
+    t_c: { label: 'Created' kind: Number valid: Skip }
+    t_m: { label: 'Modified' kind: Number valid: Skip }
+  }
+  valid: '$$': 'Open'
+}
+
+
+## A sync RUN. Sync goes through a queue, not the request (SPEC 10.6), so the
+## organiser sees per-segment state rather than a spinner - and a crash
+## resumes instead of starting over.
+##
+## An active run for a top fixture IS the durable half of C10: the in-process
+## advisory lock makes the check-and-create atomic, but only a row survives a
+## restart, and "one sync at a time per conference" has to survive one.
+sys: calendar_run: {
+  ux: { label: 'top_id' }
+  field: {
+    id: { label: 'ID' kind: String }
+    org_id: { label: 'Org' kind: String ref: 'sys/org' valid: Skip }
+    top_id: { label: 'Conference' kind: String ref: 'cag/fixture' valid: Skip }
+    ## running | done | aborted
+    state: { label: 'State' kind: String valid: Skip }
+    t_start: { label: 'Started' kind: Number valid: Skip }
+    t_end: { label: 'Ended' kind: Number valid: Skip }
+    ## Counts by action, as a frozen JSON string - the same reasoning as
+    ## cag/snapshot.agenda_json: bytes are what a store preserves.
+    counts_json: { label: 'Counts' kind: String valid: 'Empty' }
+    t_c: { label: 'Created' kind: Number valid: Skip }
+    t_m: { label: 'Modified' kind: Number valid: Skip }
+  }
+  valid: '$$': 'Open'
+}
+
+
+## ONE JOB PER (segment fixture x account). That granularity is the point: a
+## single provider rejection is isolated and retriable without touching the
+## other speakers (SPEC 10.6, C9).
+sys: calendar_job: {
+  ux: { label: 'uid' }
+  field: {
+    id: { label: 'ID' kind: String }
+    org_id: { label: 'Org' kind: String ref: 'sys/org' valid: Skip }
+    run_id: { label: 'Run' kind: String ref: 'sys/calendar_run' valid: Skip }
+    top_id: { label: 'Conference' kind: String ref: 'cag/fixture' valid: Skip }
+    fixture_id: { label: 'Segment' kind: String valid: Skip }
+    account_id: { label: 'Account' kind: String ref: 'sys/calendar_account' valid: Skip }
+    ## create | update | cancel
+    action: { label: 'Action' kind: String valid: Skip }
+    uid: { label: 'UID' kind: String valid: Skip }
+    ## The decided PlanItem, frozen at enqueue time. The job carries what was
+    ## confirmed (C4), so a plan that changes mid-run cannot quietly alter what
+    ## the organiser agreed to send.
+    item_json: { label: 'Item' kind: String valid: 'Empty' }
+    ## pending | sent | noop | failed | abandoned
+    state: { label: 'State' kind: String valid: Skip }
+    attempts: { label: 'Attempts' kind: Number valid: Skip }
+    ## Earliest next try. Backoff is exponential WITH JITTER, so a provider
+    ## that rejected a hundred jobs at once does not get all hundred retries
+    ## back in the same instant.
+    next_at: { label: 'Next attempt' kind: Number valid: Skip }
+    last_error: { label: 'Last error' kind: String valid: 'Empty' }
+    ## How long the provider took, in ms. Shown per segment on the run screen:
+    ## "sent" means the provider accepted it, and how long that took is the
+    ## first thing anyone asks when a sync feels slow.
+    ms: { label: 'Duration' kind: Number valid: Skip }
+    t_c: { label: 'Created' kind: Number valid: Skip }
+    t_m: { label: 'Modified' kind: Number valid: Skip }
+  }
+  valid: '$$': 'Open'
+}
+
 
 cag: snapshot: {
   ## Without this the app picks the first non-ref String field in key order -

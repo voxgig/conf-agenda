@@ -45,6 +45,9 @@ flowchart LR
 | `aim:auth,list:apikey` | `src/srv/auth/list_apikey.ts` |
 | `aim:auth,revoke:apikey` | `src/srv/auth/revoke_apikey.ts` |
 | `aim:web,on:cag,load:tree` | `src/srv/auth/web_load_tree.ts` |
+| `aim:web,on:cag,plan:sync` | `src/srv/auth/web_plan_sync.ts` |
+| `aim:web,on:cag,apply:sync` | `src/srv/auth/web_apply_sync.ts` |
+| `aim:web,on:cag,watch:run` | `src/srv/auth/web_watch_run.ts` |
 | `aim:web,on:auth,signin:user` | `src/srv/auth/web_signin_user.ts` |
 | `aim:web,on:auth,signout:user` | `src/srv/auth/web_signout_user.ts` |
 | `aim:web,on:auth,load:auth` | `src/srv/auth/web_load_auth.ts` |
@@ -72,6 +75,9 @@ flowchart LR
 | `aim:cag,validate:fixture` | `src/srv/cag/validate_fixture.ts` |
 | `aim:cag,publish:fixture` | `src/srv/cag/publish_fixture.ts` |
 | `aim:cag,load:tree` | `src/srv/cag/load_tree.ts` |
+| `aim:cag,plan:sync` | `src/srv/cag/plan_sync.ts` |
+| `aim:cag,apply:sync` | `src/srv/cag/apply_sync.ts` |
+| `aim:cag,watch:run` | `src/srv/cag/watch_run.ts` |
 | `aim:cag,list:room` | `src/srv/cag/list_room.ts` |
 | `aim:cag,load:room` | `src/srv/cag/load_room.ts` |
 | `aim:cag,list:track` | `src/srv/cag/list_track.ts` |
@@ -83,6 +89,9 @@ flowchart LR
 | `aim:cag,list:snapshot` | `src/srv/cag/list_snapshot.ts` |
 | `aim:cag,load:snapshot` | `src/srv/cag/load_snapshot.ts` |
 | `aim:web,on:cag,load:tree` | `src/srv/cag/web_load_tree.ts` |
+| `aim:web,on:cag,plan:sync` | `src/srv/cag/web_plan_sync.ts` |
+| `aim:web,on:cag,apply:sync` | `src/srv/cag/web_apply_sync.ts` |
+| `aim:web,on:cag,watch:run` | `src/srv/cag/web_watch_run.ts` |
 | `aim:web,on:auth,signin:user` | `src/srv/cag/web_signin_user.ts` |
 | `aim:web,on:auth,signout:user` | `src/srv/cag/web_signout_user.ts` |
 | `aim:web,on:auth,load:auth` | `src/srv/cag/web_load_auth.ts` |

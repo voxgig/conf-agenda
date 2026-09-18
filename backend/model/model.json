@@ -347,7 +347,7 @@
             "email": {
               "kind": "String",
               "label": "Email",
-              "valid": "Skip"
+              "valid": "Empty"
             },
             "id": {
               "kind": "String",
@@ -449,6 +449,310 @@
         }
       },
       "sys": {
+        "calendar_account": {
+          "field": {
+            "calendar_id": {
+              "kind": "String",
+              "label": "Calendar",
+              "valid": "Empty"
+            },
+            "id": {
+              "kind": "String",
+              "label": "ID"
+            },
+            "name": {
+              "kind": "String",
+              "label": "Name",
+              "valid": "Min(1).Max(200)"
+            },
+            "org_id": {
+              "kind": "String",
+              "label": "Org",
+              "ref": "sys/org",
+              "valid": "Skip"
+            },
+            "provider": {
+              "kind": "String",
+              "label": "Provider",
+              "valid": "Skip"
+            },
+            "secret_ref": {
+              "kind": "String",
+              "label": "Secret",
+              "valid": "Empty"
+            },
+            "status": {
+              "kind": "String",
+              "label": "Status",
+              "valid": "Skip"
+            },
+            "t_c": {
+              "kind": "Number",
+              "label": "Created",
+              "valid": "Skip"
+            },
+            "t_m": {
+              "kind": "Number",
+              "label": "Modified",
+              "valid": "Skip"
+            }
+          },
+          "id": {
+            "field": "id"
+          },
+          "ux": {
+            "label": "name"
+          },
+          "valid": {
+            "$$": "Open"
+          }
+        },
+        "calendar_job": {
+          "field": {
+            "account_id": {
+              "kind": "String",
+              "label": "Account",
+              "ref": "sys/calendar_account",
+              "valid": "Skip"
+            },
+            "action": {
+              "kind": "String",
+              "label": "Action",
+              "valid": "Skip"
+            },
+            "attempts": {
+              "kind": "Number",
+              "label": "Attempts",
+              "valid": "Skip"
+            },
+            "fixture_id": {
+              "kind": "String",
+              "label": "Segment",
+              "valid": "Skip"
+            },
+            "id": {
+              "kind": "String",
+              "label": "ID"
+            },
+            "item_json": {
+              "kind": "String",
+              "label": "Item",
+              "valid": "Empty"
+            },
+            "last_error": {
+              "kind": "String",
+              "label": "Last error",
+              "valid": "Empty"
+            },
+            "ms": {
+              "kind": "Number",
+              "label": "Duration",
+              "valid": "Skip"
+            },
+            "next_at": {
+              "kind": "Number",
+              "label": "Next attempt",
+              "valid": "Skip"
+            },
+            "org_id": {
+              "kind": "String",
+              "label": "Org",
+              "ref": "sys/org",
+              "valid": "Skip"
+            },
+            "run_id": {
+              "kind": "String",
+              "label": "Run",
+              "ref": "sys/calendar_run",
+              "valid": "Skip"
+            },
+            "state": {
+              "kind": "String",
+              "label": "State",
+              "valid": "Skip"
+            },
+            "t_c": {
+              "kind": "Number",
+              "label": "Created",
+              "valid": "Skip"
+            },
+            "t_m": {
+              "kind": "Number",
+              "label": "Modified",
+              "valid": "Skip"
+            },
+            "top_id": {
+              "kind": "String",
+              "label": "Conference",
+              "ref": "cag/fixture",
+              "valid": "Skip"
+            },
+            "uid": {
+              "kind": "String",
+              "label": "UID",
+              "valid": "Skip"
+            }
+          },
+          "id": {
+            "field": "id"
+          },
+          "ux": {
+            "label": "uid"
+          },
+          "valid": {
+            "$$": "Open"
+          }
+        },
+        "calendar_link": {
+          "field": {
+            "account_id": {
+              "kind": "String",
+              "label": "Account",
+              "ref": "sys/calendar_account",
+              "valid": "Skip"
+            },
+            "content_hash": {
+              "kind": "String",
+              "label": "Hash",
+              "valid": "Skip"
+            },
+            "fixture_id": {
+              "kind": "String",
+              "label": "Segment",
+              "ref": "cag/fixture",
+              "valid": "Skip"
+            },
+            "id": {
+              "kind": "String",
+              "label": "ID"
+            },
+            "last_error": {
+              "kind": "String",
+              "label": "Last error",
+              "valid": "Empty"
+            },
+            "last_sync": {
+              "kind": "Number",
+              "label": "Last sync",
+              "valid": "Skip"
+            },
+            "org_id": {
+              "kind": "String",
+              "label": "Org",
+              "ref": "sys/org",
+              "valid": "Skip"
+            },
+            "provider_event_id": {
+              "kind": "String",
+              "label": "Provider event",
+              "valid": "Skip"
+            },
+            "sequence": {
+              "kind": "Number",
+              "label": "Sequence",
+              "valid": "Skip"
+            },
+            "spec_json": {
+              "kind": "String",
+              "label": "Spec",
+              "valid": "Empty"
+            },
+            "state": {
+              "kind": "String",
+              "label": "State",
+              "valid": "Skip"
+            },
+            "t_c": {
+              "kind": "Number",
+              "label": "Created",
+              "valid": "Skip"
+            },
+            "t_m": {
+              "kind": "Number",
+              "label": "Modified",
+              "valid": "Skip"
+            },
+            "top_id": {
+              "kind": "String",
+              "label": "Conference",
+              "ref": "cag/fixture",
+              "valid": "Skip"
+            },
+            "uid": {
+              "kind": "String",
+              "label": "UID",
+              "valid": "Skip"
+            }
+          },
+          "id": {
+            "field": "id"
+          },
+          "ux": {
+            "label": "uid"
+          },
+          "valid": {
+            "$$": "Open"
+          }
+        },
+        "calendar_run": {
+          "field": {
+            "counts_json": {
+              "kind": "String",
+              "label": "Counts",
+              "valid": "Empty"
+            },
+            "id": {
+              "kind": "String",
+              "label": "ID"
+            },
+            "org_id": {
+              "kind": "String",
+              "label": "Org",
+              "ref": "sys/org",
+              "valid": "Skip"
+            },
+            "state": {
+              "kind": "String",
+              "label": "State",
+              "valid": "Skip"
+            },
+            "t_c": {
+              "kind": "Number",
+              "label": "Created",
+              "valid": "Skip"
+            },
+            "t_end": {
+              "kind": "Number",
+              "label": "Ended",
+              "valid": "Skip"
+            },
+            "t_m": {
+              "kind": "Number",
+              "label": "Modified",
+              "valid": "Skip"
+            },
+            "t_start": {
+              "kind": "Number",
+              "label": "Started",
+              "valid": "Skip"
+            },
+            "top_id": {
+              "kind": "String",
+              "label": "Conference",
+              "ref": "cag/fixture",
+              "valid": "Skip"
+            }
+          },
+          "id": {
+            "field": "id"
+          },
+          "ux": {
+            "label": "top_id"
+          },
+          "valid": {
+            "$$": "Open"
+          }
+        },
         "login": {
           "field": {
             "id": {
@@ -526,6 +830,46 @@
         ]
       },
       {
+        "params": {
+          "fixture_id": "String"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "plan": "sync"
+          }
+        ]
+      },
+      {
+        "params": {
+          "confirm": "Boolean",
+          "fixture_id": "String"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "apply": "sync"
+          }
+        ]
+      },
+      {
+        "params": {
+          "run_id": "String"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "watch": "run"
+          }
+        ]
+      },
+      {
         "file": "./web_load_tree",
         "pat": [
           {
@@ -536,6 +880,48 @@
           },
           {
             "load": "tree"
+          }
+        ]
+      },
+      {
+        "file": "./web_plan_sync",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "plan": "sync"
+          }
+        ]
+      },
+      {
+        "file": "./web_apply_sync",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "apply": "sync"
+          }
+        ]
+      },
+      {
+        "file": "./web_watch_run",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "watch": "run"
           }
         ]
       },

@@ -6,6 +6,11 @@ import { entity } from '@voxgig/util'
 import Model from '../../../model/model.json'
 
 import FixtureTree from '../../concern/FixtureTree/FixtureTree'
+import CalendarSync from '../../concern/CalendarSync/CalendarSync'
+import CalendarSafety from '../../concern/CalendarSync/CalendarSafety'
+import CalendarQueue from '../../concern/CalendarSync/CalendarQueue'
+import FakeProvider from '../../concern/CalendarSync/FakeProvider'
+import IcsProvider from '../../concern/CalendarSync/IcsProvider'
 
 
 // Core seneca setup shared by the local runner and (optionally) tests.
@@ -49,6 +54,8 @@ const base = {
       },
     },
     fixturetree: {},
+    calendarsync: {},
+    icsprovider: {},
     reload: {},
 
     // Access control, enforced by @seneca/owner at the entity layer rather
@@ -137,6 +144,36 @@ function basic(seneca: any, options?: any) {
   // never imported by a service. No `aim:` surface, so never gateway- or
   // API-reachable.
   seneca.use(FixtureTree, deep(base.options.fixturetree, options.fixturetree))
+
+  // The sync ledger and reconciliation (SPEC 10.3). Answers sys:calendar,*
+  // rather than concern:* because those are the patterns SPEC 10.2 names and
+  // they are destined for senecajs/Calendar upstream. No aim: surface either
+  // way, so nothing here is gateway-reachable.
+  seneca.use(CalendarSync, deep(base.options.calendarsync, options.calendarsync))
+
+  // The queue (SPEC 10.6). apply:sync enqueues; this is what sends. Loaded
+  // before the safety chain, because the chain wraps send:invite and the
+  // outermost wrap has to be registered last.
+  seneca.use(CalendarQueue, deep(base.options.calendarsync, options.calendarsync))
+
+  // The safety chain, layered ABOVE the provider dispatch with prior-wraps:
+  // cap (C5) -> redaction (C7) -> ledger gate (C2/C3). Loaded AFTER
+  // CalendarSync, because each same-pattern definition wraps the previous and
+  // the outermost has to be registered last. Every provider inherits these,
+  // including ones nobody has written yet - which is the whole reason they sit
+  // here rather than inside a provider or inside a caller.
+  seneca.use(CalendarSafety, deep(base.options.calendarsync, options.calendarsync))
+
+  // The recording provider. Loaded ALWAYS, not only in tests: the ledger is
+  // proven against it before any real provider exists, and Stage 1 has no
+  // other provider to dispatch to. It sends nothing anywhere.
+  seneca.use(FakeProvider)
+
+  // provider:ics - the always-available fallback (SPEC 10.2). No OAuth, no
+  // API client; it builds real iTIP invitations and hands them to the
+  // `deliver:invite` seam. With nothing registered to deliver, that seam
+  // REFUSES rather than reporting success over a file nobody received.
+  seneca.use(IcsProvider, deep(base.options.icsprovider, options.icsprovider))
 
   return seneca
 }
