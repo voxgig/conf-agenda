@@ -171,6 +171,39 @@ an organiser is actually in — **you synced, then things changed**:
 Each step is a real product event replayed in order, against the recording fake, and the end state
 of the fixture data is unchanged.
 
+## Applying, the run screen, and a cache that lied
+
+`apply:sync` is now on the browser surface, and **`confirm` is required on it**. The surface test
+narrowed rather than relaxed: it used to assert "nothing that sends is declared anywhere", which
+was right while the safety machinery did not exist. It does now — cap, redaction, ledger gate,
+lock, queue — and C4 asks for a *confirmed* apply on the app surface rather than none. What stays
+unreachable is everything **below** apply: `send:invite`, the provider verbs, the lock and the
+queue. Reaching `send:invite` directly would skip the plan, the confirmation and the cap.
+
+The **confirmation is the button**, which states the counts rather than asking "are you sure?" —
+the organiser is agreeing to a specific number of messages to a specific number of people.
+
+A **local scheduler** (`tick:queue`, a 1s interval in the web env) works every open run, so a run
+started from the app progresses without anything calling `drain:run` by hand. Deployed, cron posts
+the same message: the *caller* changes, not the message.
+
+### The bug worth remembering: `get:run` was cached for ever
+
+The run screen sat on "0 of 2 · SENDING…" while the backend had long since finished. A raw `fetch`
+to the same endpoint returned `sent`; `bus.post` returned `pending` every second for as long as you
+watched.
+
+The SPA runs a transparent cache (`SenecaBrowserStore`, configured in `web/src/bus.js`). It
+classifies any `aim:web` message carrying a `get` / `list` / `load` key as a **cacheable read**, and
+invalidates only on a client-side **write**. A sync run has neither property: its state changes on
+the *server*, as the queue works, with no browser write to invalidate anything. So the first poll
+was cached and every later one returned the same stale answer — the screen and the truth silently
+disagreed, which is the worst way for a screen to be wrong.
+
+The fix is the **message name**. A verb outside both the read and write lists is passed through
+uncached, so the message is **`watch:run`**, not `get:run` — and the name now says what it is. An
+e2e test asserts the run screen reaches `SENT`, which is what catches a rename back.
+
 ## Not built yet, and deliberately
 
 - **`apply:sync` has no `aim:` surface.** Applying reaches real speakers. Only `aim:cag,plan:sync`

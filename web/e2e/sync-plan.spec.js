@@ -53,13 +53,11 @@ test('it says PLAN — NOTHING SENT, and Apply is not live', async ({ page }) =>
   // would send.
   await expect(page.locator('.ca-plan-badge')).toHaveText('PLAN — NOTHING SENT')
 
-  // There is no apply:sync on the browser surface at all. The control says
-  // what it would do and is plainly off, rather than looking live and doing
-  // nothing.
+  // C4: the confirmation STATES what it is confirming. "Are you sure?" asks
+  // nothing; "send 2" is a number the organiser can disagree with.
   const apply = page.locator('[data-apply]')
-  await expect(apply).toBeDisabled()
   await expect(apply).toHaveText(/Apply — send \d+/)
-  await expect(apply).toHaveAttribute('title', /reaches real speakers/)
+  await expect(apply).toHaveAttribute('title', /Sends \d+ change/)
 })
 
 test('the no-op row is present — C2 shown, not claimed', async ({ page }) => {
@@ -115,4 +113,52 @@ test('connected accounts show, and carry no secret', async ({ page }) => {
   await expect(page.locator('.ca-account')).toContainText('fake')
   // The account object reaches the browser (C7).
   await expect(page.locator('.ca-accounts')).not.toContainText('sekreto')
+})
+
+// ---------------------------------------------------------------------------
+// APPLYING, and the run screen (mockups/src/SyncRun.dc.html).
+//
+// These run LAST in the file on purpose: applying mutates the shared dev store
+// that every spec in this project shares (one worker, one backend), so a test
+// that applies must not run before one that expects something to send.
+
+test('Apply runs the plan, and the run screen reaches SENT', async ({ page }) => {
+  await openGrid(page)
+  await page.keyboard.press('S')
+
+  const apply = page.locator('[data-apply]')
+  await expect(apply).toBeEnabled()
+  await apply.click()
+
+  // The run screen. Per-segment state, not a spinner.
+  await expect(page.locator('.ca-run-table')).toBeVisible()
+  await expect(page.locator('[data-progress]')).toContainText(/no-ops skipped/)
+
+  // THE REGRESSION THIS EXISTS FOR. The SPA caches any aim:web message
+  // carrying a `get` key as a read, and invalidates only on a client-side
+  // WRITE. A sync run has neither property - it changes on the server, as the
+  // queue works. Named `get:run` the first poll was cached and every later one
+  // returned "pending" for ever, while the run had long since finished: the
+  // screen and the truth silently disagreed. The message is `watch:run` so the
+  // cache passes it through, and this assertion is what catches a rename back.
+  await expect(page.locator('.ca-run-st--sent').first()).toBeVisible({ timeout: 15000 })
+  await expect(page.locator('[data-progress]')).toContainText(/^(\d+) of \1 /)
+
+  // Named, not numbered.
+  await expect(page.locator('.ca-sync-title')).toContainText('Calendar sync')
+  await expect(page.locator('.ca-sync-title')).not.toContainText('demo_conf')
+
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.vg-grid')).toBeVisible()
+})
+
+test('a second Apply is refused while nothing is left to send', async ({ page }) => {
+  // The previous test applied, so every segment is now up to date. An Apply
+  // that would send nothing still takes a lock and writes a run, so it is off.
+  await openGrid(page)
+  await page.keyboard.press('S')
+
+  await expect(page.locator('[data-apply]')).toBeDisabled()
+  await expect(page.locator('[data-apply]')).toHaveText('Apply — send 0')
+  await expect(page.locator('.ca-sync-row--quiet')).toContainText('zero provider calls')
 })

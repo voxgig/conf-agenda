@@ -15,6 +15,8 @@ Requires a signed-in user (`user.required: true`).
 | `aim:cag,publish:fixture` | `publish_fixture.ts` |
 | `aim:cag,load:tree` | `load_tree.ts` |
 | `aim:cag,plan:sync` | `plan_sync.ts` |
+| `aim:cag,apply:sync` | `apply_sync.ts` |
+| `aim:cag,watch:run` | `watch_run.ts` |
 | `aim:cag,list:room` | `list_room.ts` |
 | `aim:cag,load:room` | `load_room.ts` |
 | `aim:cag,list:track` | `list_track.ts` |
@@ -27,6 +29,8 @@ Requires a signed-in user (`user.required: true`).
 | `aim:cag,load:snapshot` | `load_snapshot.ts` |
 | `aim:web,on:cag,load:tree` | `web_load_tree.ts` |
 | `aim:web,on:cag,plan:sync` | `web_plan_sync.ts` |
+| `aim:web,on:cag,apply:sync` | `web_apply_sync.ts` |
+| `aim:web,on:cag,watch:run` | `web_watch_run.ts` |
 | `aim:web,on:auth,signin:user` | `web_signin_user.ts` |
 | `aim:web,on:auth,signout:user` | `web_signout_user.ts` |
 | `aim:web,on:auth,load:auth` | `web_load_auth.ts` |
@@ -56,6 +60,8 @@ flowchart LR
   srv --> publish_fixture["aim:cag,publish:fixture<br>publish_fixture.ts"]
   srv --> load_tree["aim:cag,load:tree<br>load_tree.ts"]
   srv --> plan_sync["aim:cag,plan:sync<br>plan_sync.ts"]
+  srv --> apply_sync["aim:cag,apply:sync<br>apply_sync.ts"]
+  srv --> watch_run["aim:cag,watch:run<br>watch_run.ts"]
   srv --> list_room["aim:cag,list:room<br>list_room.ts"]
   srv --> load_room["aim:cag,load:room<br>load_room.ts"]
   srv --> list_track["aim:cag,list:track<br>list_track.ts"]
@@ -68,6 +74,8 @@ flowchart LR
   srv --> load_snapshot["aim:cag,load:snapshot<br>load_snapshot.ts"]
   srv --> web_load_tree["aim:web,on:cag,load:tree<br>web_load_tree.ts"]
   srv --> web_plan_sync["aim:web,on:cag,plan:sync<br>web_plan_sync.ts"]
+  srv --> web_apply_sync["aim:web,on:cag,apply:sync<br>web_apply_sync.ts"]
+  srv --> web_watch_run["aim:web,on:cag,watch:run<br>web_watch_run.ts"]
   srv --> web_signin_user["aim:web,on:auth,signin:user<br>web_signin_user.ts"]
   srv --> web_signout_user["aim:web,on:auth,signout:user<br>web_signout_user.ts"]
   srv --> web_load_auth["aim:web,on:auth,load:auth<br>web_load_auth.ts"]

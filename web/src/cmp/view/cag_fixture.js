@@ -22,6 +22,7 @@
 
 import { bus } from '../../bus.js'
 import { renderSyncPlan } from './sync_plan.js'
+import { renderSyncRun } from './sync_run.js'
 
 const STATUS_LABEL = { draft: 'Draft', confirmed: '', cancelled: 'Cancelled' }
 
@@ -109,6 +110,7 @@ class VgViewCagFixture extends HTMLElement {
 
   disconnectedCallback() {
     this.removeEventListener('keydown', this.onKey)
+    this.stopPolling()
   }
 
   navigate(canon, id) {
@@ -154,7 +156,7 @@ class VgViewCagFixture extends HTMLElement {
   }
 
   onKey(ev) {
-    if ('sync' === this.mode) {
+    if ('grid' !== this.mode) {
       if ('Escape' === ev.key) { ev.preventDefault(); this.showGrid() }
       return
     }
@@ -201,8 +203,53 @@ class VgViewCagFixture extends HTMLElement {
 
   showGrid() {
     this.mode = 'grid'
+    this.stopPolling()
     this.render()
     this.focus()
+  }
+
+  stopPolling() {
+    if (this.poll) { clearTimeout(this.poll); this.poll = null }
+  }
+
+  /**
+   * Apply the confirmed plan, then watch the run.
+   *
+   * The confirmation is the click: the button states the counts, which is C4's
+   * "explicit confirmation stating the invitation and recipient counts". It is
+   * not defaulted anywhere below - a confirmation that can be lost in transit
+   * is not a confirmation.
+   */
+  async applySync() {
+    const r = await bus.post({
+      aim: 'web', on: 'cag', apply: 'sync', fixture_id: this.fixtureId, confirm: true,
+    })
+    if (!r || !r.ok || !r.run_id) {
+      const why = (r && r.why) || 'unknown'
+      const note = this.querySelector('[data-apply-note]')
+      // Name the refusal. 'sync-in-progress' and 'outbound-cap-exceeded' are
+      // different problems with different answers.
+      if (note) note.textContent = 'Not applied: ' + why
+      return
+    }
+    this.runId = r.run_id
+    this.mode = 'run'
+    this.watchRun()
+  }
+
+  async watchRun() {
+    if ('run' !== this.mode || null == this.runId) return
+    // watch: and not get: - the SPA's transparent cache treats a `get` as a
+    // cacheable read and only invalidates on a client write, so a run that
+    // changes on the SERVER was cached "pending" for ever. See
+    // backend/src/srv/cag/web_watch_run.ts.
+    const r = await bus.post({ aim: 'web', on: 'cag', watch: 'run', run_id: this.runId })
+    if (!r || !r.ok) return
+    const running = renderSyncRun(this, r, () => this.showGrid())
+    this.stopPolling()
+    // Poll only while something can still change. A screen that keeps asking
+    // after the run has settled is a screen that never lets the process idle.
+    if (running) this.poll = setTimeout(() => this.watchRun(), 1000)
   }
 
   async showSync() {
@@ -216,7 +263,7 @@ class VgViewCagFixture extends HTMLElement {
       return
     }
     this.mode = 'sync'
-    renderSyncPlan(this, r, () => this.showGrid())
+    renderSyncPlan(this, r, () => this.showGrid(), () => this.applySync())
   }
 
   paintFocus() {

@@ -126,6 +126,22 @@ async function run() {
   // Seed demo projects/todolists/items (collaborative, one shared project).
   await seedDemo(seneca, usersByEmail)
 
+  // The local scheduler (SPEC 10.6). A run started from the app has to make
+  // progress without anything calling drain by hand; deployed, Cloudflare cron
+  // posts this same message, so only the CALLER changes.
+  //
+  // unref() so the tick never holds the process open - a dev server you cannot
+  // Ctrl-C is worse than one that syncs a second late.
+  const tick = setInterval(() => {
+    // Never swallowed: a scheduler that fails silently looks exactly like a
+    // queue that is not being worked, and that is a long afternoon.
+    seneca.post('sys:calendar,tick:queue')
+      // Never swallowed: a scheduler that fails silently looks exactly like a
+      // queue that is not being worked, and that is a long afternoon.
+      .catch((e: any) => console.error('calendar tick failed:', e && e.message))
+  }, 1000)
+  if (tick.unref) tick.unref()
+
   const app = Express()
   // The frontend folder is a sibling of backend/; from dist/env/local go
   // up to the project root, then into its dist. The folder name comes from

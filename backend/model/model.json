@@ -544,6 +544,11 @@
               "label": "Last error",
               "valid": "Empty"
             },
+            "ms": {
+              "kind": "Number",
+              "label": "Duration",
+              "valid": "Skip"
+            },
             "next_at": {
               "kind": "Number",
               "label": "Next attempt",
@@ -838,6 +843,33 @@
         ]
       },
       {
+        "params": {
+          "confirm": "Boolean",
+          "fixture_id": "String"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "apply": "sync"
+          }
+        ]
+      },
+      {
+        "params": {
+          "run_id": "String"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "watch": "run"
+          }
+        ]
+      },
+      {
         "file": "./web_load_tree",
         "pat": [
           {
@@ -862,6 +894,34 @@
           },
           {
             "plan": "sync"
+          }
+        ]
+      },
+      {
+        "file": "./web_apply_sync",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "apply": "sync"
+          }
+        ]
+      },
+      {
+        "file": "./web_watch_run",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "watch": "run"
           }
         ]
       },

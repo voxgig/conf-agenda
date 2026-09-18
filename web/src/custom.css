@@ -801,3 +801,74 @@ tr:hover .vg-rowmenu-btn,
   border-color: var(--vg-border); opacity: 1; cursor: not-allowed;
 }
 @media (max-width: 720px) { .ca-sync-title { white-space: normal; } }
+
+/* ==========================================================================
+   THE SYNC RUN — mockups/src/SyncRun.dc.html
+   A spinner says "wait". This says which segment, to which calendar, how long
+   it took, and — when a provider refuses — what it said and when the next
+   attempt is. The failure states are the reason the screen exists.
+   ========================================================================== */
+.ca-run-lock {
+  font-family: var(--vg-mono); font-size: 11px; color: var(--vg-muted);
+}
+.ca-run-progress {
+  display: flex; align-items: center; gap: var(--vg-space-4);
+  padding: var(--vg-space-4) 0 var(--vg-space-2);
+}
+.ca-run-bar {
+  flex: 1; height: 8px; background: var(--vg-surface);
+  border-radius: var(--vg-radius-pill); overflow: hidden;
+}
+.ca-run-bar-fill {
+  height: 100%; background: var(--vg-focus);
+  transition: width var(--vg-t-base) var(--vg-ease);
+}
+.ca-run-count {
+  font-family: var(--vg-mono); font-size: 12px; color: var(--vg-text-soft);
+  white-space: nowrap;
+}
+
+.ca-run-table {
+  border: 1px solid var(--vg-border); border-radius: var(--vg-radius-lg);
+  overflow: hidden; background: var(--vg-surface);
+}
+.ca-run-row {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 18rem) minmax(0, 1fr) 4rem;
+  gap: 14px; align-items: center;
+  min-height: 46px; padding: 8px 16px;
+  border-bottom: 1px solid var(--vg-border); font-size: 12.5px;
+}
+.ca-run-row:last-child { border-bottom: none; }
+.ca-run-row--active { background: color-mix(in srgb, var(--vg-focus) 4%, transparent); }
+.ca-run-row--retry,
+.ca-run-row--failed { background: color-mix(in srgb, var(--vg-danger) 5%, transparent); }
+
+.ca-run-st { font-size: 11px; font-weight: 700; letter-spacing: .06em; }
+.ca-run-st--sent { color: var(--vg-success); }
+.ca-run-st--sending { color: var(--vg-focus); }
+.ca-run-st--retry, .ca-run-st--failed {
+  color: color-mix(in srgb, var(--vg-danger) 62%, var(--vg-text));
+}
+.ca-run-st--noop { color: var(--vg-muted); }
+
+.ca-run-seg { font-weight: 700; color: var(--vg-text); }
+.ca-run-row--cancel .ca-run-seg {
+  text-decoration: line-through; color: var(--vg-muted); font-weight: 600;
+}
+.ca-run-detail {
+  font-family: var(--vg-mono); font-size: 11px; color: var(--vg-muted);
+  overflow-wrap: anywhere;
+}
+.ca-run-detail--bad { color: color-mix(in srgb, var(--vg-danger) 62%, var(--vg-text)); }
+.ca-run-ms {
+  font-family: var(--vg-mono); font-size: 11px; color: var(--vg-muted);
+  text-align: right;
+}
+
+.ca-apply-note { font-size: 12px; color: var(--vg-danger); }
+
+@media (max-width: 1100px) {
+  .ca-run-row { grid-template-columns: 6rem minmax(0, 1fr); row-gap: 4px; }
+  .ca-run-ms { text-align: left; }
+}

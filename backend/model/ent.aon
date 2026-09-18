@@ -312,6 +312,10 @@ sys: calendar_job: {
     ## back in the same instant.
     next_at: { label: 'Next attempt' kind: Number valid: Skip }
     last_error: { label: 'Last error' kind: String valid: 'Empty' }
+    ## How long the provider took, in ms. Shown per segment on the run screen:
+    ## "sent" means the provider accepted it, and how long that took is the
+    ## first thing anyone asks when a sync feels slow.
+    ms: { label: 'Duration' kind: Number valid: Skip }
     t_c: { label: 'Created' kind: Number valid: Skip }
     t_m: { label: 'Modified' kind: Number valid: Skip }
   }

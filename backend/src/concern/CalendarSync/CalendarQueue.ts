@@ -115,6 +115,7 @@ export default function CalendarQueue(this: any, options: any) {
       let worked = 0
       for (const job of jobs) {
         const item = JSON.parse(job.item_json)
+        const t0 = now()
         const out = await this.post('sys:calendar,send:invite', {
           item,
           account: accounts.get(job.account_id),
@@ -132,6 +133,7 @@ export default function CalendarQueue(this: any, options: any) {
             state: true === out.noop ? 'noop' : 'sent',
             attempts: (job.attempts || 0) + 1,
             last_error: '',
+            ms: now() - t0,
           }).save$()
           continue
         }
@@ -148,6 +150,7 @@ export default function CalendarQueue(this: any, options: any) {
           attempts,
           next_at: spent ? 0 : t + backoffFor(attempts),
           last_error: why,
+          ms: now() - t0,
         }).save$()
 
         // A job is a run's unit of retry and dies with the run; the LEDGER is
@@ -195,6 +198,24 @@ export default function CalendarQueue(this: any, options: any) {
       return { ok: true, worked }
     })
 
+    // THE LOCAL SCHEDULER (SPEC 10.6: "the plugin's tick is the local
+    // scheduler and Cloudflare cron the deployed one"). Works every run that
+    // is still open, so a run started from the app makes progress without
+    // anything calling drain:run by hand.
+    //
+    // Deployed, the CALLER changes - cron posts this same message - which is
+    // why the scheduler is a deployment detail rather than a rewrite.
+    .message('tick:queue', {}, async function (this: any) {
+      const open = (await this.entity('sys/calendar_run').list$({ state: 'running' }))
+        .map((r: any) => r.data$(false))
+      let worked = 0
+      for (const run of open) {
+        const out = await this.post('sys:calendar,work:queue', { run_id: run.id })
+        worked += out.worked || 0
+      }
+      return { ok: true, runs: open.length, worked }
+    })
+
     // Progress, per segment. "A run with per-segment state, not a spinner."
     .message('get:run', { run_id: String }, async function (this: any, msg: any) {
       const run = await this.entity('sys/calendar_run').load$(msg.run_id)
@@ -204,27 +225,51 @@ export default function CalendarQueue(this: any, options: any) {
         .map((r: any) => r.data$(false))
         .sort((a: any, b: any) => (a.id < b.id ? -1 : 1))
 
+      // Names, not ids. A run screen listing `demo_open` and `acct_fake` is a
+      // log; one listing the session and the calendar is a report.
+      const accounts = new Map((await this.entity('sys/calendar_account').list$({}))
+        .map((r: any) => [r.id, r.data$(false)]))
+
       const by = jobs.reduce((acc: Record<string, number>, j: any) => {
         acc[j.state] = (acc[j.state] || 0) + 1
         return acc
       }, {})
 
+      // The conference's NAME. A run screen headed `demo_conf` is a log; one
+      // headed "Demo Conf 2027" is a report.
+      const top = await this.entity('cag/fixture').load$(run.top_id)
+
       return {
         ok: true,
+        title: String((top && top.title) || run.top_id),
         run: {
           id: run.id, top_id: run.top_id, state: run.state,
           t_start: run.t_start, t_end: run.t_end,
           counts: JSON.parse(run.counts_json || '{}'),
         },
         states: by,
-        jobs: jobs.map((j: any) => ({
+        // Everything the queue skipped. "13 no-ops skipped" beside the
+        // progress bar is the same C2 argument the plan screen makes.
+        noops: (JSON.parse(run.counts_json || '{}').noop) || 0,
+        jobs: jobs.map((j: any) => {
+          let item: any = {}
+          try { item = JSON.parse(j.item_json || '{}') } catch (e) { item = {} }
+          const account: any = accounts.get(j.account_id)
+          return {
           fixture_id: j.fixture_id, account_id: j.account_id,
+          title: String(item.title || j.fixture_id),
+          account: String((account && account.name) || j.account_id),
+          provider: String((account && account.provider) || ''),
+          recipients: (item.recipients || []).length,
+          sequence: item.sequence,
+          ms: j.ms || 0,
           action: j.action, uid: j.uid, state: j.state,
           attempts: j.attempts, next_at: j.next_at,
           // Already redacted on the way in; passed through, never re-derived
           // from a provider error here.
           last_error: j.last_error || '',
-        })),
+          }
+        }),
       }
     })
 }

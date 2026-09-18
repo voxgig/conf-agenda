@@ -76,7 +76,7 @@ function row(item) {
  * Render the plan into `host`. `onBack` returns to the grid.
  * Returns nothing; the host is replaced wholesale.
  */
-export function renderSyncPlan(host, plan, onBack) {
+export function renderSyncPlan(host, plan, onBack, onApply) {
   const sending = (plan.items || []).filter((i) => 'noop' !== i.action)
   const accounts = plan.accounts || []
 
@@ -153,12 +153,21 @@ export function renderSyncPlan(host, plan, onBack) {
   ])
   back.addEventListener('click', onBack)
 
+  // THE CONFIRMATION IS THIS BUTTON. It states the counts rather than asking
+  // "are you sure?", which is what C4 means by explicit: the organiser is
+  // agreeing to a specific number of messages to a specific number of people.
+  //
+  // Disabled when there is nothing to send - an Apply that would do nothing
+  // still acquires a lock and writes a run.
   const apply = el('button', {
-    type: 'button', class: 'vg-btn vg-btn--teal', disabled: '',
-    'data-apply': '',
-    title: 'Applying reaches real speakers. The confirmed surface is not built yet.',
-    text: 'Apply — send ' + sending.length,
+    type: 'button', class: 'vg-btn vg-btn--teal', 'data-apply': '',
+    disabled: 0 === sending.length ? '' : null,
+    title: 0 === sending.length
+      ? 'Nothing to send: every segment is up to date.'
+      : 'Sends ' + sending.length + ' change(s) to ' + people + ' speaker(s).',
+    text: 'Apply \u2014 send ' + sending.length,
   })
+  if (onApply) apply.addEventListener('click', onApply)
 
   host.replaceChildren(
     el('div', { class: 'vg-entity vg-entity--wide vg-agenda' }, [
@@ -168,6 +177,7 @@ export function renderSyncPlan(host, plan, onBack) {
       el('div', { class: 'ca-sync-foot' }, [
         summary,
         el('div', { class: 'vg-spacer' }),
+        el('span', { class: 'ca-apply-note', 'data-apply-note': '' }),
         back,
         apply,
       ]),
