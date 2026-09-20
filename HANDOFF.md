@@ -59,7 +59,7 @@ cd web     && PLAYWRIGHT_CHROMIUM_PATH=/home/jose/.cache/ms-playwright/chromium-
 ```
 
 Sign in as `alice@example.com` / `alice-pass-01`. Current green:
-**222 backend · 32 e2e · 13 web unit · 7 embed**.
+**222 backend · 34 e2e · 13 web unit · 7 embed**.
 
 `web/` has a unit runner now — `cd web && npm test` (`node --test test/*.test.mjs`) — because
 `buildInverse` is pure and the path resolution, the falsy-value case and the undo stack semantics

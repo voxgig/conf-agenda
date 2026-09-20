@@ -849,6 +849,10 @@ class VgViewCagFixture extends HTMLElement {
       const node = el('div', {
         'data-session': s.id,
         'data-index': order.get(s.id),
+        // The room it is IN, as an id rather than a computed column. A card
+        // inside a clash wrapper has no grid column of its own, so the layout
+        // cannot be asked where it sits.
+        'data-room': s.room_id || '',
         class: cls.join(' '),
         role: 'listitem',
         // Drag is the pointer's route to move:segment - the SAME message
@@ -957,7 +961,16 @@ class VgViewCagFixture extends HTMLElement {
       const id = this.dragging
       this.dragging = null
 
-      const slot = ev.target.closest && ev.target.closest('[data-slot]')
+      // THE SLOT UNDER THE POINTER, not the event target. Cards are appended
+      // after the slots, so a card covers the slot it sits in - and dropping
+      // onto an OCCUPIED slot is not an edge case, it is how an organiser
+      // deliberately creates a clash. closest() alone finds the card and the
+      // drop is silently lost.
+      const under = document.elementsFromPoint
+        ? document.elementsFromPoint(ev.clientX, ev.clientY)
+        : []
+      const slot = under.find((n) => n.matches && n.matches('[data-slot]')) ||
+        (ev.target.closest && ev.target.closest('[data-slot]'))
       if (!slot) return
       const session = (this.data.segments || []).find((x) => x.id === id)
       if (null == session) return

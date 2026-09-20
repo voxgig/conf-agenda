@@ -255,3 +255,86 @@ test('editing is never gated by validation, and the count follows the edit', asy
   await expect.poll(() => errorCount(page), { timeout: 8000 }).toBe(before)
   expect(await focusLabel(page)).toBe(start)
 })
+
+
+test('a room change produces ONE update, not a duplicate', async ({ page }) => {
+  // THE THING THE PRODUCT IS FOR, end to end and through the UI.
+  //
+  // SPEC 19.4's "done when": a room change produces updates, not duplicates.
+  // Everything the ledger does is invisible by construction - its job is to
+  // NOT send things - so this is the one assertion that joins the two halves
+  // of the project: an organiser moves a card, and the plan says `update ·
+  // same UID, seq+1` rather than a second invitation.
+  //
+  // The seed already applied a sync for this conference, so every row starts
+  // as a no-op. That is what makes the single update legible.
+  await signIn(page)
+
+  const title = await focusTitle(page)
+  const before = await focusLabel(page)
+
+  await page.keyboard.press('Shift+ArrowRight')
+  await settled(page)
+
+  await page.keyboard.press('S')
+  await page.waitForSelector('.ca-sync-title')
+
+  const moved = page.locator('[role=row]').filter({ hasText: title }).first()
+  await expect(moved).toContainText('update · same UID, seq+1')
+  // The room is what changed, and the plan says so in words rather than
+  // offering a hash to compare.
+  await expect(moved).toContainText('room')
+
+  // ONE update, and ZERO creates. A create here would be the duplicate
+  // invitation the whole ledger exists to prevent.
+  const body = await page.locator('.ca-sync-grid, [role=table]').first().innerText()
+  expect(body.match(/update · same UID, seq\+1/g) || []).toHaveLength(1)
+  expect(body).not.toContain('create')
+
+  await page.keyboard.press('Escape')
+  await page.waitForSelector('.vg-grid')
+  await page.keyboard.press('u')
+  await expect.poll(() => focusLabel(page), { timeout: 8000 }).toBe(before)
+})
+
+
+test('drag posts the same intent as Shift-arrows', async ({ page }) => {
+  // The pointer route to move:segment. SPEC 13.1 requires the grid to stay
+  // fully operable from the keyboard, so drag is the alternative and never the
+  // only way - but it has to post the SAME message, or there are two
+  // implementations of "move" and one of them will drift.
+  await signIn(page)
+
+  const title = await focusTitle(page)
+  const before = await focusLabel(page)
+
+  const card = page.locator('[data-session]').filter({ hasText: title }).first()
+  const room = await card.getAttribute('data-room')
+
+  // A slot in ANOTHER room, at a time nothing occupies - so the move is a
+  // room change, which is the case the ledger cares about, and the drop is
+  // not intercepted by a card sitting on top of it.
+  const pick = await page.locator('[data-slot]').evaluateAll((ns, r) => {
+    const taken = new Set([...document.querySelectorAll('[data-session]')]
+      .map((c) => c.getAttribute('data-room') + '@' + c.getAttribute('data-start')))
+    for (let i = 0; i < ns.length; i++) {
+      const dr = ns[i].getAttribute('data-room')
+      if (dr === r) continue
+      if (taken.has(dr + '@' + ns[i].getAttribute('data-start'))) continue
+      return i
+    }
+    return -1
+  }, room)
+
+  test.skip(pick < 0, 'no free slot in another room')
+
+  await card.dragTo(page.locator('[data-slot]').nth(pick))
+  await settled(page)
+
+  await expect(page.locator('.ca-toast')).toContainText('Moved')
+  await expect(page.locator('.ca-toast')).toContainText(title)
+  await expect.poll(() => focusLabel(page)).not.toBe(before)
+
+  await page.keyboard.press('u')
+  await expect.poll(() => focusLabel(page), { timeout: 8000 }).toBe(before)
+})
