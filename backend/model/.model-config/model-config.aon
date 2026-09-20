@@ -6,6 +6,12 @@
 ## order.action sets their execution order.
 
 sys: model: action: {
+  ## MUST RUN FIRST. Withholds `inverse` from the Lambda generators, whose
+  ## MsgMetaShape is closed and rejects it. See build/msg_meta.js - and note
+  ## that the failure it prevents is a FALSE GREEN, not a loud one.
+  msg_meta: {
+    load: 'build/msg_meta'
+  }
   srv_yml: {
     load: 'build/srv_yml'
   }
@@ -26,4 +32,4 @@ sys: model: action: {
   }
 }
 
-sys: model: order: action: 'srv_yml,srv_handler,res_yml,env_gen,doc_gen,api_gen'
+sys: model: order: action: 'msg_meta,srv_yml,srv_handler,res_yml,env_gen,doc_gen,api_gen'

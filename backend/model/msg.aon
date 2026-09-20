@@ -44,6 +44,73 @@
   { pat: [{aim: cag}, {apply: sync}]
     params: { fixture_id: 'String', confirm: 'Boolean' } }
 
+  # ---- the segment intents (SPEC 9) --------------------------------------
+  # Every grid interaction is a NAMED INTENT with its own closed params shape.
+  # The browser never composes an entity and never computes the new row - the
+  # result of a drag is an intent, not a payload (PLATFORM 1.2).
+  #
+  # NOTE WHAT IS ABSENT: no definition below declares org_id, owner_id or
+  # top_id. Tenancy comes from the STORED row, and the closed shape is the
+  # structural half of that - there is no key to send.
+  #
+  # `inverse` is the declared undo contract (PLATFORM 1.4). It names its
+  # target BY PATTERN, and `map` says how that message's params are built from
+  # this one's params and result. Undo runs the inverse as an ORDINARY EDIT,
+  # which the ledger, the validator and the audit trail all see like any
+  # other - not a snapshot restore, which would put back state the server may
+  # have moved on from.
+  #
+  # `inverse` is stripped from the model before the Lambda generators see it
+  # (build/msg_meta.js) - @voxgig/build's MsgMetaShape is closed and rejects
+  # it, and the failure is a FALSE GREEN. model.json keeps it, which is what
+  # the SPA reads.
+
+  { pat: [{aim: cag}, {move: segment}]
+    params: { fixture_id: 'String', room_id: 'Skip(String)', t_start: 'Number' }
+    inverse: { pat: [{aim: cag}, {move: segment}]
+               map: { fixture_id: 'params.fixture_id'
+                      room_id: 'result.prev.room_id'
+                      t_start: 'result.prev.t_start' } } }
+
+  { pat: [{aim: cag}, {set: status}]
+    params: { fixture_id: 'String', status: 'String' }
+    inverse: { pat: [{aim: cag}, {set: status}]
+               map: { fixture_id: 'params.fixture_id'
+                      status: 'result.prev.status' } } }
+
+  { pat: [{aim: cag}, {make: segment}]
+    params: { parent_id: 'String', t_start: 'Number', t_end: 'Number'
+              room_id: 'Skip(String)', kind: 'Skip(String)', title: 'Skip(String)' }
+    inverse: { pat: [{aim: cag}, {remove: segment}]
+               map: { fixture_id: 'result.fixture_id' } } }
+
+  # SPEC 9: duplicate "declares the removal of the copy" as its inverse -
+  # which is why remove:segment is declared at all. PLATFORM 1.4 requires an
+  # inverse.pat to match a DECLARED definition.
+  { pat: [{aim: cag}, {duplicate: segment}]
+    params: { fixture_id: 'String' }
+    inverse: { pat: [{aim: cag}, {remove: segment}]
+               map: { fixture_id: 'result.fixture_id' } } }
+
+  # NO INVERSE, deliberately. Restoring a deleted segment is not an ordinary
+  # edit, and PLATFORM 1.4 says a definition without one "is not undoable, and
+  # the UI must show it that way".
+  { pat: [{aim: cag}, {remove: segment}]
+    params: { fixture_id: 'String' } }
+
+  { pat: [{aim: cag}, {add: appearance}]
+    params: { fixture_id: 'String', speaker_id: 'String', role: 'Skip(String)' }
+    inverse: { pat: [{aim: cag}, {remove: appearance}]
+               map: { appearance_id: 'result.appearance_id' } } }
+
+  { pat: [{aim: cag}, {remove: appearance}]
+    params: { appearance_id: 'String' }
+    inverse: { pat: [{aim: cag}, {add: appearance}]
+               map: { fixture_id: 'result.prev.fixture_id'
+                      speaker_id: 'result.prev.speaker_id'
+                      role: 'result.prev.role' } } }
+
+
   # Per-segment progress for one run. Read-only, and deliberately NOT named
   # `get:` - see web_watch_run.ts. A run's state changes on the server with no
   # client write to invalidate a cache, so it must never be treated as a
@@ -69,6 +136,35 @@
 
   { pat: [{aim: web}, {on: cag}, {watch: run}]
     file: './web_watch_run' }
+
+  # The grid re-runs validation after every settled intent, for the header's
+  # error count - live validation (SPEC 19.4), minus the panel.
+  { pat: [{aim: web}, {on: cag}, {validate: fixture}]
+    file: './web_validate_fixture' }
+
+  # The segment intents. Each is a declared proxy, and each names its own
+  # action file because a proxy shares its LAST pattern pair with the message
+  # it forwards to (PLATFORM 1.4).
+  { pat: [{aim: web}, {on: cag}, {move: segment}]
+    file: './web_move_segment' }
+
+  { pat: [{aim: web}, {on: cag}, {set: status}]
+    file: './web_set_status' }
+
+  { pat: [{aim: web}, {on: cag}, {make: segment}]
+    file: './web_make_segment' }
+
+  { pat: [{aim: web}, {on: cag}, {duplicate: segment}]
+    file: './web_duplicate_segment' }
+
+  { pat: [{aim: web}, {on: cag}, {remove: segment}]
+    file: './web_remove_segment' }
+
+  { pat: [{aim: web}, {on: cag}, {add: appearance}]
+    file: './web_add_appearance' }
+
+  { pat: [{aim: web}, {on: cag}, {remove: appearance}]
+    file: './web_remove_appearance' }
 
 
   # ---- agenda service ----------------------------------------------------

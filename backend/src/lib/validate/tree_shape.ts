@@ -14,6 +14,50 @@ export const OUTSIDE = 'outside-parent-fixture'
 export const NEGATIVE = 'negative-duration'
 export const BAD_KIND = 'bad-parent-kind'
 
+/**
+ * Why a fixture's kind is wrong for its position, or null when it is right.
+ *
+ * ONE DEFINITION OF THE RULE. The grid's save-time intents need this decision
+ * BEFORE storing - SPEC 16.1 says bad-parent-kind is "checked at save time as
+ * well as at validate" - and a second copy of the branch logic beside the
+ * validator is how the two quietly drift apart. treeShape() below turns these
+ * verdicts into diagnostics; an intent just refuses.
+ */
+export type KindVerdict =
+  | 'top-has-parent'
+  | 'group-no-parent'
+  | 'group-not-under-top'
+  | 'segment-no-parent'
+  | 'segment-under-segment'
+  | 'segment-has-children'
+  | 'unknown-kind'
+  | null
+
+export function parentKindVerdict(
+  kind: string,
+  parentKind: string | null | undefined,
+  hasChildren = false,
+): KindVerdict {
+  const k = String(kind ?? '')
+  // A parent kind of null/'' means "no parent", which is what makes a top.
+  const isTop = null == parentKind || '' === parentKind
+  const pk = String(parentKind ?? '')
+
+  if (TOP_KINDS.includes(k)) {
+    return isTop ? null : 'top-has-parent'
+  }
+  if (GROUP_KINDS.includes(k)) {
+    if (isTop) return 'group-no-parent'
+    return TOP_KINDS.includes(pk) ? null : 'group-not-under-top'
+  }
+  if (SEGMENT_KINDS.includes(k)) {
+    if (isTop) return 'segment-no-parent'
+    if (!TOP_KINDS.includes(pk) && !GROUP_KINDS.includes(pk)) return 'segment-under-segment'
+    return hasChildren ? 'segment-has-children' : null
+  }
+  return 'unknown-kind'
+}
+
 const has = (f: Fixture) => null != f.t_start && null != f.t_end
 
 export function treeShape(input: ValidateInput): Diagnostic[] {
@@ -86,25 +130,32 @@ export function treeShape(input: ValidateInput): Diagnostic[] {
         data: { kind, parent_kind: parent ? parent.kind : null },
       })
 
-    if (TOP_KINDS.includes(kind)) {
-      if (!isTop) say('is a top-level kind but has a parent.',
+    // The DECISION is parentKindVerdict's; the sentences are this file's,
+    // because only a diagnostic needs to name the other fixture.
+    const verdict = parentKindVerdict(
+      kind,
+      isTop ? null : (parent ? String(parent.kind ?? '') : ''),
+      0 < (childCount.get(f.id) ?? 0),
+    )
+
+    if ('top-has-parent' === verdict) {
+      say('is a top-level kind but has a parent.',
         'Give it no parent, or change its kind to a segment kind.')
-    } else if (GROUP_KINDS.includes(kind)) {
-      if (isTop) say('is a grouping kind but has no parent.', 'Put it under a conference.')
-      else if (parent && !TOP_KINDS.includes(String(parent.kind)))
-        say('must sit directly under a conference, not under ' + quoted(parent) + '.',
-          'Move it directly under the conference.')
-    } else if (SEGMENT_KINDS.includes(kind)) {
-      if (isTop) say('is a segment but has no parent.',
+    } else if ('group-no-parent' === verdict) {
+      say('is a grouping kind but has no parent.', 'Put it under a conference.')
+    } else if ('group-not-under-top' === verdict) {
+      if (parent) say('must sit directly under a conference, not under ' + quoted(parent) + '.',
+        'Move it directly under the conference.')
+    } else if ('segment-no-parent' === verdict) {
+      say('is a segment but has no parent.',
         'Put it under a conference or a day.')
-      else if (parent && !TOP_KINDS.includes(String(parent.kind)) &&
-               !GROUP_KINDS.includes(String(parent.kind)))
-        say('sits under ' + quoted(parent) + ', which is itself a segment.',
-          'Segments contain nothing. Move it under a conference or a day.')
-      else if (0 < (childCount.get(f.id) ?? 0))
-        say('is a segment but contains other fixtures.',
-          'Segments contain nothing. Move its children, or make it a day.')
-    } else {
+    } else if ('segment-under-segment' === verdict) {
+      if (parent) say('sits under ' + quoted(parent) + ', which is itself a segment.',
+        'Segments contain nothing. Move it under a conference or a day.')
+    } else if ('segment-has-children' === verdict) {
+      say('is a segment but contains other fixtures.',
+        'Segments contain nothing. Move its children, or make it a day.')
+    } else if ('unknown-kind' === verdict) {
       say('is not a known kind.',
         'Use a conference (con/web/mep/sem/gen), a day, or a segment ' +
         '(key/tak/lgt/wrk/pan/brk/mea/soc/reg).')

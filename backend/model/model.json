@@ -867,6 +867,190 @@
         ]
       },
       {
+        "inverse": {
+          "map": {
+            "fixture_id": "params.fixture_id",
+            "room_id": "result.prev.room_id",
+            "t_start": "result.prev.t_start"
+          },
+          "pat": [
+            {
+              "aim": "cag"
+            },
+            {
+              "move": "segment"
+            }
+          ]
+        },
+        "params": {
+          "fixture_id": "String",
+          "room_id": "Skip(String)",
+          "t_start": "Number"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "move": "segment"
+          }
+        ]
+      },
+      {
+        "inverse": {
+          "map": {
+            "fixture_id": "params.fixture_id",
+            "status": "result.prev.status"
+          },
+          "pat": [
+            {
+              "aim": "cag"
+            },
+            {
+              "set": "status"
+            }
+          ]
+        },
+        "params": {
+          "fixture_id": "String",
+          "status": "String"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "set": "status"
+          }
+        ]
+      },
+      {
+        "inverse": {
+          "map": {
+            "fixture_id": "result.fixture_id"
+          },
+          "pat": [
+            {
+              "aim": "cag"
+            },
+            {
+              "remove": "segment"
+            }
+          ]
+        },
+        "params": {
+          "kind": "Skip(String)",
+          "parent_id": "String",
+          "room_id": "Skip(String)",
+          "t_end": "Number",
+          "t_start": "Number",
+          "title": "Skip(String)"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "make": "segment"
+          }
+        ]
+      },
+      {
+        "inverse": {
+          "map": {
+            "fixture_id": "result.fixture_id"
+          },
+          "pat": [
+            {
+              "aim": "cag"
+            },
+            {
+              "remove": "segment"
+            }
+          ]
+        },
+        "params": {
+          "fixture_id": "String"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "duplicate": "segment"
+          }
+        ]
+      },
+      {
+        "params": {
+          "fixture_id": "String"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "remove": "segment"
+          }
+        ]
+      },
+      {
+        "inverse": {
+          "map": {
+            "appearance_id": "result.appearance_id"
+          },
+          "pat": [
+            {
+              "aim": "cag"
+            },
+            {
+              "remove": "appearance"
+            }
+          ]
+        },
+        "params": {
+          "fixture_id": "String",
+          "role": "Skip(String)",
+          "speaker_id": "String"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "add": "appearance"
+          }
+        ]
+      },
+      {
+        "inverse": {
+          "map": {
+            "fixture_id": "result.prev.fixture_id",
+            "role": "result.prev.role",
+            "speaker_id": "result.prev.speaker_id"
+          },
+          "pat": [
+            {
+              "aim": "cag"
+            },
+            {
+              "add": "appearance"
+            }
+          ]
+        },
+        "params": {
+          "appearance_id": "String"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "remove": "appearance"
+          }
+        ]
+      },
+      {
         "params": {
           "run_id": "String"
         },
@@ -932,6 +1116,118 @@
           },
           {
             "watch": "run"
+          }
+        ]
+      },
+      {
+        "file": "./web_validate_fixture",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "validate": "fixture"
+          }
+        ]
+      },
+      {
+        "file": "./web_move_segment",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "move": "segment"
+          }
+        ]
+      },
+      {
+        "file": "./web_set_status",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "set": "status"
+          }
+        ]
+      },
+      {
+        "file": "./web_make_segment",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "make": "segment"
+          }
+        ]
+      },
+      {
+        "file": "./web_duplicate_segment",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "duplicate": "segment"
+          }
+        ]
+      },
+      {
+        "file": "./web_remove_segment",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "remove": "segment"
+          }
+        ]
+      },
+      {
+        "file": "./web_add_appearance",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "add": "appearance"
+          }
+        ]
+      },
+      {
+        "file": "./web_remove_appearance",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "remove": "appearance"
           }
         ]
       },

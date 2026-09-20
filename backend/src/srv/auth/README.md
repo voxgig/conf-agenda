@@ -23,6 +23,14 @@ message maps to the action file named after its last pattern pair.
 | `aim:web,on:cag,plan:sync` | `web_plan_sync.ts` |
 | `aim:web,on:cag,apply:sync` | `web_apply_sync.ts` |
 | `aim:web,on:cag,watch:run` | `web_watch_run.ts` |
+| `aim:web,on:cag,validate:fixture` | `web_validate_fixture.ts` |
+| `aim:web,on:cag,move:segment` | `web_move_segment.ts` |
+| `aim:web,on:cag,set:status` | `web_set_status.ts` |
+| `aim:web,on:cag,make:segment` | `web_make_segment.ts` |
+| `aim:web,on:cag,duplicate:segment` | `web_duplicate_segment.ts` |
+| `aim:web,on:cag,remove:segment` | `web_remove_segment.ts` |
+| `aim:web,on:cag,add:appearance` | `web_add_appearance.ts` |
+| `aim:web,on:cag,remove:appearance` | `web_remove_appearance.ts` |
 | `aim:web,on:auth,signin:user` | `web_signin_user.ts` |
 | `aim:web,on:auth,signout:user` | `web_signout_user.ts` |
 | `aim:web,on:auth,load:auth` | `web_load_auth.ts` |
@@ -62,6 +70,14 @@ flowchart LR
   srv --> web_plan_sync["aim:web,on:cag,plan:sync<br>web_plan_sync.ts"]
   srv --> web_apply_sync["aim:web,on:cag,apply:sync<br>web_apply_sync.ts"]
   srv --> web_watch_run["aim:web,on:cag,watch:run<br>web_watch_run.ts"]
+  srv --> web_validate_fixture["aim:web,on:cag,validate:fixture<br>web_validate_fixture.ts"]
+  srv --> web_move_segment["aim:web,on:cag,move:segment<br>web_move_segment.ts"]
+  srv --> web_set_status["aim:web,on:cag,set:status<br>web_set_status.ts"]
+  srv --> web_make_segment["aim:web,on:cag,make:segment<br>web_make_segment.ts"]
+  srv --> web_duplicate_segment["aim:web,on:cag,duplicate:segment<br>web_duplicate_segment.ts"]
+  srv --> web_remove_segment["aim:web,on:cag,remove:segment<br>web_remove_segment.ts"]
+  srv --> web_add_appearance["aim:web,on:cag,add:appearance<br>web_add_appearance.ts"]
+  srv --> web_remove_appearance["aim:web,on:cag,remove:appearance<br>web_remove_appearance.ts"]
   srv --> web_signin_user["aim:web,on:auth,signin:user<br>web_signin_user.ts"]
   srv --> web_signout_user["aim:web,on:auth,signout:user<br>web_signout_user.ts"]
   srv --> web_load_auth["aim:web,on:auth,load:auth<br>web_load_auth.ts"]
