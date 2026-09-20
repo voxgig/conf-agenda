@@ -265,6 +265,79 @@ can clear.
   on purpose — it cannot be proven offline, and the machinery it plugs into is now proven by two
   providers that can.
 
+## What review found, and what it changed
+
+Six defects came out of a review of this branch before merge. All six are recorded here rather
+than only in a commit message, because every one of them is a thing the design *claimed* and the
+code did not do - and four of the six were invisible to a suite of 176 tests.
+`test/unit/calendar-regressions.test.ts` holds one test per defect, each confirmed to fail when
+the fix is reverted.
+
+**The plan was scoped to whatever it was asked about, not to the conference.** `planFor` resolved
+the tree from `fixture_id`, but links load by `top_id`. `resolve:tree` returns only the requested
+node and its subtree, so planning from a *day* left every other day's segments out of `byId` - and
+the VANISHED loop then read their links as `segment-deleted`. A day-scoped apply therefore
+**cancelled live meetings across the rest of the conference**, and `aim:web,on:cag,apply:sync`
+takes `fixture_id` straight from the browser. The same line also made `top` the wrong node, so the
+timezone, slug and title came from a day that has none: the UTC fallback changed every hash and
+every segment replanned as `hash-changed`. Now the plan re-resolves from the root. Re-scoping
+rather than refusing, because the lock, the run and the ledger are already per top fixture - the
+conference *is* the unit of sync.
+
+**Listing was not claiming.** `work:queue` listed `pending` rows and sent them, writing each row
+only after the provider returned. Two overlapping calls listed the same rows and both sent - and
+the local tick is a 1s interval, so any provider call slower than a tick overlapped itself. Two
+concurrent workers produced two invitations per UID and two ledger rows per (segment x account),
+which is both halves of the failure this subsystem exists to prevent.
+
+A job now moves to `running` under a claim token before any provider call, in two halves for the
+same reason C10 has two: an in-process `Set`, checked and added with no `await` between, is what
+makes the guarantee deterministic rather than a matter of scheduling; the **row** is what survives
+a restart and a second isolate. And because a claim that never expires turns one crash into a
+permanently wedged conference - the failure the claim was added to prevent - a claim has a TTL,
+exactly as the lock does.
+
+**The ledger gate was inert on creates.** It returned early whenever `item.link_id` was null,
+which is *always* true for a create, because a create is what produces the link. So the backstop
+for "anything that reaches `send:invite` by another route" could not see the one action that
+creates provider events. It now looks the link up by the ledger's own identity, (segment x
+account). `writeLink` had the mirror of this bug - it upserted by `link_id` when it had one and
+inserted unconditionally otherwise, so "upsert by identity" was not what it did.
+
+**One bad row cost the conference.** `send:invite` requires `account: Object`; a missing
+`sys/calendar_account` therefore *rejected*, and the bare `await` in the worker loop aborted the
+whole tick before any row was written. Every job stayed `pending`, the run never left `running`,
+and `apply:sync`'s state guard then refused every future sync of that conference with
+`sync-in-progress`. For ever. Sending is now per-job and inside a try/catch: one bad row costs one
+job (C9).
+
+**A run was readable without its conference.** `get:run` read `sys/calendar_run` and
+`sys/calendar_job` directly, and `sys/` entities are exempt from `@seneca/owner` by design
+(`ignore: ['sys:entity,base:sys']`). `run_id` arrives from the browser, so a held or guessed id
+returned another org's segment titles, account names, recipient counts, UIDs and error strings. It
+now resolves the conference through `cag/fixture` first, which *is* owner-annotated - reusing the
+app's existing enforcement rather than inventing a second one. The real answer is
+`concern:tenant` at Stage 4.
+
+**Two small ones with outsized tells.** `release:lock` did `runSends.delete(msg.token)` on a Map
+keyed by `run_id`, so nothing was ever deleted - and it fired the moment `apply:sync` had
+*enqueued*, long before the queue sent anything. The budget is now released by the queue when the
+run closes. And `redactText` treated a replacer's second argument as the first capture, which it
+is only when the pattern has one: four of the five shapes have none, so it received the match
+*offset* and produced `0[redacted]`. The secret was still removed, which is exactly why the
+existing test - `out.includes(REDACTED)` - passed either way.
+
+**One more, about a sentence rather than a secret.** A resurrection is built as a `create`
+carrying the tombstone's sequence + 1, so a subject line keyed off the sequence told a speaker
+with nothing in their calendar "Updated:". The action decides now; the sequence is the fallback.
+
+### `valid: 'Empty'` is required, which is the other half of the trap
+
+The claim field hit the *opposite* face of the `valid: Skip` problem written up above. `Skip` lets
+a field be absent but rejects `''`. `'Empty'` permits `''` but still **requires the field** - so
+`enqueue:run` has to write `claim: ''` explicitly, and a row created without it fails validation.
+Both halves are worth knowing: one rejects the empty string, the other rejects the absence.
+
 ## One toolchain note, unrelated but found here
 
 `npm run model-breaking` **exits 1 on an unchanged model**: `aontu breaking` cannot compare

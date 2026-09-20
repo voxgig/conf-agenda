@@ -102,12 +102,36 @@ export default function CalendarSync(this: any, options: any) {
       capped: false, accounts: [], unchanged: 0, why,
     })
 
-    const tree = await this.post('concern:fixture,resolve:tree', { fixture_id })
+    // SYNC IS CONFERENCE-SCOPED, ALWAYS, AND THE PLAN MUST BE RESOLVED FROM
+    // THE ROOT. resolve:tree returns only the REQUESTED node and its subtree,
+    // while links are loaded by top_id - the whole conference. Resolve from a
+    // day and the two disagree: every segment outside that day is missing
+    // from `byId`, so the VANISHED loop below reads its link as
+    // `segment-deleted` and the plan CANCELS live meetings in speakers'
+    // calendars. aim:web,on:cag,apply:sync takes fixture_id straight from the
+    // browser, so this was reachable, and its blast radius was the rest of
+    // the conference.
+    //
+    // It also settles `top` itself. `top` supplies the timezone, the slug,
+    // the title and the org - and a day carries none of them. Falling back to
+    // UTC changes every hash, so every segment plans as `hash-changed` and
+    // every speaker is re-invited to an event that did not move.
+    //
+    // Re-scoping rather than refusing is deliberate: the lock, the run and
+    // the ledger are all per top fixture already, so the conference IS the
+    // unit of sync. The plan screen then states what will happen, and C4's
+    // confirmation is taken against these counts.
+    const probe = await this.post('concern:fixture,resolve:tree', { fixture_id })
+    if (!probe.ok) return empty(probe.why || 'tree-failed')
+
+    const top_id: string = probe.top_id || fixture_id
+    const tree = top_id === fixture_id
+      ? probe
+      : await this.post('concern:fixture,resolve:tree', { fixture_id: top_id })
     if (!tree.ok) return empty(tree.why || 'tree-failed')
 
-    const top = tree.nodes.find((n: any) => n.id === fixture_id)
+    const top = tree.nodes.find((n: any) => n.id === top_id)
     if (null == top) return empty('not-found')
-    const top_id: string = tree.top_id || fixture_id
 
     const org_q = null == top.org_id ? {} : { org_id: top.org_id }
     const accounts: Account[] = (await this.entity('sys/calendar_account').list$(org_q))
@@ -465,12 +489,23 @@ export default function CalendarSync(this: any, options: any) {
     // `id$` only ever CREATES - saving an existing id that way is
     // entity-id-exists, which is exactly what the snapshot upsert hit on
     // republish. An update loads the row and saves it back.
-    if (item.link_id) {
-      const row = await ent.load$(item.link_id)
-      if (row) {
-        await row.data$(fields).save$()
-        return
-      }
+    //
+    // UPSERT BY IDENTITY MEANS BY IDENTITY, not "by link_id when we happen to
+    // have one". A create carries no link_id by definition, so keying only on
+    // it made every create an unconditional insert - and a create that runs
+    // twice for one (segment x account) leaves TWO ledger rows, after which
+    // linkOf() picks one arbitrarily and the ledger no longer knows what was
+    // sent. The gate above should stop the second send; this stops the second
+    // ROW if anything ever gets past it.
+    const row = item.link_id
+      ? await ent.load$(item.link_id)
+      : (await ent.list$({
+        fixture_id: item.fixture_id, account_id: item.account_id,
+      }))[0]
+
+    if (row) {
+      await row.data$(fields).save$()
+      return
     }
     await ent.make$().data$(fields).save$()
   }

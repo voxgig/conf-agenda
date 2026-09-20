@@ -77,7 +77,20 @@ export default function CalendarSafety(this: any, options: any) {
       // timed-out run unlock the run that replaced it, and then both are live.
       if (held && held.token !== msg.token) return { ok: false, why: 'not-holder' }
       locks.delete(msg.top_id)
-      runSends.delete(msg.token)
+      return { ok: true }
+    })
+
+    // The per-run send budget is a RUN's, so it is released when the run
+    // ends - posted by the queue, which is the only thing that knows.
+    //
+    // It used to be dropped here, in release:lock, as `runSends.delete(token)`
+    // - wrong twice over. runSends is keyed by run_id and a lock token is an
+    // unrelated string, so nothing was ever deleted and the Map grew for the
+    // life of the process; and the lock is released the moment apply:sync has
+    // ENQUEUED, long before the queue sends anything, so even keyed correctly
+    // it would have discarded the budget before it was spent.
+    .message('clear:sends', { run_id: String }, async function (this: any, msg: any) {
+      runSends.delete(String(msg.run_id))
       return { ok: true }
     })
 
@@ -92,9 +105,28 @@ export default function CalendarSafety(this: any, options: any) {
       if ('create' !== item.action && 'update' !== item.action) {
         return this.prior(msg)
       }
-      if (null == item.link_id) return this.prior(msg)
 
-      const link = await this.entity('sys/calendar_link').load$(item.link_id)
+      // THE GATE LOOKS THE LINK UP BY IDENTITY, NOT BY link_id.
+      //
+      // It used to return early whenever `link_id` was null - which is ALWAYS
+      // true for a create, because a create is what produces the link. So the
+      // backstop was inert on precisely the action that creates provider
+      // events, and the case it exists for was the one it could not see: a
+      // create whose provider actually succeeded but reported failure (a
+      // timeout, a 5xx after commit), retried by the queue, making a second
+      // event in the speaker's calendar.
+      //
+      // The ledger's identity is (segment x account) - that is what
+      // writeLink upserts on - so that is what the gate asks about. `top_id`
+      // is denormalised scoping and the item does not carry it.
+      const link = null != item.link_id
+        ? await this.entity('sys/calendar_link').load$(item.link_id)
+        : (await this.entity('sys/calendar_link')
+          .list$({ fixture_id: item.fixture_id, account_id: item.account_id }))[0]
+
+      // A cancelled link is a tombstone, and a resurrection is meant to pass:
+      // same UID, sequence continuing. Only an ACTIVE link with the same hash
+      // means "this already went, unchanged".
       if (link && 'active' === link.state && link.content_hash === item.hash) {
         return { ok: true, noop: true, calls: 0, why: 'ledger-gate:hash-unchanged' }
       }

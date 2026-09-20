@@ -32,11 +32,26 @@ const SECRET_SHAPE: RegExp[] = [
 
 export const REDACTED = '[redacted]'
 
-/** Scrub a string. Safe to apply twice: the marker matches nothing. */
+/**
+ * Scrub a string. Safe to apply twice: the marker matches nothing.
+ *
+ * The keep-the-label pattern (`token: <secret>`) has a capture group and the
+ * other four do not - and a replacer's second argument is the first CAPTURE
+ * only when there is one. With no groups it is the match OFFSET, a number, so
+ * `null == p1` was false for any offset and the output became `0[redacted]`
+ * or `9[redacted]`. The secret was still removed, which is why the existing
+ * test - `out.includes(REDACTED)` - passed either way, but every redacted
+ * `last_error` on the run screen carried a spurious digit.
+ *
+ * So the check is on the TYPE, not on null.
+ */
 export function redactText(input: string): string {
   let out = String(input)
   for (const re of SECRET_SHAPE) {
-    out = out.replace(re, (m, p1) => (null == p1 ? REDACTED : p1 + REDACTED))
+    out = out.replace(re, (_m: string, ...rest: any[]) => {
+      const p1 = rest[0]
+      return 'string' === typeof p1 ? p1 + REDACTED : REDACTED
+    })
   }
   return out
 }

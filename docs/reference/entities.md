@@ -109,6 +109,8 @@ erDiagram
     String account_id FK
     String action
     Number attempts
+    String claim
+    Number claim_at
     String fixture_id
     String id
     String item_json
@@ -196,7 +198,7 @@ erDiagram
 | `cag/speaker` | bio, email, id, name, org_id, org_name, photo, t_c, t_m, w_site | org_id → sys/org | generic admin |
 | `cag/track` | color, desc, id, name, order, org_id, t_c, t_m | org_id → sys/org | generic admin |
 | `sys/calendar_account` | calendar_id, id, name, org_id, provider, secret_ref, status, t_c, t_m | org_id → sys/org | generic admin |
-| `sys/calendar_job` | account_id, action, attempts, fixture_id, id, item_json, last_error, ms, next_at, org_id, run_id, state, t_c, t_m, top_id, uid | account_id → sys/calendar_account<br>org_id → sys/org<br>run_id → sys/calendar_run<br>top_id → cag/fixture | generic admin |
+| `sys/calendar_job` | account_id, action, attempts, claim, claim_at, fixture_id, id, item_json, last_error, ms, next_at, org_id, run_id, state, t_c, t_m, top_id, uid | account_id → sys/calendar_account<br>org_id → sys/org<br>run_id → sys/calendar_run<br>top_id → cag/fixture | generic admin |
 | `sys/calendar_link` | account_id, content_hash, fixture_id, id, last_error, last_sync, org_id, provider_event_id, sequence, spec_json, state, t_c, t_m, top_id, uid | account_id → sys/calendar_account<br>fixture_id → cag/fixture<br>org_id → sys/org<br>top_id → cag/fixture | generic admin |
 | `sys/calendar_run` | counts_json, id, org_id, state, t_c, t_end, t_m, t_start, top_id | org_id → sys/org<br>top_id → cag/fixture | generic admin |
 | `sys/login` | id | — | generic admin |

@@ -88,6 +88,12 @@ export type InviteInput = {
   sequence: number
   /** 'request' creates or updates; 'cancel' withdraws. */
   method: 'request' | 'cancel'
+  /**
+   * What the ledger decided this is. The SUBJECT needs it and the file does
+   * not: METHOD:REQUEST covers a create and an update alike, but "Invitation"
+   * and "Updated" are not the same sentence to read.
+   */
+  action?: 'create' | 'update' | 'cancel'
   /** The calendar the invitation comes FROM. */
   organiser: { name?: string; email: string }
   /** Shown in the body; the spec carries only addresses. */
@@ -159,11 +165,23 @@ export function buildInvite(input: InviteInput): string {
   return lines.map(fold).join(CRLF) + CRLF
 }
 
-/** The subject line a mail deliverer would use. */
+/**
+ * The subject line a mail deliverer would use.
+ *
+ * THE ACTION DECIDES, NOT THE SEQUENCE. A RESURRECTION is built as a `create`
+ * carrying the tombstone's sequence + 1 - same UID, so the speaker's client
+ * matches it, which is the whole point of never deleting a link. Keying the
+ * subject off the sequence therefore titled a brand-new invitation "Updated:"
+ * for someone with nothing in their calendar to update.
+ *
+ * The sequence stays as the fallback for callers that do not say.
+ */
 export function inviteSubject(input: InviteInput): string {
-  const prefix = 'cancel' === input.method
+  const prefix = 'cancel' === input.method || 'cancel' === input.action
     ? 'Cancelled: '
-    : 0 < input.sequence ? 'Updated: ' : 'Invitation: '
+    : 'create' === input.action ? 'Invitation: '
+      : 'update' === input.action ? 'Updated: '
+        : 0 < input.sequence ? 'Updated: ' : 'Invitation: '
   return prefix + input.spec.title
     + (input.conference ? ' (' + input.conference + ')' : '')
 }

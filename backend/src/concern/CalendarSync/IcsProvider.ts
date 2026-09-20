@@ -64,6 +64,9 @@ export default function IcsProvider(this: any, options: any) {
       spec,
       sequence: item.sequence || 0,
       method: ('cancel' === op ? 'cancel' : 'request') as 'cancel' | 'request',
+      // The ledger's decision, so the subject can tell a resurrection from an
+      // update - the file cannot, because both are METHOD:REQUEST.
+      action: (item && item.action) as 'create' | 'update' | 'cancel' | undefined,
       organiser,
       conference: msg.conference,
     }

@@ -244,6 +244,13 @@ class VgViewCagFixture extends HTMLElement {
     // changes on the SERVER was cached "pending" for ever. See
     // backend/src/srv/cag/web_watch_run.ts.
     const r = await bus.post({ aim: 'web', on: 'cag', watch: 'run', run_id: this.runId })
+    // RE-CHECK AFTER THE AWAIT. disconnectedCallback calls stopPolling, but a
+    // disconnect DURING the post above clears a timer that does not exist
+    // yet - and the line below then schedules a fresh one, so a detached
+    // component polls watch:run every second for the life of the page. The
+    // same render-token reasoning as cmp/admin.js, and `run` is a poll rather
+    // than a cached read precisely so it reaches the server every time.
+    if (!this.isConnected || 'run' !== this.mode) return
     if (!r || !r.ok) return
     const running = renderSyncRun(this, r, () => this.showGrid())
     this.stopPolling()

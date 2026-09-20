@@ -525,6 +525,16 @@
               "label": "Attempts",
               "valid": "Skip"
             },
+            "claim": {
+              "kind": "String",
+              "label": "Claim",
+              "valid": "Empty"
+            },
+            "claim_at": {
+              "kind": "Number",
+              "label": "Claimed",
+              "valid": "Skip"
+            },
             "fixture_id": {
               "kind": "String",
               "label": "Segment",

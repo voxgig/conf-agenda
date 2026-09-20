@@ -419,7 +419,11 @@ browser.
 ## Do not demo these
 
 - **Editing the grid.** Read-only. Stage 2.
-- **Anything calendar-side.** `plan:sync` returns a plan and sends nothing; there is no provider.
+- **Sending to a real address.** The whole calendar track is built — the ledger, the safety chain,
+  the lock, the queue, both sync screens and `provider:ics` with real iTIP invitations — and `S`
+  through to the run screen is worth showing. What does not exist is a **deliverer**: with none
+  registered the default refuses, on purpose, so nothing leaves the machine. `provider:google`
+  needs OAuth credentials that do not exist yet.
 - **The SDK.** Blocked — neither `apidef` nor `sdkgen` bootstraps the `.sdk/` scaffold they both
   require. Written up in `sdk/README.md`.
 - **Multi-tenancy as a feature.** Org scoping is real and tested, but there is no self-serve signup

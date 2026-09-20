@@ -312,8 +312,22 @@ sys: calendar_job: {
     ## confirmed (C4), so a plan that changes mid-run cannot quietly alter what
     ## the organiser agreed to send.
     item_json: { label: 'Item' kind: String valid: 'Empty' }
-    ## pending | sent | noop | failed | abandoned
+    ## pending | running | sent | noop | failed | abandoned
+    ##
+    ## `running` is the CLAIM. Listing is not claiming: two overlapping
+    ## work:queue calls both see the same pending rows and both send, which is
+    ## a duplicate invitation and a duplicate ledger row at once. A job moves
+    ## to `running` under a claim token before any provider call.
     state: { label: 'State' kind: String valid: Skip }
+    ## The claim token. Cleared when the job settles, so it carries `Empty`
+    ## rather than Skip - Skip lets a field be ABSENT but still rejects '',
+    ## and "no longer claimed" has to be expressible.
+    claim: { label: 'Claim' kind: String valid: 'Empty' }
+    ## When the claim was taken. A claim EXPIRES, exactly as the advisory lock
+    ## does: a process that dies mid-send must not wedge its job in `running`
+    ## for ever, or one crash costs the conference - which is the failure the
+    ## claim was added to prevent, reintroduced by the claim itself.
+    claim_at: { label: 'Claimed' kind: Number valid: Skip }
     attempts: { label: 'Attempts' kind: Number valid: Skip }
     ## Earliest next try. Backoff is exponential WITH JITTER, so a provider
     ## that rejected a hundred jobs at once does not get all hundred retries

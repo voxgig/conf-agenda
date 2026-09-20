@@ -54,7 +54,7 @@ cd embed   && npm run build && ./node_modules/.bin/serve -l 50600 .
 cd web     && PLAYWRIGHT_CHROMIUM_PATH=/home/jose/.cache/ms-playwright/chromium-1187/chrome-linux/chrome npx playwright test
 ```
 
-Sign in as `alice@example.com` / `alice-pass-01`. Current green: **176 backend · 22 e2e · 7 embed**.
+Sign in as `alice@example.com` / `alice-pass-01`. Current green: **190 backend · 22 e2e · 7 embed**.
 
 **WSL2 does not forward localhost on this machine.** Use `http://172.18.117.226:50500/` (the IP
 changes when WSL restarts — `hostname -I`), or set `networkingMode=mirrored` in
@@ -88,6 +88,12 @@ it first.
 
 **RFC 5545 folds any line past 75 octets**, so ATTENDEE lines are routinely split. Asserting on the
 raw `.ics` tests the folding, not the content.
+
+**A green suite is not a built suite.** `npm run build` is `model-build && tsc`, so a model-build
+failure means tsc never runs - and `npm test` then passes against the *previous* `dist-test`. A
+false green, and it looks exactly like a real one. After anything that touches `model/`, check
+that the build exited 0 before believing the tests. The same trap bites any workflow that edits
+source and reruns tests without rebuilding.
 
 **A test that walks the model must assert a known-present *and* a known-absent case.** The surface
 test went vacuously green once already. Two later tests (`grid-keys`, `calendar-sync`) were

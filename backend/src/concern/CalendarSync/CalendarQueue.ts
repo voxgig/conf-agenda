@@ -33,6 +33,14 @@ const DEFAULTS = {
   max_attempts: 5,
   /** Jobs claimed per tick. Bounded so one tick cannot run for ever. */
   batch: 25,
+  /**
+   * How long a claim holds before another worker may take the job back. A
+   * claim that never expires turns one crash into a permanently wedged
+   * conference - the same reasoning as the advisory lock's TTL. Generous
+   * against a slow provider, because reclaiming a job that is still in flight
+   * is how a claim becomes a duplicate.
+   */
+  claim_ttl: 5 * 60 * 1000,
 }
 
 
@@ -52,6 +60,162 @@ export default function CalendarQueue(this: any, options: any) {
   function backoffFor(attempts: number): number {
     const flat = Math.min(opts.backoff_max, opts.backoff_base * Math.pow(2, attempts - 1))
     return Math.round(flat * (0.5 + 0.5 * rand()))
+  }
+
+  let claimSeq = 0
+
+  /** Job ids being worked by THIS process, right now. See claimJob. */
+  const inflight = new Set<string>()
+
+  /** A claim nobody released, from a worker that is not coming back. */
+  function stale(job: any, t: number): boolean {
+    return 'running' === job.state && (job.claim_at || 0) + opts.claim_ttl <= t
+  }
+
+  /** Claimable now: due and pending, or holding a claim that has expired. */
+  function claimable(job: any, t: number): boolean {
+    if ('pending' === job.state) return (job.next_at || 0) <= t
+    return stale(job, t)
+  }
+
+  /**
+   * CLAIM A JOB BEFORE SENDING IT. Listing is not claiming.
+   *
+   * work:queue used to list `pending` rows and send them, updating each row
+   * only AFTER the provider returned. Two overlapping calls therefore listed
+   * the same rows and both sent - and the local tick overlaps itself the
+   * moment a provider call outlasts its 1s interval. That is a duplicate
+   * invitation AND a duplicated ledger row, which is the single thing this
+   * whole subsystem exists to prevent.
+   *
+   * So the row moves to `running` under a token, and only the writer whose
+   * token survives the read-back proceeds. Re-checking `state` and `next_at`
+   * here rather than trusting the listing is the point: the row may have
+   * settled, or been given a backoff, between the list and the claim.
+   *
+   * Returns the claimed job, or null when somebody else has it.
+   */
+  async function claimJob(seneca: any, job_id: string, t: number): Promise<any> {
+    // THE SYNCHRONOUS HALF, and it must come before any await. A load /
+    // compare / save round-trip has an interleaving in which both callers
+    // read `pending` before either writes, so the row claim alone is
+    // best-effort. This Set is checked and added with no await in between,
+    // and JS is single-threaded, so within one process exactly one caller
+    // gets each job - deterministically, not by luck of scheduling.
+    if (inflight.has(job_id)) return null
+    inflight.add(job_id)
+
+    let claimed: any = null
+    try {
+      const row = await seneca.entity('sys/calendar_job').load$(job_id)
+      if (null == row) return null
+      if (!claimable(row.data$(false), t)) return null
+
+      const token = 'c' + ++claimSeq + '.' + Math.floor(rand() * 1e9)
+      await row.data$({ state: 'running', claim: token, claim_at: t }).save$()
+
+      // THE DURABLE HALF. The read-back is the compare-and-set: whoever wrote
+      // last owns the job, everyone else sees a token that is not theirs. The
+      // Set above does not survive a restart and does not exist in a second
+      // isolate; the ROW does, which is why both are here. Same two-halves
+      // argument as C10's lock plus run row.
+      const back = await seneca.entity('sys/calendar_job').load$(job_id)
+      if (null == back || back.claim !== token) return null
+      claimed = back.data$(false)
+      return claimed
+    }
+    finally {
+      // A job that was actually claimed is released by the WORKER, once it
+      // settles. Every other exit - not found, not claimable, lost the
+      // compare-and-set, a throw - releases here, or the id stays reserved
+      // for the life of the process and the job never runs again.
+      if (null == claimed) inflight.delete(job_id)
+    }
+  }
+
+  /**
+   * Send one claimed job and settle its row. Returns how much work it did, so
+   * the caller's `worked` count - which is what drain:run stops on - still
+   * means "jobs attempted".
+   *
+   * Split out of the loop so the claim can be released in a `finally` around
+   * exactly this call, and so every exit below settles the row rather than
+   * leaving it `running`.
+   */
+  async function settleJob(
+    seneca: any, job: any, accounts: Map<string, any>, t: number,
+  ): Promise<number> {
+    const item = JSON.parse(job.item_json)
+    const t0 = now()
+    const account = accounts.get(job.account_id)
+
+    // EVERY FAILURE IS THIS JOB'S FAILURE, INCLUDING A THROW. The send used
+    // to sit bare in the loop, so a rejected post - a missing account is
+    // enough, since `account: Object` is required on send:invite - aborted
+    // the whole tick before any row was written. Every job stayed `pending`,
+    // the run never left `running`, and apply:sync's state guard then refused
+    // that conference for ever. One bad row must cost one job, not the
+    // conference (C9).
+    let out: any
+    try {
+      if (null == account) {
+        out = { ok: false, why: 'account-missing:' + job.account_id }
+      }
+      else {
+        out = await seneca.post('sys:calendar,send:invite', {
+          item, account, run_id: job.run_id,
+        })
+      }
+    }
+    catch (err: any) {
+      out = { ok: false, why: redactReason(err && err.message) }
+    }
+
+    const row = await seneca.entity('sys/calendar_job').load$(job.id)
+    // The row is gone, so there is nothing to settle - but the attempt was
+    // still made, and the caller must not be told the queue is idle.
+    if (null == row) return 1
+
+    if (out && out.ok) {
+      await seneca.post('sys:calendar,record:link',
+        { top_id: job.top_id, item, out, org_id: job.org_id })
+      await row.data$({
+        state: true === out.noop ? 'noop' : 'sent',
+        attempts: (job.attempts || 0) + 1,
+        last_error: '',
+        claim: '',
+        ms: now() - t0,
+      }).save$()
+      return 1
+    }
+
+    // FAILURE. Isolated to this job: the loop carries on, because one
+    // provider saying no must not abandon the other speakers (C9).
+    const attempts = (job.attempts || 0) + 1
+    const why = redactReason(out && out.why)
+    const spent = attempts >= opts.max_attempts
+    await row.data$({
+      // `abandoned` is a state the organiser can see and act on - not a
+      // silent give-up, and not an infinite retry either.
+      state: spent ? 'abandoned' : 'pending',
+      attempts,
+      next_at: spent ? 0 : t + backoffFor(attempts),
+      last_error: why,
+      // Released either way: an abandoned job is settled, and a retried one
+      // must be claimable again by the next tick.
+      claim: '',
+      ms: now() - t0,
+    }).save$()
+
+    // A job is a run's unit of retry and dies with the run; the LEDGER is
+    // what survives runs. So a failure that is never going to be retried is
+    // stamped there too - otherwise "this segment's invitation never went" is
+    // a fact that disappears with the run that discovered it.
+    if (spent && item.link_id) {
+      const link = await seneca.entity('sys/calendar_link').load$(item.link_id)
+      if (link) await link.data$({ last_error: why }).save$()
+    }
+    return 1
   }
 
   seneca
@@ -88,6 +252,11 @@ export default function CalendarQueue(this: any, options: any) {
           uid: item.uid,
           item_json: JSON.stringify(item),
           state: 'pending',
+          // Unclaimed, and '' rather than absent: `valid: 'Empty'` permits an
+          // empty string but still REQUIRES the field. The same trap as
+          // last_error, from the other side - Skip would have rejected the ''
+          // that a released claim has to write.
+          claim: '',
           attempts: 0,
           next_at: t,
           last_error: '',
@@ -102,70 +271,48 @@ export default function CalendarQueue(this: any, options: any) {
     // the scheduler is a deployment detail rather than a rewrite.
     .message('work:queue', { run_id: String }, async function (this: any, msg: any) {
       const t = now()
+      // Candidates, not a work list: the claim below decides. `running` rows
+      // are in scope only once their claim has expired, which is what lets a
+      // run resume after a crash instead of sitting wedged.
       const jobs = (await this.entity('sys/calendar_job')
-        .list$({ run_id: msg.run_id, state: 'pending' }))
+        .list$({ run_id: msg.run_id }))
         .map((r: any) => r.data$(false))
-        .filter((j: any) => (j.next_at || 0) <= t)
+        .filter((j: any) => claimable(j, t))
         .sort((a: any, b: any) => (a.id < b.id ? -1 : 1))
         .slice(0, opts.batch)
 
-      const accounts = new Map((await this.entity('sys/calendar_account').list$({}))
-        .map((r: any) => [r.id, r.data$(false)]))
+      const accounts: Map<string, any> = new Map(
+        (await this.entity('sys/calendar_account').list$({}))
+          .map((r: any) => [String(r.id), r.data$(false)] as [string, any]))
 
       let worked = 0
-      for (const job of jobs) {
-        const item = JSON.parse(job.item_json)
-        const t0 = now()
-        const out = await this.post('sys:calendar,send:invite', {
-          item,
-          account: accounts.get(job.account_id),
-          run_id: job.run_id,
-        })
-        worked++
+      for (const candidate of jobs) {
+        // Listing is not claiming - see claimJob. A job someone else already
+        // took, or that settled between the list and here, is simply skipped.
+        const job = await claimJob(this, candidate.id, t)
+        if (null == job) continue
 
-        const row = await this.entity('sys/calendar_job').load$(job.id)
-        if (null == row) continue
-
-        if (out && out.ok) {
-          await this.post('sys:calendar,record:link',
-            { top_id: job.top_id, item, out, org_id: job.org_id })
-          await row.data$({
-            state: true === out.noop ? 'noop' : 'sent',
-            attempts: (job.attempts || 0) + 1,
-            last_error: '',
-            ms: now() - t0,
-          }).save$()
-          continue
+        try {
+          worked += await settleJob(this, job, accounts, t)
         }
-
-        // FAILURE. Isolated to this job: the loop carries on, because one
-        // provider saying no must not abandon the other speakers (C9).
-        const attempts = (job.attempts || 0) + 1
-        const why = redactReason(out && out.why)
-        const spent = attempts >= opts.max_attempts
-        await row.data$({
-          // `abandoned` is a state the organiser can see and act on - not a
-          // silent give-up, and not an infinite retry either.
-          state: spent ? 'abandoned' : 'pending',
-          attempts,
-          next_at: spent ? 0 : t + backoffFor(attempts),
-          last_error: why,
-          ms: now() - t0,
-        }).save$()
-
-        // A job is a run's unit of retry and dies with the run; the LEDGER is
-        // what survives runs. So a failure that is never going to be retried
-        // is stamped there too - otherwise "this segment's invitation never
-        // went" is a fact that disappears with the run that discovered it.
-        if (spent && item.link_id) {
-          const link = await this.entity('sys/calendar_link').load$(item.link_id)
-          if (link) await link.data$({ last_error: why }).save$()
+        finally {
+          // The worker owns the reservation from the moment claimJob hands
+          // the job over, so it is released in a finally: anywhere else, one
+          // throw reserves that id for the life of the process and the job
+          // never runs again.
+          inflight.delete(job.id)
         }
       }
 
-      // The run closes only when nothing is left that could still be tried.
+      // The run closes only when nothing is left that could still be tried -
+      // and `running` counts, or an overlapping call closes the run out from
+      // under a job that is still with a provider, and the organiser is told
+      // the sync finished while an invitation is still in flight.
       const left = (await this.entity('sys/calendar_job')
-        .list$({ run_id: msg.run_id, state: 'pending' })).length
+        .list$({ run_id: msg.run_id }))
+        .map((r: any) => r.data$(false))
+        .filter((j: any) => 'pending' === j.state || 'running' === j.state)
+        .length
       if (0 === left) {
         const run = await this.entity('sys/calendar_run').load$(msg.run_id)
         if (run && 'running' === run.state) {
@@ -175,6 +322,9 @@ export default function CalendarQueue(this: any, options: any) {
             state: 0 < abandoned ? 'aborted' : 'done',
             t_end: now(),
           }).save$()
+          // The run is over, so its outbound budget is too. The queue is the
+          // only thing that knows when that happens.
+          await this.post('sys:calendar,clear:sends', { run_id: msg.run_id })
         }
       }
 
@@ -221,6 +371,21 @@ export default function CalendarQueue(this: any, options: any) {
       const run = await this.entity('sys/calendar_run').load$(msg.run_id)
       if (null == run) return { ok: false, why: 'not-found' }
 
+      // THE RUN IS REACHED THROUGH ITS CONFERENCE, AND THAT IS THE ACCESS
+      // CHECK. run_id comes from the browser via aim:web,on:cag,watch:run,
+      // and `sys/` entities are exempt from @seneca/owner by design
+      // (`ignore: ['sys:entity,base:sys']`, basic.ts) - so reading the run
+      // rows directly asked nobody's permission, and a run id held or guessed
+      // by any signed-in user returned another org's segment titles, calendar
+      // account names, recipient counts, UIDs and error strings.
+      //
+      // cag/fixture IS owner-annotated, so resolving the conference first
+      // puts this read behind the same enforcement as every other read in the
+      // app rather than inventing a second one. At Stage 4 that moves behind
+      // concern:tenant and this inherits it (see srv/cag/ent_util.ts).
+      const top = await this.entity('cag/fixture').load$(run.top_id)
+      if (null == top) return { ok: false, why: 'not-found' }
+
       const jobs = (await this.entity('sys/calendar_job').list$({ run_id: msg.run_id }))
         .map((r: any) => r.data$(false))
         .sort((a: any, b: any) => (a.id < b.id ? -1 : 1))
@@ -236,9 +401,8 @@ export default function CalendarQueue(this: any, options: any) {
       }, {})
 
       // The conference's NAME. A run screen headed `demo_conf` is a log; one
-      // headed "Demo Conf 2027" is a report.
-      const top = await this.entity('cag/fixture').load$(run.top_id)
-
+      // headed "Demo Conf 2027" is a report. Already loaded above, where it
+      // doubles as the access check.
       return {
         ok: true,
         title: String((top && top.title) || run.top_id),
