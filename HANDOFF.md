@@ -104,6 +104,25 @@ confirmed to bite by reintroducing the bug on purpose — worth doing for anythi
 ## Open, and Jose's to do
 
 - **Merge PR #17** when reviewed.
+- **Disconnect Workers Builds until Stage 4.** The `Workers Builds: conf-agenda` check is red on
+  every PR and on `main`, and always has been - it first appears on `a789a5b` (PR #15); PR #14 has
+  no checks at all, so the Cloudflare GitHub App was connected between them. It is **not** a
+  regression and it does not block a merge: #15 and #16 both merged with it red, and GitHub still
+  reports `MERGEABLE`.
+
+  It fails in **0 seconds** with no log and creates no deployment, because there is nothing to
+  build: no root `wrangler.toml`, `cloudflare:` is commented out in `model/env.aon`, and
+  `gen/env/` holds only `local` and `aws`. The one `wrangler.toml` in the repo is the `cf-spike`
+  worker under `docs/decisions/cloudflare-spike/`. Cloudflare deployment is Stage 4 (§19.6); the
+  integration was simply connected ahead of the work.
+
+  Fix: **Cloudflare dashboard -> Workers & Pages -> `conf-agenda` -> Settings -> Build ->
+  disconnect the Git repository.** Do it there, not in GitHub, so the app stays installed for any
+  other voxgig repo. Reconnect at Stage 4, when `docs/decisions/cloudflare-spike.md`'s blockers
+  are dealt with - the gateway is not on npm, `cookie` needs pinning to 0.6.0, `@seneca/reload`
+  must be off for Workers, and the handler-map problem is unsolved for `@voxgig/build` apps.
+
+  A red check that means nothing on every PR is how a red check that means something gets missed.
 - **Five PLATFORM.md corrections to raise with Richard verbally** — §3.1's "does not exist" entries
   for the Cloudflare packages, the retired §6 Cloudflare risk, the `.aon`/`.aontu` extension
   mismatches, §1.4's `web.allow`/`api.active` shape, and the duplicate Cloudflare repo pairs.
