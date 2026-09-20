@@ -13,6 +13,7 @@ no memory.
 | [fixture-model-inheritance.md](fixture-model-inheritance.md) | Where `cag/fixture` comes from — the field-by-field mapping from `fixture-srv`'s `core/fixture`, and every deliberate departure (epoch ms, no `t_tzo`, `public` inverted to `private`, the `kind` code set, venue on the fixture). |
 | [ontology-mechanism.md](ontology-mechanism.md) | How `ontology.aon` actually works: `@"std/system"` is served from the engine, and relation edges come from **data**, not type declarations — declaring `cag/fixture contains cag/fixture` is a self-loop that `acyclic` correctly rejects. |
 | [calendar-ledger.md](calendar-ledger.md) | Where the sync ledger lives while `@seneca/calendar` catches up, why it answers `sys:calendar,*` rather than `concern:*`, why the fake provider is built **first**, and the two orderings that are load-bearing (cancellation before the hash; links scoped by `top_id`). |
+| [editable-grid.md](editable-grid.md) | The segment intents and the undo contract: why `inverse` breaks `@voxgig/build` **as a false green**, why the browser store cannot invalidate the grid whatever is in its write list, save-time guards versus the publish gate, and the six rules an app-local undo log needs. |
 | [web-env-and-generic-ent.md](web-env-and-generic-ent.md) | Why the generated generic `ent` service is never declared, why the generated test suites are out of the run, the vendored browser-store, and the still-open generic-admin gap. |
 
 Two of these record a mistake as well as a decision — the Cloudflare verdict that was wrong for a

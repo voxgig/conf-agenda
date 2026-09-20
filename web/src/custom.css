@@ -872,3 +872,67 @@ tr:hover .vg-rowmenu-btn,
   .ca-run-row { grid-template-columns: 6rem minmax(0, 1fr); row-gap: 4px; }
   .ca-run-ms { text-align: left; }
 }
+
+/* ---- editing: the ghost, the drop slots, the toast, the error count ----
+ *
+ * Built to GridMove.dc.html. Every value here is a theme token rather than
+ * the mockup's hex, so the grid stays one system with the rest of the app in
+ * both modes - the mockup is the dark rendering of these, not a palette.
+ */
+
+/* The origin slot's placeholder, held until the move settles. It keeps the
+ * ORIGINAL row span so the grid does not reflow under the pointer. */
+.ca-ghost {
+  border: 1px dashed var(--vg-border-strong);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: var(--vg-muted);
+  pointer-events: none;
+}
+
+/* Drop targets. Invisible until something is being dragged - an empty grid
+ * ruled into boxes reads as a table, which is the thing this grid is not. */
+.ca-slot {
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: background var(--vg-t-fast), border-color var(--vg-t-fast);
+}
+.ca-grid:has([draggable='true']:active) .ca-slot,
+.ca-slot.ca-slot-over {
+  border-color: var(--vg-border);
+  background: color-mix(in srgb, var(--vg-accent) 6%, transparent);
+}
+
+.ca-seg[draggable='true'] { cursor: grab; }
+.ca-seg[draggable='true']:active { cursor: grabbing; }
+
+/* The toast IS the undo affordance, so it sits above the footer where the
+ * eye already is after a move, and it names what happened. */
+.ca-toast {
+  position: fixed; left: 50%; bottom: 56px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 12px;
+  background: var(--vg-surface-raised, var(--vg-surface));
+  border: 1px solid var(--vg-border-strong);
+  border-radius: 8px;
+  padding: 10px 16px;
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.5);
+  font-size: 12.5px;
+  z-index: 20;
+}
+.ca-toast-undo { display: flex; align-items: center; gap: 6px; color: var(--vg-muted); }
+
+/* "2 errors — room-double-booked +1". Publication is blocked while any
+ * remain (SPEC 16), so this belongs beside the publish state. */
+.ca-errpill {
+  display: flex; align-items: center; gap: 7px;
+  background: color-mix(in srgb, var(--vg-danger) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--vg-danger) 50%, transparent);
+  border-radius: 6px;
+  padding: 4px 11px;
+  font-size: 11.5px;
+  color: var(--vg-danger);
+}
+.ca-errdot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--vg-danger); flex-shrink: 0;
+}

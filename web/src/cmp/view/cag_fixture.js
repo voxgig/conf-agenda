@@ -21,6 +21,8 @@
 // organiser must see drafts, which agenda.json deliberately never contains.
 
 import { bus } from '../../bus.js'
+import { msgFor, patterns } from '../../model.js'
+import { buildInverse, makeUndoStack, webMessage } from '../../undo.js'
 import { renderSyncPlan } from './sync_plan.js'
 import { renderSyncRun } from './sync_run.js'
 
@@ -101,6 +103,27 @@ class VgViewCagFixture extends HTMLElement {
     // item, because it is a thing you do TO a conference, not a place.
     this.mode = 'grid'
     this.onKey = this.onKey.bind(this)
+
+    // Undo is a log of INVERSE MESSAGES, not a stack of snapshots - see
+    // src/undo.js. Cleared whenever the scope changes, because a stale entry
+    // posts an edit against a row the organiser is no longer looking at.
+    this.undo = makeUndoStack()
+
+    // SINGLE-FLIGHT. One mutation in the air at a time; the next queues
+    // behind it. Without this, two fast Shift-arrows reconcile
+    // last-response-wins - a visible ghost move - and the undo stack ends up
+    // ordered by when the server answered rather than by what the organiser
+    // did, so `u` undoes the wrong one.
+    this.pending = null
+
+    // The origin slot's "moved from here" placeholder, and the toast that
+    // names the move. Both are cleared when the move settles.
+    this.ghost = null
+    this.toast = null
+
+    // Live validation (SPEC 19.4), re-run after every settled intent. The
+    // header shows the count; the panel is a separate piece of work.
+    this.diagnostics = []
   }
 
   connectedCallback() {
@@ -117,7 +140,7 @@ class VgViewCagFixture extends HTMLElement {
     if (this.onNavigate) this.onNavigate(canon, id)
   }
 
-  async reload() {
+  async reload(focusId) {
     const msg = { aim: 'web', on: 'cag', load: 'tree' }
     if (this.fixtureId) msg.fixture_id = this.fixtureId
     const r = await bus.post(msg)
@@ -135,8 +158,251 @@ class VgViewCagFixture extends HTMLElement {
     // intermediate fixture, so a conference may have none.
     const days = this.days
     if (!days.some((d) => d.id === this.dayId)) this.dayId = days.length ? days[0].id : null
-    this.focusIndex = 0
+
+    // FOCUS FOLLOWS THE SESSION, not the index. A move reorders the list -
+    // that is what moving in time means - so keeping the index would leave
+    // the ring on whatever slid into that position, which is exactly the
+    // ring-and-panel disagreement paintFocus already exists to prevent.
+    const at = null == focusId ? -1 : this.sessions.findIndex((x) => x.id === focusId)
+    this.focusIndex = 0 <= at ? at : Math.min(this.focusIndex, Math.max(0, this.sessions.length - 1))
     this.render()
+
+    // THE COUNT IS PART OF LOADING THE GRID, not a consequence of editing. A
+    // conference that is already invalid - and the seeded one is, deliberately
+    // - must say so the moment it opens, or the organiser discovers it at
+    // publish time instead.
+    await this.revalidate()
+  }
+
+  /** Rooms as columns, in the order the grid draws them. */
+  get roomList() {
+    return (this.data.rooms || []).slice().sort((a, b) => (a.order || 0) - (b.order || 0))
+  }
+
+  /** Wall time in the conference zone (SPEC 8.3). */
+  clock(ms) {
+    return clockFor((this.data.top || {}).t_tzn)(ms)
+  }
+
+  /** Errors first, warnings after - the header names the first and counts the rest. */
+  get errorCount() {
+    return this.diagnostics.filter((d) => 'error' === d.severity).length
+  }
+
+  /**
+   * POST ONE INTENT, AND SETTLE EVERYTHING THAT FOLLOWS FROM IT.
+   *
+   * Every mutation in this component goes through here, and so does every
+   * undo - which is what makes "always invalidate, always reload, never touch
+   * the stack on failure" one rule rather than six call sites that each
+   * remember most of it.
+   *
+   * `service` is the SERVICE pattern (aim:cag,move:segment). webMessage turns
+   * it into the aim:web proxy the browser is allowed to post; the gateway
+   * accepts nothing else.
+   */
+  async mutate(service, args, label) {
+    // SINGLE-FLIGHT. Queue behind whatever is already in the air, so the
+    // stack ends up ordered by what the organiser did rather than by when the
+    // server happened to answer.
+    while (this.pending) {
+      try { await this.pending } catch (e) { /* reported by its own caller */ }
+    }
+
+    const base = webMessage(service)
+    if (null == base) return { ok: false, why: 'bad-intent' }
+
+    const run = bus.post({ ...base, ...args })
+    this.pending = run
+
+    let out
+    try { out = await run }
+    catch (e) { out = { ok: false, why: 'transport-failed' } }
+    finally { this.pending = null }
+
+    if (out && out.ok) {
+      // ONLY NOW. An inverse map reads `result.*`, so before the answer there
+      // is nothing to build and anything pushed would be a guess. This is
+      // also why a rolled-back write never has to be un-pushed.
+      const inverse = buildInverse(msgFor(service), args, out, patterns())
+      this.undo.push(inverse, label)
+      this.say(label, null != inverse)
+    } else {
+      this.say('Could not ' + label + ' \u2014 ' + ((out && out.why) || 'unknown'), false)
+    }
+
+    await this.settle(out && out.ok && out.item ? out.item.id : args.fixture_id)
+    return out
+  }
+
+  /**
+   * Drop the grid's cached read, refetch, and recount the diagnostics.
+   *
+   * THE STORE CANNOT DO THIS FOR US, and no entry in its `write` verb list
+   * ever could. Its cache group is zone / on / <value of the verb key>, so
+   * the grid's read is `web/cag/tree` while move:segment is
+   * `web/cag/segment` - different groups, and invalidateGroup matches
+   * exactly. Adding 'move' to the write list changes which group is dropped,
+   * never which read is refreshed, so web/src/bus.js is deliberately left
+   * alone and the invalidation is explicit here.
+   *
+   * ON FAILURE TOO. A rejected write heals only the write's OWN group, so the
+   * grid would otherwise keep both its wrong optimistic state and its stale
+   * tree - and the optimistic state is the one the organiser is looking at.
+   */
+  async settle(focusId) {
+    this.ghost = null
+    try {
+      await bus.act('sys:browser-store,invalidate:group', { group: 'web/cag/tree' })
+    } catch (e) {
+      // No store registered (a bare test page). The reload below is the point.
+    }
+    // reload() recounts the diagnostics itself.
+    await this.reload(focusId)
+  }
+
+  /**
+   * Live validation (SPEC 19.4), for the header's error count.
+   *
+   * A SECOND ROUND-TRIP ON PURPOSE. The count has to be the server's answer:
+   * a browser that recomputed room-double-booked would be reimplementing the
+   * rule, and the two would drift. It arrives a moment after the move lands,
+   * which is honest - the move is optimistic, the verdict is not.
+   */
+  async revalidate() {
+    if (null == this.fixtureId) return
+    let r
+    try {
+      r = await bus.post({
+        aim: 'web', on: 'cag', validate: 'fixture', fixture_id: this.fixtureId,
+      })
+    } catch (e) {
+      return
+    }
+    this.diagnostics = (r && r.ok && r.diagnostics) || []
+    if (this.isConnected && 'grid' === this.mode) this.render()
+  }
+
+  /** The toast. It NAMES the move - "Saved" tells an organiser nothing. */
+  say(text, undoable) {
+    this.toast = { text, undoable }
+    if (this.toastTimer) clearTimeout(this.toastTimer)
+    this.toastTimer = setTimeout(() => {
+      this.toast = null
+      if (this.isConnected && 'grid' === this.mode) this.render()
+    }, 6000)
+  }
+
+  // ---- the intents -------------------------------------------------------
+  // Each builds the TARGET and posts it. None of them computes the new row:
+  // the server decides what a move means, and a browser that decided would be
+  // the business rule, unreviewably (PLATFORM 1.2).
+
+  /** Optimistic: move the card now, reconcile when the server answers. */
+  applyMoveLocally(id, room_id, t_start) {
+    const seg = (this.data.segments || []).find((x) => x.id === id)
+    if (null == seg) return
+    this.ghost = {
+      id, title: seg.title, room_id: seg.room_id,
+      t_start: seg.t_start, t_end: seg.t_end,
+    }
+    const span = (seg.t_end || t_start) - (seg.t_start || t_start)
+    if (null != room_id) seg.room_id = room_id
+    seg.t_start = t_start
+    seg.t_end = t_start + span
+    this.render()
+  }
+
+  async moveSegment(session, room_id, t_start) {
+    if (null == session) return
+    const rooms = this.roomList
+    const name = (rooms.find((r) => r.id === room_id) || {}).name || room_id
+    const label = 'Moved ' + (session.title || session.id) +
+      ' \u2192 ' + name + ' \u00b7 ' + this.clock(t_start)
+
+    this.applyMoveLocally(session.id, room_id, t_start)
+    await this.mutate('aim:cag,move:segment',
+      { fixture_id: session.id, room_id, t_start }, label)
+  }
+
+  /** `Shift`-arrows: one room sideways, one slot up or down. */
+  async nudge(session, dx, dy) {
+    if (null == session) return
+    const rooms = this.roomList
+    if (0 === rooms.length) return
+
+    let room_id = session.room_id
+    if (0 !== dx) {
+      const at = rooms.findIndex((r) => r.id === session.room_id)
+      const next = Math.min(rooms.length - 1, Math.max(0, (at < 0 ? 0 : at) + dx))
+      room_id = rooms[next].id
+    }
+    const t_start = (session.t_start || 0) + dy * HALF_HOUR
+    await this.moveSegment(session, room_id, t_start)
+  }
+
+  async cycleStatus(session) {
+    if (null == session) return
+    // draft -> confirmed -> cancelled -> draft. The CYCLE is the UI's; the
+    // message takes the status it is moving to, which is what gives it an
+    // inverse worth declaring.
+    const order = ['draft', 'confirmed', 'cancelled']
+    const at = order.indexOf(String(session.status || 'draft'))
+    const status = order[(at < 0 ? 0 : at + 1) % order.length]
+    await this.mutate('aim:cag,set:status',
+      { fixture_id: session.id, status },
+      (session.title || session.id) + ' \u2192 ' + status)
+  }
+
+  async duplicateSegment(session) {
+    if (null == session) return
+    await this.mutate('aim:cag,duplicate:segment', { fixture_id: session.id },
+      'Duplicated ' + (session.title || session.id))
+  }
+
+  /** `n`: a new session beside the focused one, in the same room. */
+  async makeSegment(session) {
+    const parent_id = null == session ? this.dayId || this.fixtureId : session.parent_id
+    if (null == parent_id) return
+
+    const t_start = null == session
+      ? (this.data.top || {}).t_start
+      : session.t_end
+    if (null == t_start) return
+
+    await this.mutate('aim:cag,make:segment', {
+      parent_id,
+      room_id: null == session ? undefined : session.room_id,
+      t_start,
+      t_end: t_start + HALF_HOUR,
+    }, 'New session')
+  }
+
+  /** `u`: run the top inverse, as an ordinary edit. */
+  async undoLast() {
+    // AWAIT THE IN-FLIGHT MUTATION FIRST. Its inverse is not on the stack
+    // until it settles, so undoing "now" would undo the one before it - an
+    // action the organiser is not looking at.
+    while (this.pending) {
+      try { await this.pending } catch (e) { /* reported by its own caller */ }
+    }
+
+    if (0 === this.undo.depth) {
+      this.say('Nothing to undo', false)
+      this.render()
+      return
+    }
+
+    const out = await this.undo.pop((message) => bus.post(message))
+    this.say(out.ok ? 'Undone \u00b7 ' + out.label
+      : 'Could not undo \u2014 ' + out.why, false)
+
+    // FOCUS FOLLOWS THE SESSION THAT CAME BACK. An undo that lands the ring
+    // on whatever happens to sit at the old index is the ring-and-panel
+    // disagreement again, one step removed - and the organiser's eye is
+    // already on the card they just restored.
+    const restored = out.ok && out.out && out.out.item ? out.out.item.id : undefined
+    await this.settle(restored)
   }
 
   /** Intermediate `day` fixtures, in programme order. */
@@ -162,7 +428,9 @@ class VgViewCagFixture extends HTMLElement {
     }
 
     const list = this.sessions
-    if (0 === list.length) return
+    // `n` and `u` are the two that mean something on an EMPTY day - which is
+    // exactly the day you most want to add a session to.
+    if (0 === list.length && 'n' !== ev.key && 'u' !== ev.key) return
 
     // S: the sync plan. Read-only and it sends nothing - see sync_plan.js.
     if ('S' === ev.key) {
@@ -178,6 +446,44 @@ class VgViewCagFixture extends HTMLElement {
     if ('k' === ev.key.toLowerCase() && (ev.metaKey || ev.ctrlKey)) {
       ev.preventDefault()
       this.toggleBar()
+      return
+    }
+
+    // SHIFT-ARROWS BEFORE THE BARE KEYS, and for the same reason Cmd-K goes
+    // before 'k': a modifier does not change ev.key, so anything that tests
+    // the plain key first wins and the modified binding is unreachable. That
+    // is not hypothetical here - it is what kept Cmd-K dead for its whole
+    // life, and e2e/grid-keys.spec.js exists because of it.
+    const ARROW = {
+      ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1],
+    }
+    if (ev.shiftKey && ARROW[ev.key]) {
+      ev.preventDefault()
+      const [dx, dy] = ARROW[ev.key]
+      this.nudge(list[this.focusIndex], dx, dy)
+      return
+    }
+
+    // The editing keys (SPEC 13.1). Each posts a NAMED INTENT; none of them
+    // computes a row.
+    if ('n' === ev.key) {
+      ev.preventDefault()
+      this.makeSegment(list[this.focusIndex])
+      return
+    }
+    if ('d' === ev.key) {
+      ev.preventDefault()
+      this.duplicateSegment(list[this.focusIndex])
+      return
+    }
+    if ('t' === ev.key) {
+      ev.preventDefault()
+      this.cycleStatus(list[this.focusIndex])
+      return
+    }
+    if ('u' === ev.key) {
+      ev.preventDefault()
+      this.undoLast()
       return
     }
 
@@ -314,7 +620,11 @@ class VgViewCagFixture extends HTMLElement {
         ' · ' + (session.effective_status || '') +
         (names.length ? ' · ' + names.join(', ') : '') }),
       session.desc ? el('p', { text: session.desc }) : null,
-      el('p', { class: 'vg-muted', text: 'Read-only at this stage. Editing arrives in Stage 2.' }),
+      // The bindings that act on THIS session, where somebody who reached it
+      // with the mouse will see them. The panel is the discovery route for
+      // the keyboard model, not a second way of doing things.
+      el('p', { class: 'vg-muted', text:
+        'Shift-arrows move · t cycles status · d duplicates · u undoes' }),
     ].filter((n) => null != n))
   }
 
@@ -339,6 +649,27 @@ class VgViewCagFixture extends HTMLElement {
     ]
   }
 
+  /**
+   * The toast, which IS the undo affordance.
+   *
+   * It names what happened - "Moved Message Buses in the Browser -> Liffey B
+   * · 10:00" - rather than saying "Saved". An organiser who has just moved
+   * three things needs to know WHICH one this is offering to put back, and
+   * `u` is offered only when the intent actually declared an inverse.
+   */
+  renderToast() {
+    if (null == this.toast) return null
+    return el('div', { class: 'ca-toast', role: 'status' }, [
+      el('span', { text: this.toast.text }),
+      this.toast.undoable
+        ? el('span', { class: 'ca-toast-undo' }, [
+          el('span', { class: 'vg-kbd', text: 'u' }),
+          el('span', { text: ' undo' }),
+        ])
+        : null,
+    ])
+  }
+
   /** Conference picker, day pills and publish state - the mockup's header. */
   renderHead(top, list) {
     const tops = this.data.tops || []
@@ -351,6 +682,11 @@ class VgViewCagFixture extends HTMLElement {
       sel.addEventListener('change', () => {
         this.fixtureId = sel.value
         this.dayId = null
+        // The stack is fixture-scoped. A `u` left over from the last
+        // conference posts an edit against a row nobody is looking at - the
+        // server refuses it, but the UI would have claimed an undo happened.
+        this.undo.clear()
+        this.diagnostics = []
         this.reload()
       })
       kids.push(sel)
@@ -390,8 +726,23 @@ class VgViewCagFixture extends HTMLElement {
     } else {
       state.appendChild(el('span', { class: 'ca-never', text: 'Not published' }))
     }
-    state.appendChild(el('span', { text: ' · ' + list.length + ' sessions · read-only' }))
+    state.appendChild(el('span', { text: ' · ' + list.length + ' sessions' }))
     kids.push(state)
+
+    // THE ERROR COUNT, and it names the first rule rather than only counting.
+    // "2 errors" sends an organiser looking; "2 errors — room-double-booked
+    // +1" tells them where to start. Publication is blocked while any remain
+    // (SPEC 16), which is what makes this the header's business and not a
+    // panel's.
+    const errors = this.diagnostics.filter((d) => 'error' === d.severity)
+    if (0 < errors.length) {
+      const rest = errors.length - 1
+      kids.push(el('div', { class: 'ca-errpill', 'data-errors': String(errors.length) }, [
+        el('span', { class: 'ca-errdot', 'aria-hidden': 'true' }),
+        el('b', { text: errors.length + (1 === errors.length ? ' error' : ' errors') }),
+        el('span', { text: ' — ' + errors[0].rule + (0 < rest ? ' +' + rest : '') }),
+      ]))
+    }
 
     return el('div', { class: 'ca-head' }, kids)
   }
@@ -420,7 +771,11 @@ class VgViewCagFixture extends HTMLElement {
     // lands exactly. Row HEIGHT is then proportional to that slot's real
     // duration - a 15-minute gap is visibly shorter than an hour - which is
     // what makes the ladder read as time rather than as a list.
-    const marks = [...new Set(list.flatMap((s) => [s.t_start, s.t_end]))].sort((a, b) => a - b)
+    // The ghost's ORIGINAL slot is a row edge too, or rowsFor cannot place it
+    // - the session has already moved away from those times optimistically.
+    const ghostMarks = this.ghost ? [this.ghost.t_start, this.ghost.t_end] : []
+    const marks = [...new Set(list.flatMap((s) => [s.t_start, s.t_end]).concat(ghostMarks))]
+      .sort((a, b) => a - b)
     const rowIndex = new Map(marks.map((m, i) => [m, i]))
     const heights = []
     for (let i = 0; i < marks.length - 1; i++) {
@@ -456,6 +811,20 @@ class VgViewCagFixture extends HTMLElement {
       }))
     }
 
+    // EMPTY SLOTS, one per (room x row). They are the drop targets, and they
+    // are appended BEFORE the cards so a card is always on top of the slot it
+    // sits in. Without them a drag has nowhere to land - the grid draws only
+    // what is occupied.
+    rooms.forEach((r, c) => {
+      for (let i = 0; i < marks.length - 1; i++) {
+        grid.appendChild(el('div', {
+          class: 'ca-slot', 'aria-hidden': 'true',
+          'data-slot': '', 'data-room': r.id, 'data-start': String(marks[i]),
+          style: 'grid-column: ' + (c + 2) + '; grid-row: ' + (i + 2) + ';',
+        }))
+      }
+    })
+
     const rowsFor = (start, end) => {
       const a = rowIndex.get(start)
       const b = rowIndex.get(end)
@@ -482,6 +851,10 @@ class VgViewCagFixture extends HTMLElement {
         'data-index': order.get(s.id),
         class: cls.join(' '),
         role: 'listitem',
+        // Drag is the pointer's route to move:segment - the SAME message
+        // Shift-arrows posts. The grid must stay fully operable from the
+        // keyboard (SPEC 13.1), so drag is the alternative, never the only way.
+        draggable: 'true',
         // A CSS grid has no table semantics, so each card carries its own
         // context: a screen reader hears room and time without the header row.
         'aria-label': [
@@ -540,12 +913,57 @@ class VgViewCagFixture extends HTMLElement {
       }
     }
 
+    // THE GHOST. The origin slot keeps a "moved from here" placeholder until
+    // the move settles, with the original row span - so the grid does not
+    // reflow under the pointer while the server is still answering, and the
+    // organiser can see what they picked up and from where.
+    if (this.ghost) {
+      const gcol = rooms.findIndex((r) => r.id === this.ghost.room_id)
+      grid.appendChild(el('div', {
+        class: 'ca-ghost', 'aria-hidden': 'true', 'data-ghost': this.ghost.id,
+        style: 'grid-column: ' + (0 <= gcol ? gcol + 2 : 2) + '; ' +
+          rowsFor(this.ghost.t_start, this.ghost.t_end),
+        text: 'moved from here',
+      }))
+    }
+
     grid.addEventListener('click', (ev) => {
       const cell = ev.target.closest && ev.target.closest('[data-session]')
       if (!cell) return
       this.focusIndex = Number(cell.getAttribute('data-index'))
       this.paintFocus()
       this.openDetail(this.sessions[this.focusIndex])
+    })
+
+    // DRAG POSTS THE SAME INTENT AS SHIFT-ARROWS. The drop target names a
+    // room and a slot; the message carries those, and the server works out
+    // what the move means. Nothing here computes a row.
+    grid.addEventListener('dragstart', (ev) => {
+      const cell = ev.target.closest && ev.target.closest('[data-session]')
+      if (!cell) return
+      ev.dataTransfer.effectAllowed = 'move'
+      // Some browsers refuse to start a drag with no payload set.
+      try { ev.dataTransfer.setData('text/plain', cell.getAttribute('data-session')) } catch (e) {}
+      this.dragging = cell.getAttribute('data-session')
+    })
+    grid.addEventListener('dragover', (ev) => {
+      if (null == this.dragging) return
+      ev.preventDefault()
+      ev.dataTransfer.dropEffect = 'move'
+    })
+    grid.addEventListener('drop', (ev) => {
+      if (null == this.dragging) return
+      ev.preventDefault()
+      const id = this.dragging
+      this.dragging = null
+
+      const slot = ev.target.closest && ev.target.closest('[data-slot]')
+      if (!slot) return
+      const session = (this.data.segments || []).find((x) => x.id === id)
+      if (null == session) return
+
+      this.moveSegment(session, slot.getAttribute('data-room'),
+        Number(slot.getAttribute('data-start')))
     })
 
     const bar = el('div', { 'data-bar': '', hidden: '', class: 'vg-bar' }, [
@@ -570,8 +988,15 @@ class VgViewCagFixture extends HTMLElement {
       el('span', { class: 'vg-kbd', text: keys }),
       el('span', { text: label }),
     ])
+    // ONLY KEYS THAT WORK. A hint for a binding that does nothing is worse
+    // than no hint - `v` (validate panel) and `P` (publish) stay off until
+    // they do something.
     const foot = el('div', { class: 'ca-foot' }, [
       hint('j k', 'move'),
+      hint('Shift-arrows', 'move session'),
+      hint('n', 'new'),
+      hint('d', 'duplicate'),
+      hint('t', 'status'),
       hint('Enter', 'open'),
       hint('⌘K', 'commands'),
       hint('S', 'sync plan'),
@@ -589,6 +1014,7 @@ class VgViewCagFixture extends HTMLElement {
         // component that failed to load.
         el('div', { 'data-detail': '', class: 'vg-detail-panel', hidden: '' }),
         foot,
+        this.renderToast(),
         el('div', { 'data-live': '', 'aria-live': 'polite', class: 'vg-sr' }),
       ]),
     )
