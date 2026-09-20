@@ -17,6 +17,7 @@ Sign in as `alice@example.com` / `alice-pass-01`.
 
 | | |
 |---|---|
+| [HANDOFF.md](HANDOFF.md) | **Start here.** Where the project is, what is next, and the traps that have already cost time |
 | [DEMO.md](DEMO.md) | How to show it — seven minutes, six surfaces, and what to say when asked |
 | [docs/tutorial.md](docs/tutorial.md) | Start here to work on it |
 | [docs/decisions/](docs/decisions/README.md) | Why things are the way they are |
