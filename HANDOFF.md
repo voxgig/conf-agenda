@@ -31,12 +31,13 @@ validation in the header — is open as **PR #18** on branch `grid-intents`.
 | The `nodeconf` fixture | the real published NodeConf EU 2026 programme — 2 days, 34 sessions, 27 speakers. Not seeded; `tiny` + `demo` still are |
 | Bus-drive | the full journey through `window.seneca.post()` with zero DOM interaction (PLATFORM §10), and a guard that fails if the spec ever grows a click |
 | The binding registry | one ordered list behind the key handler, the `?` overlay, the footer and the command bar — order is precedence, and the overlay cannot drift |
+| The second MCP tool | `conf_agenda_session_find`, plus the first tests the MCP surface has ever had |
 
 | Not done, in rough order | |
 |---|---|
 
 | `provider:google` | Needs OAuth credentials that do not exist yet. Last among the OAuth providers **on purpose** — the machinery it plugs into is already proven by two providers that can be tested offline. |
-| Content | The public Astro page; the `go` SDK; a second MCP tool. |
+| Content | The public Astro page — **blocked**, see below; the `go` SDK — blocked on the SDK chain. |
 | **A workshop fixture** | No fixture carries `wrk` or outdoor sessions — the real NodeConf EU 2026 edition has neither, and SPEC §2's description of a country-house edition no longer matches the conference. See `docs/decisions/nodeconf-fixture.md`; needs a programme somebody has a copy of. |
 | Blocked | The SDK chain — neither `apidef` nor `sdkgen` bootstraps the `.sdk/` scaffold both require. Written up in `sdk/README.md`. |
 
@@ -63,7 +64,7 @@ cd web     && PLAYWRIGHT_CHROMIUM_PATH=/home/jose/.cache/ms-playwright/chromium-
 ```
 
 Sign in as `alice@example.com` / `alice-pass-01`. Current green:
-**272 backend · 47 e2e · 13 web unit · 7 embed**.
+**285 backend · 47 e2e · 13 web unit · 7 embed**.
 
 `web/` has a unit runner now — `cd web && npm test` (`node --test test/*.test.mjs`) — because
 `buildInverse` is pure and the path resolution, the falsy-value case and the undo stack semantics
@@ -113,6 +114,14 @@ it first.
 
 **RFC 5545 folds any line past 75 octets**, so ATTENDEE lines are routinely split. Asserting on the
 raw `.ics` tests the folding, not the content.
+
+**`npm` cannot reach the registry from this machine, but `curl` can.** `npm install` of anything
+new fails with `ETIMEDOUT` after three attempts, and so does a plain `node` HTTPS request to
+`registry.npmjs.org` — while `curl` to the same host returns 200 in ~1.5s, and DNS resolves fine.
+So it is node's outbound egress, not the network and not npm's config (it fails with
+`--userconfig /dev/null` too). **Everything already in `node_modules` works; nothing new can be
+added.** That is what blocks the public Astro page, which needs `astro` installed. There is also an
+npm auth token in `~/.npmrc` — unrelated to this, but worth rotating if it is stale.
 
 **A green suite is not a built suite.** `npm run build` is `model-build && tsc`, so a model-build
 failure means tsc never runs - and `npm test` then passes against the *previous* `dist-test`. A
