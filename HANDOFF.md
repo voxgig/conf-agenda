@@ -11,10 +11,9 @@ any of this got here. The reasoning lives in `docs/decisions/`; this is the map.
 validation, the published snapshot, the public read path, the embed, the `.ics`/`.csv` feeds, the
 CLI, the MCP tool, and the calendar stub that was the last gap.
 
-**Stage 2 (§19.4): most of the way.** The calendar track is built and open as **PR #17**
-(branch `calendar-ledger`, 6 commits plus a review pass). The **editable grid** — the segment
-intents, undo via each message's declared `inverse`, and live validation in the header — is built
-on **`grid-intents`**, branched off `calendar-ledger` because #17 had not landed.
+**Stage 2 (§19.4): most of the way.** The calendar track is **merged** (PR #17, `087fef4`). The
+**editable grid** — the segment intents, undo via each message's declared `inverse`, and live
+validation in the header — is open as **PR #18** on branch `grid-intents`.
 
 | Done | |
 |---|---|
@@ -124,7 +123,7 @@ confirmed to bite by reintroducing the bug on purpose — worth doing for anythi
 
 ## Open, and Jose's to do
 
-- **Merge PR #17** when reviewed.
+- **Merge PR #18** (the editable grid) when reviewed.
 - **Disconnect Workers Builds until Stage 4.** The `Workers Builds: conf-agenda` check is red on
   every PR and on `main`, and always has been - it first appears on `a789a5b` (PR #15); PR #14 has
   no checks at all, so the Cloudflare GitHub App was connected between them. It is **not** a
