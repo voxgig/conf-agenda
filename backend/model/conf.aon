@@ -10,3 +10,11 @@ port: {
   frontend: 50501
   repl: 50502
 }
+
+
+## Where speaker photos and other files live, relative to backend/. Checked by
+## SPEC 16.1's `broken-asset` and `asset-escapes-root` - and containment is
+## judged on the CANONICAL path, after resolving symlinks, because a symlink
+## inside this root pointing outside it would otherwise be copied into public
+## output by a build running in CI.
+assets: root: 'assets'

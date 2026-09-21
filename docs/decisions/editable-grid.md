@@ -207,3 +207,48 @@ the organiser without telling them is worse than not moving.
 It also opens with a fresh `validate:fixture` rather than trusting the header's count. The count is
 refreshed after every settled intent, but `v` is also what an organiser presses after doing nothing
 for ten minutes, and §13.1 says `v` means *validate now*.
+
+## The last four §16.1 rules, and two things they forced
+
+`fixture-cycle`, `bad-color-contrast`, `broken-asset` and `asset-escapes-root` complete §16.1, and
+the eight remaining §16.2 warnings land with them. Each has a triggering case and a non-triggering
+near-miss (SPEC §18) — an error that fires when it should not blocks a real conference from
+publishing.
+
+**A cycle is unreachable from the top, so the rule could never have fired where it was first put.**
+None of a ring's members has an ancestor chain that arrives at the conference, so `resolve:tree`
+does not return one and `cycles(input)` over the resolved subtree is structurally incapable of
+seeing anything. It runs instead over everything that claims this conference via the denormalised
+`top_id` — fixtures that still say they belong to it even though the tree can no longer reach them.
+Scoping by org alone was the alternative and is wrong: a corrupt tree in one conference would block
+publication of another.
+
+**The rules stay pure, so the filesystem work happens outside them.** `src/lib/assets.ts` resolves
+paths once and the rules are handed facts. Containment is judged on the **canonical** path, after
+`realpath`: a symlink sitting inside the assets root and pointing outside it normalises to an
+inside path and resolves to an outside file, and a build running in CI would copy it into public
+output. Existence and containment fail independently, which is why the spec says to check both —
+`../../secrets.txt` may well exist, and a path inside the root may well be missing.
+
+**A rule that needs more than the tree can skip silently.** Both of the above return `[]` when they
+are not given their extra input — correct for a pure function, and indistinguishable from "nothing
+is wrong". `srv-cag-validate.test.ts` asserts each fires *through the service*, which is the only
+place the wiring is visible.
+
+### The contrast threshold is 3:1, and that was checked rather than assumed
+
+`bad-color-contrast` first used 4.5:1 — AA for text — and failed three of the project's own brand
+colours on a fixture that is meant to publish clean. That is the shape of a rule about to be
+ignored, so the question became what the app actually draws.
+
+It never renders a raw track colour as text. It is `.ca-seg-strip`'s background — a 3px rule that
+identifies the track — and `.ca-seg-chip`'s background at 14%, whose *text* is
+`color-mix(track 62%, var(--vg-text))`, mixed toward the body colour precisely so it reads on
+either ground. So the criterion is WCAG 1.4.11 **non-text** contrast, 3:1, and the comment in
+`contrast.ts` says why.
+
+At 3:1 exactly one fixture colour still failed, and genuinely: vox-teal `#00c6d8` is **2.1:1** on
+the white card surface. The demo fixture's Frontend track moved to `#2f7fd4` (4.0 dark / 4.1
+light). That is the rule doing its job on real data rather than the data being bent to fit it — and
+it is worth saying out loud that the brand's teal is not usable as a meaning-carrying mark on a
+light ground.

@@ -6,6 +6,9 @@
       "version": "v1"
     },
     "conf": {
+      "assets": {
+        "root": "assets"
+      },
       "core": {
         "name": "conf-agenda",
         "short": "conf-agenda",

@@ -27,12 +27,12 @@ validation in the header — is open as **PR #18** on branch `grid-intents`.
 | The editable grid | seven named intents, `Shift`-arrows and drag, `n`/`d`/`t`, undo-as-inverse, the header's live error count |
 | Live validation | the header count, and `v` for the diagnostics panel — `j`/`k`, `Enter` to jump, and the publish gate stated |
 | The admin's writes | per-entity `make`/`update`/`remove` intents, a two-step delete, and a refusal that names what still holds a row |
+| Validation | **all 10 §16.1 errors and all 14 §16.2 warnings**, each with a triggering case and a near-miss |
 
 | Not done, in rough order | |
 |---|---|
 
 | `provider:google` | Needs OAuth credentials that do not exist yet. Last among the OAuth providers **on purpose** — the machinery it plugs into is already proven by two providers that can be tested offline. |
-| Validation | 4 of 10 error rules and 8 of 14 warnings missing (`fixture-cycle` as a diagnostic, `bad-color-contrast`, `broken-asset`, `asset-escapes-root`). Plus live validation in the app (mockup 3). |
 | Content | The `nodeconf` fixture from the real programme; the public Astro page; the `go` SDK; a second MCP tool. |
 | Blocked | The SDK chain — neither `apidef` nor `sdkgen` bootstraps the `.sdk/` scaffold both require. Written up in `sdk/README.md`. |
 
@@ -59,7 +59,7 @@ cd web     && PLAYWRIGHT_CHROMIUM_PATH=/home/jose/.cache/ms-playwright/chromium-
 ```
 
 Sign in as `alice@example.com` / `alice-pass-01`. Current green:
-**229 backend · 44 e2e · 13 web unit · 7 embed**.
+**263 backend · 44 e2e · 13 web unit · 7 embed**.
 
 `web/` has a unit runner now — `cd web && npm test` (`node --test test/*.test.mjs`) — because
 `buildInverse` is pure and the path resolution, the falsy-value case and the undo stack semantics
@@ -115,6 +115,15 @@ failure means tsc never runs - and `npm test` then passes against the *previous*
 false green, and it looks exactly like a real one. After anything that touches `model/`, check
 that the build exited 0 before believing the tests. The same trap bites any workflow that edits
 source and reruns tests without rebuilding.
+
+**A rule that needs more than the tree can skip SILENTLY.** `bad-color-contrast` needs the theme's
+surfaces and the asset rules need a filesystem checker; given neither, both return `[]` — correct
+for a pure function, and indistinguishable from "nothing is wrong". `srv-cag-validate.test.ts`
+asserts each one fires *through the service*, which is the only place the wiring is visible.
+
+**A cycle is unreachable from the top, so `resolve:tree` never returns one.** `fixture-cycle`
+therefore runs over everything that claims this conference via the denormalised `top_id`, not over
+the resolved subtree — where it could never have fired at all.
 
 **A test that walks the model must assert a known-present *and* a known-absent case.** The surface
 test went vacuously green once already. Two later tests (`grid-keys`, `calendar-sync`) were

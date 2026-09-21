@@ -252,3 +252,139 @@ describe('warnings', () => {
     assert.match(d.fix, /Expected/)
   })
 })
+
+
+describe('warnings: the SPEC 16.2 rules added with the rest', () => {
+  // Each with a near-miss, same as everywhere else. These are WARNINGS, so an
+  // over-eager one does not block a conference - it just trains people to
+  // stop reading the panel, which is worse in the long run.
+
+  const twoInTrack = (t2: any) => warnings(input({
+    segments: [
+      seg({ id: 'a', title: 'A', track_id: 't1', t_start: T(10), t_end: T(11) }),
+      seg({ id: 'b', title: 'B', track_id: 't1', ...t2 }),
+    ],
+  }))
+
+  test('track-overlap TRIGGERS on two sessions of one track at one time', () => {
+    const out = twoInTrack({ t_start: T(10, 30), t_end: T(12) })
+    assert.ok(rules(out).includes('track-overlap'))
+    const d = out.find((x: any) => 'track-overlap' === x.rule)
+    // Both sides, plus the track (SPEC 16.3).
+    assert.deepEqual(d.related.filter((r: any) => 'cag/fixture' === r.canon)
+      .map((r: any) => r.id).sort(), ['a', 'b'])
+  })
+
+  test('track-overlap near-miss: touching is not overlapping', () => {
+    // Half-open intervals, the same rule room-double-booked follows.
+    const out = twoInTrack({ t_start: T(11), t_end: T(12) })
+    assert.ok(!rules(out).includes('track-overlap'))
+  })
+
+  test('orphan-track TRIGGERS on a track no session uses', () => {
+    const out = warnings(input({ segments: [seg({ id: 'a', title: 'A', t_start: T(10), t_end: T(11) })] }))
+    assert.ok(rules(out).includes('orphan-track'))
+  })
+
+  test('orphan-track near-miss: a used track is not orphaned', () => {
+    const out = warnings(input({
+      segments: [seg({ id: 'a', title: 'A', track_id: 't1', t_start: T(10), t_end: T(11) })],
+    }))
+    assert.ok(!rules(out).includes('orphan-track'))
+  })
+
+  test('no-turnover TRIGGERS on a gap too short to change the room over', () => {
+    const out = warnings(input({
+      segments: [
+        seg({ id: 'a', title: 'A', room_id: 'r1', t_start: T(10), t_end: T(11) }),
+        seg({ id: 'b', title: 'B', room_id: 'r1', t_start: T(11, 5), t_end: T(12) }),
+      ],
+    }))
+    assert.ok(rules(out).includes('no-turnover'))
+  })
+
+  test('no-turnover near-miss: an OVERLAP is an error, and is not said twice', () => {
+    // room-double-booked already reports it. Saying it again as a warning is
+    // one problem wearing two severities.
+    const out = warnings(input({
+      segments: [
+        seg({ id: 'a', title: 'A', room_id: 'r1', t_start: T(10), t_end: T(11) }),
+        seg({ id: 'b', title: 'B', room_id: 'r1', t_start: T(10, 30), t_end: T(12) }),
+      ],
+    }))
+    assert.ok(!rules(out).includes('no-turnover'))
+  })
+
+  test('long-gap TRIGGERS on a hole in the programme', () => {
+    const out = warnings(input({
+      segments: [
+        seg({ id: 'a', title: 'A', room_id: 'r1', t_start: T(9), t_end: T(10) }),
+        seg({ id: 'b', title: 'B', room_id: 'r1', t_start: T(13), t_end: T(14) }),
+      ],
+    }))
+    assert.ok(rules(out).includes('long-gap'))
+  })
+
+  test('long-gap near-miss: a normal break is not a hole', () => {
+    const out = warnings(input({
+      segments: [
+        seg({ id: 'a', title: 'A', room_id: 'r1', t_start: T(9), t_end: T(10) }),
+        seg({ id: 'b', title: 'B', room_id: 'r1', t_start: T(10, 30), t_end: T(11) }),
+      ],
+    }))
+    assert.ok(!rules(out).includes('long-gap'))
+  })
+
+  test('missing-bio and missing-photo TRIGGER for a speaker ON the programme', () => {
+    const out = warnings(input({
+      segments: [seg({ id: 'a', title: 'A', t_start: T(10), t_end: T(11) })],
+      appearances: [{ id: 'x', fixture_id: 'a', speaker_id: 'sp1' }],
+    }))
+    assert.ok(rules(out).includes('missing-bio'))
+    assert.ok(rules(out).includes('missing-photo'))
+  })
+
+  test('missing-bio near-miss: an unused speaker is orphan-speaker, not this', () => {
+    // Speakers are org-scoped and carry across editions. Last year's speaker
+    // with no bio is not this conference's problem.
+    const out = warnings(input({ segments: [] }))
+    assert.ok(rules(out).includes('orphan-speaker'))
+    assert.ok(!rules(out).includes('missing-bio'))
+    assert.ok(!rules(out).includes('missing-photo'))
+  })
+
+  test('draft-in-publish TRIGGERS on a draft session', () => {
+    const out = warnings(input({
+      segments: [seg({ id: 'a', title: 'A', effective_status: 'draft', t_start: T(10), t_end: T(11) })],
+    }))
+    assert.ok(rules(out).includes('draft-in-publish'))
+  })
+
+  test('draft-in-publish near-miss: a confirmed session is not a draft', () => {
+    const out = warnings(input({
+      segments: [seg({ id: 'a', title: 'A', t_start: T(10), t_end: T(11) })],
+    }))
+    assert.ok(!rules(out).includes('draft-in-publish'))
+  })
+
+  test('deep-nesting TRIGGERS past three levels', () => {
+    const out = warnings(input({
+      segments: [
+        seg({ id: 'day', kind: 'day', title: 'Day' }),
+        seg({ id: 'strand', kind: 'day', title: 'Strand', parent_id: 'day' }),
+        seg({ id: 'talk', title: 'Talk', parent_id: 'strand', t_start: T(10), t_end: T(11) }),
+      ],
+    }))
+    assert.ok(rules(out).includes('deep-nesting'))
+  })
+
+  test('deep-nesting near-miss: conference, day, talk is three and fine', () => {
+    const out = warnings(input({
+      segments: [
+        seg({ id: 'day', kind: 'day', title: 'Day' }),
+        seg({ id: 'talk', title: 'Talk', parent_id: 'day', t_start: T(10), t_end: T(11) }),
+      ],
+    }))
+    assert.ok(!rules(out).includes('deep-nesting'))
+  })
+})
