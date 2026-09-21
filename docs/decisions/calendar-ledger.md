@@ -1,0 +1,346 @@
+# The sync ledger, and where it lives
+
+**Decided 2026-09-16.** SPEC §10 is emphatic about *what* the ledger must do and mostly silent
+about *where the code sits while the upstream plugin catches up*. This records the placement, the
+build order, and four things the toolchain forced.
+
+## Where it lives, and why not upstream yet
+
+SPEC §10.1: the work is *"an extension of the upstream plugin, not a new one"* — contributed as PRs
+to `senecajs/Calendar` where the maintainers take them, as a companion module where they do not.
+
+`@seneca/calendar` is **not a dependency of this project yet**. It is not on npm, its domain is
+time-based maintenance events, and `ctpj_intel_fox` pins it at a commit. Taking the dependency
+before the ledger's shape has settled would mean designing against an interface nobody has agreed,
+and then carrying a git pin through every change.
+
+So the ledger is built **here first**, in `backend/src/concern/CalendarSync/`, and:
+
+- It answers **`sys:calendar,*`**, not `concern:*`. Those are the patterns §10.2 names, and the
+  namespace is what makes the eventual move upstream a *lift* rather than a rename. Every caller
+  already posts the pattern it will post when the code lives in the plugin.
+- It is loaded like a concern — once, in `env/shared/basic.ts` — so there is **no `aim:` surface**
+  and nothing is gateway-reachable. `test/unit/browser-surface.test.ts` asserts that, including
+  that nothing which *sends* is declared anywhere.
+
+## The build order is the design
+
+§10.5 and the project plan both insist on it, and it is easy to get backwards:
+
+1. `sys/calendar_link` and the reconciliation loop, against a **fake provider recording every call**
+2. the safety wrap over `send:invite` — outbound cap, redaction, the ledger gate
+3. the per-conference lock (C10)
+4. `provider:google` **last**, once the safety machinery already holds
+
+Build Google first and add the dedup gate afterwards and you have shipped a thing that
+double-invites. `FakeProvider.ts` is therefore **not a test mock** — it is a real provider plugin,
+loaded always, and it is the only reason sentences like *"a full sync twice writes nothing on the
+second pass"* can be assertions rather than hopes. Those are claims about provider **calls**, and
+calls are what it counts.
+
+## Two orderings that are load-bearing
+
+**Cancellation is checked before the hash.** The content hash covers only what a speaker would
+notice about a *live* event — start, end, title, room, attendees — so a cancelled segment's hash is
+typically **unchanged**. A reconciliation that compares hashes first no-ops the cancellation and
+leaves the event alive in the speaker's calendar. `calendar-sync.test.ts` cancels a segment without
+touching any hashed field, precisely so a hash-first regression fails.
+
+**Links are scoped by `top_id`, not by walking the live tree.** That is why `top_id` is
+denormalised onto the link. A resolver that discovers events through surviving `parent_id` chains
+loses exactly the events whose ancestors were deleted — the C8 failure. The test deletes a whole
+day and asserts nothing is stranded; an orphaned event is a meeting a speaker still turns up to.
+
+## Four things the toolchain forced
+
+| | |
+|---|---|
+| **`null` in a String field** | The generated entity validator rejects an explicit `null`, exactly as `ent.aon` already records for `parent_id`. |
+| **…and so is `''`** | `valid: Skip` still refuses an empty string, so `last_error` carries `valid: 'Empty'`. "No error" has to be expressible, or a link that once failed carries that failure for ever. |
+| **`confirm` cannot be in the message shape** | Declared required, an unconfirmed `apply:sync` **throws**; given a literal default, it folds into the *pattern* and an unconfirmed call matches nothing. Both turn C4's refusal into an exception, and a refusal that arrives as a stack trace is not one the caller can act on. So `confirm` is read from the message and anything but `true` refuses. |
+| **`id$` only creates** | Saving an existing id that way is `entity-id-exists` — the same trap the snapshot upsert hit on republish. Updating a link loads the row first. |
+
+## The safety chain, and why it is prior-wraps
+
+`CalendarSafety.ts` layers three same-pattern overrides above `send:invite`, each calling
+`this.prior()`:
+
+```
+cap (C5)  ->  redaction (C7)  ->  ledger gate (C2/C3)  ->  provider dispatch
+```
+
+**Where they sit is the design, not what they do.** Above the dispatch, they hold for *every*
+provider — including ones added years from now by someone who never reads this file. Put them
+inside a provider and the next provider ships without them; put them inside `apply:sync` and the
+next caller — a retry, a queue replay, a scheduler — ships without them. The tests therefore post
+`send:invite` **directly**, bypassing `apply:sync` entirely, because that is what those callers do.
+
+Registration order is inverted relative to execution: each definition wraps the previous, so the
+outermost is registered last. The cap is outermost because refusing early is the whole of "bounded
+blast radius", and a cap under redaction would report an unredacted reason.
+
+**The redactor is one function at the sink** (`src/lib/redact.ts`), not a rule applied at call
+sites. The threat is not a developer logging a secret on purpose; it is a provider SDK throwing an
+error whose message embeds the request it failed on, that string being stored in `last_error`, and
+`last_error` then reaching a console, a log aggregator and a support ticket — without ever passing
+through anybody's own code. Sinks are countable; call sites are not. It drops `Error.stack`
+outright, because a stack is the commonest way a request body reaches a log.
+
+## The lock (C10)
+
+Per top fixture, acquired by `apply:sync` and released in a `finally` — a run that throws must not
+lock a conference out until the TTL. Three properties the tests pin: only the holder can release
+(otherwise a timed-out run unlocks the run that replaced it, and then both are live, which is the
+duplicate path); a stale lock expires, so one crash is not permanent; and a second run while the
+first holds it is refused before any provider call.
+
+**It is in-process, which is correct locally and a lie at Stage 4.** Two Cloudflare isolates share
+no `Map`. The message shape is what survives — `acquire:lock` / `release:lock` become a Durable
+Object behind the same patterns, which is the point of putting it behind messages at all.
+
+## The queue (§10.6)
+
+`apply:sync` **enqueues and returns**; `work:queue` sends. One job per (segment × account), and
+that granularity is the point: a provider rejecting one speaker's invitation does not touch the
+other thirty-nine, and retrying it does not re-send theirs. A run-level retry would do both.
+
+**Jobs are rows, not promises.** A run that survives a restart is the difference between "resume
+where it stopped" and "start again", and starting again is how a crash becomes a second invitation.
+
+**The job carries the item that was confirmed**, frozen at enqueue time. The organiser confirmed a
+specific plan (C4); recomputing it at execution time could send something they never agreed to
+because somebody saved a fixture in between. A test retitles a session after confirmation and
+asserts the queued job still sends the old title — and that the change is picked up by the *next*
+plan, so nothing is lost.
+
+**Backoff is exponential with jitter, and both the clock and the random source are injected.** The
+jitter is not decoration: a provider that rejected a hundred jobs in one tick would otherwise get
+all hundred retries back in the same instant, which is how a rate limit becomes an outage. A
+backoff test on the wall clock fails on a slow machine, and a jitter test on `Math.random` is a
+coin flip that eventually lands wrong in CI.
+
+`drain:run` works a run until nothing is **due** — not until nothing is pending. Draining past a
+job's `next_at` would defeat the backoff it was just given. It is the local monolith's stand-in for
+a scheduler; Stage 4 replaces the *caller* with cron, not the message.
+
+**Two sinks for a failure, on purpose.** The job records every attempt, because the job is the unit
+of retry. When a job is finally *abandoned* the reason is stamped on the **link** as well — a job
+dies with its run, and "this segment's invitation never went" must not disappear with the run that
+discovered it.
+
+**C10 now has two halves.** The advisory lock makes the check-and-create atomic within a process;
+an active **run row** is what survives a restart, and "one sync at a time per conference" has to
+survive one.
+
+## The sync plan screen
+
+`mockups/src/SyncPlan.dc.html`, reached with **`S`** from the agenda grid — it is something you do
+*to* a conference, not a place, so it is a keystroke rather than a nav item.
+
+**The screen exists to make the ledger visible.** Everything the reconciliation does is invisible
+by construction: its job is to *not* send things. Without this page "we never send a duplicate" is
+a claim an organiser has to take on faith. The most important element is the quiet grey row —
+*"6 further segments · hash unchanged · no-op · zero provider calls"* — which is C2 shown rather
+than claimed.
+
+Two things the backend had to grow for it:
+
+- **`sys/calendar_link.spec_json`.** The hash answers *whether* something changed; only the stored
+  spec answers *what*. An organiser told "hash differs" has been told nothing and will either apply
+  blindly or not at all. `diffSpecs()` turns it into "room + start time".
+- **Recipient names, not emails.** C6 is about the public path, but a screen that doesn't need an
+  address shouldn't carry one. `plan:sync` also returns the connected accounts — without their
+  `secret_ref`, since the object goes to a browser.
+
+**The Apply button is disabled and says why.** There is no `apply:sync` on the browser surface at
+all; applying reaches real speakers.
+
+### The dev seed replays a real history
+
+The screen can otherwise only ever show one thing: every row a `create` before the first sync,
+every row a `noop` after it. Neither shows what the plan is *for*. So the seed replays the sequence
+an organiser is actually in — **you synced, then things changed**:
+
+1. "Undo as a Contract" was **confirmed** when invitations went out. The fixture stores it cancelled
+   because that is where it ends up; the cancellation happened *after* the sync.
+2. Then it was cancelled — so the plan must cancel a provider event, and its hash is **unchanged**,
+   which is exactly the case a hash-first reconciliation would silently skip.
+3. A co-mentor joined the workshop: invisible in the grid, material to a calendar entry, so the plan
+   reads "attendee set".
+
+Each step is a real product event replayed in order, against the recording fake, and the end state
+of the fixture data is unchanged.
+
+## Applying, the run screen, and a cache that lied
+
+`apply:sync` is now on the browser surface, and **`confirm` is required on it**. The surface test
+narrowed rather than relaxed: it used to assert "nothing that sends is declared anywhere", which
+was right while the safety machinery did not exist. It does now — cap, redaction, ledger gate,
+lock, queue — and C4 asks for a *confirmed* apply on the app surface rather than none. What stays
+unreachable is everything **below** apply: `send:invite`, the provider verbs, the lock and the
+queue. Reaching `send:invite` directly would skip the plan, the confirmation and the cap.
+
+The **confirmation is the button**, which states the counts rather than asking "are you sure?" —
+the organiser is agreeing to a specific number of messages to a specific number of people.
+
+A **local scheduler** (`tick:queue`, a 1s interval in the web env) works every open run, so a run
+started from the app progresses without anything calling `drain:run` by hand. Deployed, cron posts
+the same message: the *caller* changes, not the message.
+
+### The bug worth remembering: `get:run` was cached for ever
+
+The run screen sat on "0 of 2 · SENDING…" while the backend had long since finished. A raw `fetch`
+to the same endpoint returned `sent`; `bus.post` returned `pending` every second for as long as you
+watched.
+
+The SPA runs a transparent cache (`SenecaBrowserStore`, configured in `web/src/bus.js`). It
+classifies any `aim:web` message carrying a `get` / `list` / `load` key as a **cacheable read**, and
+invalidates only on a client-side **write**. A sync run has neither property: its state changes on
+the *server*, as the queue works, with no browser write to invalidate anything. So the first poll
+was cached and every later one returned the same stale answer — the screen and the truth silently
+disagreed, which is the worst way for a screen to be wrong.
+
+The fix is the **message name**. A verb outside both the read and write lists is passed through
+uncached, so the message is **`watch:run`**, not `get:run` — and the name now says what it is. An
+e2e test asserts the run screen reaches `SENT`, which is what catches a rename back.
+
+## provider:ics — the first real provider
+
+SPEC §10.2 lists `ics` as the **always-available fallback**: no OAuth, no API client, and the
+honest answer for services with no third-party calendar API at all. That makes it the right
+provider to build *first* among the real ones — it proves the seam works for something that is not
+a test double, and unlike Google it can be proven **offline**.
+
+It forced the substantive missing piece: **iTIP invitations** (`src/lib/invite.ts`), which are not
+the same thing as the `.ics` feed and must not be confused with it.
+
+| | |
+|---|---|
+| `ics.ts` | `METHOD:PUBLISH` — a feed somebody *subscribes* to. No attendees, no sequence, nobody is asked anything. |
+| `invite.ts` | `METHOD:REQUEST` / `CANCEL` — an invitation *addressed to named people*, which their client matches against an existing entry by UID and SEQUENCE. |
+
+**Three fields carry the whole of C3**, and each has a test: `UID` stable for the life of the
+segment; `SEQUENCE` advancing on every material change — a client *ignores* a REQUEST whose
+sequence is not greater than the one it holds, so a sequence that fails to advance is an update
+silently dropped; and `METHOD` matching the intent — a cancellation sent as REQUEST is a meeting
+that never goes away.
+
+**Delivery is a separate seam.** The provider builds the invitation; `sys:calendar,deliver:invite`
+puts it in front of a person. With nothing registered, the default **refuses** — a provider that
+builds a file, drops it on the floor and reports success is the exact lie C9 exists to prevent, and
+there is a test for it. A recording deliverer (`record: true`) is what lets the whole path be
+proven with no mail server anywhere.
+
+**A cancellation reads its spec from the link, not the live segment.** By the time you cancel, the
+segment may be cancelled, re-timed or deleted — it no longer says who was invited. Only the stored
+spec does. A test strips every appearance before cancelling and asserts the CANCEL still reaches
+the original recipients.
+
+### `valid: Skip` does not mean optional
+
+Four fields hit this in one sitting, and it is worth stating plainly: **`Skip` lets a field be
+absent but still rejects an empty string.** So a form that clears a box cannot save, and any state
+defined by "this value is missing" is unstorable.
+
+- `calendar_account.calendar_id` / `.secret_ref` — `provider:ics` has neither. That it needs no
+  credentials at all is part of why it is the fallback.
+- `speaker.email` — a speaker with no address is exactly what the `speaker-no-email` warning
+  (§16.2) reports. A rule about a missing value needs the missing value to be storable.
+- `calendar_link.last_error`, `calendar_job.last_error` — "no error" has to be expressible, or a
+  link that once failed carries that failure for ever.
+
+The fix is `valid: 'Empty'`. Worth auditing the rest of the model for optional text fields a form
+can clear.
+
+## Not built yet, and deliberately
+
+- **`apply:sync` has no `aim:` surface.** Applying reaches real speakers. Only `aim:cag,plan:sync`
+  is declared, and it is read-only. The confirmed surface lands with the sync-plan and sync-run
+  screens (mockups `SyncPlan.dc.html`, `SyncRun.dc.html`).
+- **No scheduler.** `drain:run` has to be called; nothing ticks on its own yet. The plugin's `tick`
+  locally and Cloudflare cron deployed (§10.6).
+- **RSVPs.** The fake answers `not-supported`, which is the honest answer — a silent success would
+  read as "nobody has responded yet" forever.
+- **Google, Microsoft, CalDAV, Zoho.** Google is next and is last among the ones that need OAuth,
+  on purpose — it cannot be proven offline, and the machinery it plugs into is now proven by two
+  providers that can.
+
+## What review found, and what it changed
+
+Six defects came out of a review of this branch before merge. All six are recorded here rather
+than only in a commit message, because every one of them is a thing the design *claimed* and the
+code did not do - and four of the six were invisible to a suite of 176 tests.
+`test/unit/calendar-regressions.test.ts` holds one test per defect, each confirmed to fail when
+the fix is reverted.
+
+**The plan was scoped to whatever it was asked about, not to the conference.** `planFor` resolved
+the tree from `fixture_id`, but links load by `top_id`. `resolve:tree` returns only the requested
+node and its subtree, so planning from a *day* left every other day's segments out of `byId` - and
+the VANISHED loop then read their links as `segment-deleted`. A day-scoped apply therefore
+**cancelled live meetings across the rest of the conference**, and `aim:web,on:cag,apply:sync`
+takes `fixture_id` straight from the browser. The same line also made `top` the wrong node, so the
+timezone, slug and title came from a day that has none: the UTC fallback changed every hash and
+every segment replanned as `hash-changed`. Now the plan re-resolves from the root. Re-scoping
+rather than refusing, because the lock, the run and the ledger are already per top fixture - the
+conference *is* the unit of sync.
+
+**Listing was not claiming.** `work:queue` listed `pending` rows and sent them, writing each row
+only after the provider returned. Two overlapping calls listed the same rows and both sent - and
+the local tick is a 1s interval, so any provider call slower than a tick overlapped itself. Two
+concurrent workers produced two invitations per UID and two ledger rows per (segment x account),
+which is both halves of the failure this subsystem exists to prevent.
+
+A job now moves to `running` under a claim token before any provider call, in two halves for the
+same reason C10 has two: an in-process `Set`, checked and added with no `await` between, is what
+makes the guarantee deterministic rather than a matter of scheduling; the **row** is what survives
+a restart and a second isolate. And because a claim that never expires turns one crash into a
+permanently wedged conference - the failure the claim was added to prevent - a claim has a TTL,
+exactly as the lock does.
+
+**The ledger gate was inert on creates.** It returned early whenever `item.link_id` was null,
+which is *always* true for a create, because a create is what produces the link. So the backstop
+for "anything that reaches `send:invite` by another route" could not see the one action that
+creates provider events. It now looks the link up by the ledger's own identity, (segment x
+account). `writeLink` had the mirror of this bug - it upserted by `link_id` when it had one and
+inserted unconditionally otherwise, so "upsert by identity" was not what it did.
+
+**One bad row cost the conference.** `send:invite` requires `account: Object`; a missing
+`sys/calendar_account` therefore *rejected*, and the bare `await` in the worker loop aborted the
+whole tick before any row was written. Every job stayed `pending`, the run never left `running`,
+and `apply:sync`'s state guard then refused every future sync of that conference with
+`sync-in-progress`. For ever. Sending is now per-job and inside a try/catch: one bad row costs one
+job (C9).
+
+**A run was readable without its conference.** `get:run` read `sys/calendar_run` and
+`sys/calendar_job` directly, and `sys/` entities are exempt from `@seneca/owner` by design
+(`ignore: ['sys:entity,base:sys']`). `run_id` arrives from the browser, so a held or guessed id
+returned another org's segment titles, account names, recipient counts, UIDs and error strings. It
+now resolves the conference through `cag/fixture` first, which *is* owner-annotated - reusing the
+app's existing enforcement rather than inventing a second one. The real answer is
+`concern:tenant` at Stage 4.
+
+**Two small ones with outsized tells.** `release:lock` did `runSends.delete(msg.token)` on a Map
+keyed by `run_id`, so nothing was ever deleted - and it fired the moment `apply:sync` had
+*enqueued*, long before the queue sent anything. The budget is now released by the queue when the
+run closes. And `redactText` treated a replacer's second argument as the first capture, which it
+is only when the pattern has one: four of the five shapes have none, so it received the match
+*offset* and produced `0[redacted]`. The secret was still removed, which is exactly why the
+existing test - `out.includes(REDACTED)` - passed either way.
+
+**One more, about a sentence rather than a secret.** A resurrection is built as a `create`
+carrying the tombstone's sequence + 1, so a subject line keyed off the sequence told a speaker
+with nothing in their calendar "Updated:". The action decides now; the sequence is the fallback.
+
+### `valid: 'Empty'` is required, which is the other half of the trap
+
+The claim field hit the *opposite* face of the `valid: Skip` problem written up above. `Skip` lets
+a field be absent but rejects `''`. `'Empty'` permits `''` but still **requires the field** - so
+`enqueue:run` has to write `claim: ''` explicitly, and a row created without it fails validation.
+Both halves are worth knowing: one rejects the empty string, the other rejects the absence.
+
+## One toolchain note, unrelated but found here
+
+`npm run model-breaking` **exits 1 on an unchanged model**: `aontu breaking` cannot compare
+`$.main.ent.cag`'s path-dependent spread template and reports `[compat]`. Verified by stashing all
+changes and re-running. It cannot be a CI gate until that is resolved — worth raising, since the
+plan called for `breaking` in CI from the first commit.

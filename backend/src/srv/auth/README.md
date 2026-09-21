@@ -20,6 +20,9 @@ message maps to the action file named after its last pattern pair.
 | `aim:auth,list:apikey` | `list_apikey.ts` |
 | `aim:auth,revoke:apikey` | `revoke_apikey.ts` |
 | `aim:web,on:cag,load:tree` | `web_load_tree.ts` |
+| `aim:web,on:cag,plan:sync` | `web_plan_sync.ts` |
+| `aim:web,on:cag,apply:sync` | `web_apply_sync.ts` |
+| `aim:web,on:cag,watch:run` | `web_watch_run.ts` |
 | `aim:web,on:auth,signin:user` | `web_signin_user.ts` |
 | `aim:web,on:auth,signout:user` | `web_signout_user.ts` |
 | `aim:web,on:auth,load:auth` | `web_load_auth.ts` |
@@ -56,6 +59,9 @@ flowchart LR
   srv --> list_apikey["aim:auth,list:apikey<br>list_apikey.ts"]
   srv --> revoke_apikey["aim:auth,revoke:apikey<br>revoke_apikey.ts"]
   srv --> web_load_tree["aim:web,on:cag,load:tree<br>web_load_tree.ts"]
+  srv --> web_plan_sync["aim:web,on:cag,plan:sync<br>web_plan_sync.ts"]
+  srv --> web_apply_sync["aim:web,on:cag,apply:sync<br>web_apply_sync.ts"]
+  srv --> web_watch_run["aim:web,on:cag,watch:run<br>web_watch_run.ts"]
   srv --> web_signin_user["aim:web,on:auth,signin:user<br>web_signin_user.ts"]
   srv --> web_signout_user["aim:web,on:auth,signout:user<br>web_signout_user.ts"]
   srv --> web_load_auth["aim:web,on:auth,load:auth<br>web_load_auth.ts"]

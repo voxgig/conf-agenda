@@ -31,6 +31,26 @@
   { pat: [{aim: cag}, {load: tree}]
     params: { fixture_id: 'Skip(String)' } }
 
+  # The calendar sync plan (SPEC 10.3). READ-ONLY and sends nothing - C4's
+  # dry-run is the default, and `apply` is a separate, confirmed message that
+  # does not exist on this surface yet. The app calls this; the work happens in
+  # sys:calendar, which has no aim: surface of its own.
+  { pat: [{aim: cag}, {plan: sync}]
+    params: { fixture_id: 'String' } }
+
+  # Applying reaches real speakers, so `confirm` is REQUIRED on this surface -
+  # C4's "explicit confirmation stating the invitation and recipient counts".
+  # It enqueues; the queue sends (SPEC 10.6).
+  { pat: [{aim: cag}, {apply: sync}]
+    params: { fixture_id: 'String', confirm: 'Boolean' } }
+
+  # Per-segment progress for one run. Read-only, and deliberately NOT named
+  # `get:` - see web_watch_run.ts. A run's state changes on the server with no
+  # client write to invalidate a cache, so it must never be treated as a
+  # cacheable read.
+  { pat: [{aim: cag}, {watch: run}]
+    params: { run_id: 'String' } }
+
 
   # ---- browser surface ---------------------------------------------------
   # aim:web is the ONLY namespace the gateway accepts from a browser. Each
@@ -40,6 +60,15 @@
 
   { pat: [{aim: web}, {on: cag}, {load: tree}]
     file: './web_load_tree' }
+
+  { pat: [{aim: web}, {on: cag}, {plan: sync}]
+    file: './web_plan_sync' }
+
+  { pat: [{aim: web}, {on: cag}, {apply: sync}]
+    file: './web_apply_sync' }
+
+  { pat: [{aim: web}, {on: cag}, {watch: run}]
+    file: './web_watch_run' }
 
 
   # ---- agenda service ----------------------------------------------------

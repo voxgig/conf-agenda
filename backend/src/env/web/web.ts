@@ -126,6 +126,30 @@ async function run() {
   // Seed demo projects/todolists/items (collaborative, one shared project).
   await seedDemo(seneca, usersByEmail)
 
+  // The local scheduler (SPEC 10.6). A run started from the app has to make
+  // progress without anything calling drain by hand; deployed, Cloudflare cron
+  // posts this same message, so only the CALLER changes.
+  //
+  // unref() so the tick never holds the process open - a dev server you cannot
+  // Ctrl-C is worse than one that syncs a second late.
+  // ONE TICK AT A TIME. A provider call that outlasts the interval used to
+  // let the next tick start while the previous one was still sending - and
+  // the queue claims jobs now, so an overlap is refused rather than
+  // duplicated, but an unbounded pile of overlapping ticks is still how a
+  // slow provider turns into a thundering herd. The claim is the correctness
+  // boundary; this is the politeness one.
+  let ticking = false
+  const tick = setInterval(() => {
+    if (ticking) return
+    ticking = true
+    seneca.post('sys:calendar,tick:queue')
+      // Never swallowed: a scheduler that fails silently looks exactly like a
+      // queue that is not being worked, and that is a long afternoon.
+      .catch((e: any) => console.error('calendar tick failed:', e && e.message))
+      .finally(() => { ticking = false })
+  }, 1000)
+  if (tick.unref) tick.unref()
+
   const app = Express()
   // The frontend folder is a sibling of backend/; from dist/env/local go
   // up to the project root, then into its dist. The folder name comes from

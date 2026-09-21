@@ -124,7 +124,7 @@ module.exports = function makeShapes(Gubu: any) {
   shapes['cag/speaker'] = {
     create: Gubu({
       bio: Skip(String),
-      email: Skip(String),
+      email: String,
       name: String,
       org_id: Skip(String),
       org_name: Skip(String),

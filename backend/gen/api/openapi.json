@@ -773,6 +773,7 @@
           }
         },
         "required": [
+          "email",
           "name"
         ]
       },
@@ -811,6 +812,7 @@
           }
         },
         "required": [
+          "email",
           "name"
         ]
       },
