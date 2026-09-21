@@ -76,6 +76,22 @@ if ('undefined' !== typeof SenecaBrowserStore) {
 }
 
 
+// THE BUS IS REACHABLE FROM THE PAGE, ON PURPOSE (PLATFORM 10).
+//
+// "A Playwright spec drives a full user journey through window.seneca.post()
+// with ZERO DOM interaction, asserting only that the DOM followed. Without it,
+// 'drivable by messages' decays into 'was built that way once'." That spec is
+// web/e2e/bus-drive.spec.js, and this is what it drives.
+//
+// It grants nothing new. The transport is pinned to aim:web, which is the only
+// namespace the gateway accepts, and anything postable here is equally
+// postable with a fetch to /seneca from the same console. The security
+// boundary is the gateway allow-list and the per-message params shape, not the
+// absence of a handle.
+if ('undefined' !== typeof window) {
+  window.seneca = bus
+}
+
 export {
   bus,
   onEvent,

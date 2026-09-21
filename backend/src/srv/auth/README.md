@@ -24,6 +24,7 @@ message maps to the action file named after its last pattern pair.
 | `aim:web,on:cag,apply:sync` | `web_apply_sync.ts` |
 | `aim:web,on:cag,watch:run` | `web_watch_run.ts` |
 | `aim:web,on:cag,validate:fixture` | `web_validate_fixture.ts` |
+| `aim:web,on:cag,publish:fixture` | `web_publish_fixture.ts` |
 | `aim:web,on:cag,move:segment` | `web_move_segment.ts` |
 | `aim:web,on:cag,set:status` | `web_set_status.ts` |
 | `aim:web,on:cag,make:segment` | `web_make_segment.ts` |
@@ -81,6 +82,7 @@ flowchart LR
   srv --> web_apply_sync["aim:web,on:cag,apply:sync<br>web_apply_sync.ts"]
   srv --> web_watch_run["aim:web,on:cag,watch:run<br>web_watch_run.ts"]
   srv --> web_validate_fixture["aim:web,on:cag,validate:fixture<br>web_validate_fixture.ts"]
+  srv --> web_publish_fixture["aim:web,on:cag,publish:fixture<br>web_publish_fixture.ts"]
   srv --> web_move_segment["aim:web,on:cag,move:segment<br>web_move_segment.ts"]
   srv --> web_set_status["aim:web,on:cag,set:status<br>web_set_status.ts"]
   srv --> web_make_segment["aim:web,on:cag,make:segment<br>web_make_segment.ts"]

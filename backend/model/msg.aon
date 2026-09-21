@@ -222,6 +222,12 @@
   { pat: [{aim: web}, {on: cag}, {validate: fixture}]
     file: './web_validate_fixture' }
 
+  # Publishing is the organiser's own data going public, and it gates on
+  # validate:fixture. Unlike apply:sync it carries no `confirm`: the
+  # confirmation is a SCREEN, because nothing here reaches a third party.
+  { pat: [{aim: web}, {on: cag}, {publish: fixture}]
+    file: './web_publish_fixture' }
+
   # The segment intents. Each is a declared proxy, and each names its own
   # action file because a proxy shares its LAST pattern pair with the message
   # it forwards to (PLATFORM 1.4).

@@ -21,7 +21,7 @@
 // organiser must see drafts, which agenda.json deliberately never contains.
 
 import * as Api from '../../api.js'
-import { bus } from '../../bus.js'
+import { bus, onEvent } from '../../bus.js'
 import { msgFor, patterns } from '../../model.js'
 import { buildInverse, makeUndoStack, webMessage } from '../../undo.js'
 import { renderSyncPlan } from './sync_plan.js'
@@ -35,6 +35,23 @@ const STATUS_LABEL = { draft: 'Draft', confirmed: '', cancelled: 'Cancelled' }
 const BREAK_KINDS = new Set(['brk', 'mea'])
 
 const HALF_HOUR = 30 * 60 * 1000
+
+/**
+ * The aim:web,on:cag messages that CHANGE something, read from the model.
+ *
+ * Derived rather than listed, so a new intent is followed automatically and
+ * this cannot drift from msg.aon - which is the failure mode the whole
+ * surface test exists for.
+ */
+const READ_VERBS = ['list', 'load', 'watch', 'plan', 'validate']
+
+function mutationPatterns() {
+  return patterns().filter((p) => {
+    if (!p.startsWith('aim:web,on:cag,')) return false
+    const verb = p.split(',').pop().split(':')[0]
+    return !READ_VERBS.includes(verb)
+  })
+}
 
 function el(tag, props = {}, kids = []) {
   const node = document.createElement(tag)
@@ -135,6 +152,53 @@ class VgViewCagFixture extends HTMLElement {
   connectedCallback() {
     this.tabIndex = 0
     this.addEventListener('keydown', this.onKey)
+
+    // Opening a named conference is a MESSAGE, not only a <select>. Same
+    // reason the nav links post one: a journey that needs a pointer is a
+    // journey the bus-drive spec cannot prove (PLATFORM 10).
+    onEvent('conference', ({ fixture_id }) => {
+      if (!this.isConnected || null == fixture_id) return
+      this.openConference(fixture_id)
+    })
+
+    // THE GRID FOLLOWS THE BUS, NOT ONLY ITS OWN METHOD CALLS.
+    //
+    // Every mutation used to reach the grid through mutate(), which is what
+    // invalidates the cache and reloads - so a message posted from anywhere
+    // else changed the database and left the screen showing the old world.
+    // The bus-drive spec found it immediately: make:segment succeeded and no
+    // card appeared. That is the difference between a UI that IS
+    // message-driven and one that was built that way once (PLATFORM 10).
+    //
+    // `sub` and not `add`: many observers per pattern, and it does not
+    // intercept the message. It fires when the message is SENT, so the
+    // refresh is debounced past the round-trip rather than racing it.
+    for (const pattern of mutationPatterns()) {
+      bus.sub(pattern, () => this.onBusMutation())
+    }
+  }
+
+  /** A mutation went past on the bus. If it was ours, mutate() settles it. */
+  onBusMutation() {
+    // bus.sub has no auto-unsubscribe (web/AGENTS.md), so a detached grid
+    // would otherwise keep reloading for the life of the page.
+    if (!this.isConnected) return
+    if (null != this.pending) return
+
+    clearTimeout(this.busTimer)
+    this.busTimer = setTimeout(() => {
+      if (this.isConnected && 'grid' === this.mode) this.settle()
+    }, 250)
+  }
+
+  /** Switch to a conference by id, from the picker or from a message. */
+  openConference(fixture_id) {
+    this.fixtureId = fixture_id
+    this.dayId = null
+    // The stack is fixture-scoped - see the picker's own note.
+    this.undo.clear()
+    this.diagnostics = []
+    return this.reload()
   }
 
   disconnectedCallback() {
@@ -760,16 +824,11 @@ class VgViewCagFixture extends HTMLElement {
       const sel = el('select', { class: 'ca-confsel', 'aria-label': 'Conference' },
         tops.map((t) => el('option', { value: t.id, text: t.title || t.id })))
       sel.value = top.id
-      sel.addEventListener('change', () => {
-        this.fixtureId = sel.value
-        this.dayId = null
-        // The stack is fixture-scoped. A `u` left over from the last
-        // conference posts an edit against a row nobody is looking at - the
-        // server refuses it, but the UI would have claimed an undo happened.
-        this.undo.clear()
-        this.diagnostics = []
-        this.reload()
-      })
+      // The stack is fixture-scoped. A `u` left over from the last conference
+      // posts an edit against a row nobody is looking at - the server refuses
+      // it, but the UI would have claimed an undo happened. openConference
+      // clears it, whichever route got here.
+      sel.addEventListener('change', () => this.openConference(sel.value))
       kids.push(sel)
     } else {
       kids.push(el('h2', { class: 'ca-confsel', text: top.title || top.id }))

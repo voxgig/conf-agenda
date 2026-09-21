@@ -49,6 +49,7 @@ flowchart LR
 | `aim:web,on:cag,apply:sync` | `src/srv/auth/web_apply_sync.ts` |
 | `aim:web,on:cag,watch:run` | `src/srv/auth/web_watch_run.ts` |
 | `aim:web,on:cag,validate:fixture` | `src/srv/auth/web_validate_fixture.ts` |
+| `aim:web,on:cag,publish:fixture` | `src/srv/auth/web_publish_fixture.ts` |
 | `aim:web,on:cag,move:segment` | `src/srv/auth/web_move_segment.ts` |
 | `aim:web,on:cag,set:status` | `src/srv/auth/web_set_status.ts` |
 | `aim:web,on:cag,make:segment` | `src/srv/auth/web_make_segment.ts` |
@@ -128,6 +129,7 @@ flowchart LR
 | `aim:web,on:cag,apply:sync` | `src/srv/cag/web_apply_sync.ts` |
 | `aim:web,on:cag,watch:run` | `src/srv/cag/web_watch_run.ts` |
 | `aim:web,on:cag,validate:fixture` | `src/srv/cag/web_validate_fixture.ts` |
+| `aim:web,on:cag,publish:fixture` | `src/srv/cag/web_publish_fixture.ts` |
 | `aim:web,on:cag,move:segment` | `src/srv/cag/web_move_segment.ts` |
 | `aim:web,on:cag,set:status` | `src/srv/cag/web_set_status.ts` |
 | `aim:web,on:cag,make:segment` | `src/srv/cag/web_make_segment.ts` |

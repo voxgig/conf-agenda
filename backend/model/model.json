@@ -1407,6 +1407,20 @@
         ]
       },
       {
+        "file": "./web_publish_fixture",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "publish": "fixture"
+          }
+        ]
+      },
+      {
         "file": "./web_move_segment",
         "pat": [
           {

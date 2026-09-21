@@ -252,3 +252,47 @@ the white card surface. The demo fixture's Frontend track moved to `#2f7fd4` (4.
 light). That is the rule doing its job on real data rather than the data being bent to fit it — and
 it is worth saying out loud that the brand's teal is not usable as a meaning-carrying mark on a
 light ground.
+
+## Bus-drive, and the two gaps it found
+
+PLATFORM §10 and SPEC §18 both require it: *"a Playwright spec drives a full user journey through
+`window.seneca.post()` with **zero DOM interaction**, asserting only that the DOM followed. Without
+it, 'drivable by messages' decays into 'was built that way once'."*
+
+`web/e2e/bus-drive.spec.js` does the journey §18 names — sign in, open a conference, create a
+session, move it between rooms, publish. It found three things, and none of them would have shown
+up any other way.
+
+**Navigation was click-only.** `a.onclick → this.openEntity(canon)`, with no message anywhere.
+PLATFORM §1.2 puts navigation on the in-browser bus, so the click now posts `cmp:evt,name:navigate`
+and the shell subscribes. Two paths to `openEntity()` is how they drift; one is the point.
+Selecting a conference in the grid went the same way, via `cmp:evt,name:conference`.
+
+**`publish:fixture` had no `aim:web` proxy at all**, so the journey's last step was unreachable
+from a browser. It has one now — and deliberately **no `confirm` param**, unlike `apply:sync`.
+Applying a sync reaches real speakers, so C4 puts the confirmation *in the message* and the server
+refuses without it. Publishing makes the organiser's own data public and already gates on
+`validate:fixture`. So publish's confirmation is a **screen** (`PublishConfirm.dc.html`, reached
+with `P`), and a screen is skippable by a caller in a way a message param is not — which is exactly
+the distinction between the two.
+
+**The grid only updated when it initiated the change.** This is the one worth remembering. Every
+mutation reached the grid through `mutate()`, which is what invalidates the cache and reloads — so
+a message posted from anywhere *else* changed the database and left the screen showing the old
+world. The spec found it on the first run: `make:segment` returned `ok` and no card appeared.
+
+The grid now `sub`scribes to every `aim:web,on:cag` mutation pattern — **derived from the model**,
+so a new intent is followed automatically rather than added to a list somebody has to remember.
+`sub` and not `add`: many observers, no interception. It fires when the message is *sent*, so the
+refresh is debounced past the round-trip rather than racing it, and it is skipped entirely when
+`mutate()` is already settling the grid's own call.
+
+### The guard on the guard
+
+A bus-drive spec that quietly grows a `click()` stops proving anything **and still passes**. So the
+file reads itself and fails on `.click(`, `.fill(`, `.press(` and their kin — with comments
+stripped first, because the header names `keyboard.press()` in prose and a guard that cannot tell
+code from a comment fails on its own documentation.
+
+All three are confirmed to bite: reverting the bus subscription, the navigate subscription, or the
+`window.seneca` handle each fails the journey, and a sneaked `click()` fails the guard.

@@ -4,7 +4,7 @@
 // admin (or settings). Everything is driven by the model — the entity menu
 // and relationships come from /model.json, so it scales to any graph.
 
-import { bus, onEvent } from '../bus.js'
+import { bus, emit, onEvent } from '../bus.js'
 import * as Model from '../model.js'
 import * as Api from '../api.js'
 import * as Hooks from '../hooks.js'
@@ -37,6 +37,9 @@ class VgShell extends HTMLElement {
     // The project selector refreshes when projects change (e.g. a new one is
     // created). Guard with isConnected: bus.sub has no auto-unsubscribe, so a
     // torn-down shell (sign-out→in re-mounts it) must not act on stale events.
+    onEvent('navigate', ({ canon }) => {
+      if (null != canon) this.openEntity(canon)
+    })
     onEvent('projects-changed', () => {
       if (this.isConnected && this.hasProjects()) {
         this.loadProjects()
@@ -220,10 +223,15 @@ class VgShell extends HTMLElement {
           `<a href="#" class="vg-navlink${e.canon === this.currentCanon ? ' vg-sel' : ''}"
              data-canon="${e.canon}">${esc(e.label)}</a>`).join('')}
       </div>`).join('')
+    // THE CLICK POSTS A MESSAGE; THE MESSAGE NAVIGATES. Not because a click
+    // handler calling a method is wrong, but because PLATFORM 1.2 puts
+    // navigation on the in-browser bus - and a journey that cannot be driven
+    // without a pointer is one the bus-drive spec cannot prove (PLATFORM 10).
+    // Two paths to openEntity() is how they drift; one is why this exists.
     for (const a of nav.querySelectorAll('.vg-navlink')) {
       a.onclick = (ev) => {
         ev.preventDefault()
-        this.openEntity(a.dataset.canon)
+        emit('navigate', { canon: a.dataset.canon })
       }
     }
   }
