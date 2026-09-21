@@ -119,6 +119,86 @@
     params: { run_id: 'String' } }
 
 
+  # ---- the admin's per-entity writes (SPEC 9) ------------------------------
+  # "The generated admin screens drive entity-specific intent messages
+  # generated from the model - `update:speaker` with exactly the editable
+  # fields - never a generic canon-plus-item save."
+  #
+  # Generated is what the spec wants and what does not exist yet: PLATFORM 1.2
+  # calls it a @voxgig/build delta. Hand-written until it lands, exactly as the
+  # per-entity READS were. The shape is what matters - the entity is named by
+  # the PATTERN, the editable fields are a CLOSED list, and no definition here
+  # carries org_id, so tenancy cannot arrive in a payload.
+  #
+  # `remove:` declares NO inverse. Re-creating a deleted row gives it a new id,
+  # so every reference to the old one would still be broken - an undo that
+  # looked like it worked and did not. The admin's two-step confirmation is the
+  # guard instead.
+
+  { pat: [{aim: cag}, {make: room}]
+    params: { conference_id: 'String', name: 'Skip(String)', capacity: 'Skip(Number)', floor: 'Skip(String)', access: 'Skip(String)', order: 'Skip(Number)' }
+    inverse: { pat: [{aim: cag}, {remove: room}]
+               map: { id: 'result.id' } } }
+
+  { pat: [{aim: cag}, {update: room}]
+    params: { id: 'String', name: 'Skip(String)', capacity: 'Skip(Number)', floor: 'Skip(String)', access: 'Skip(String)', order: 'Skip(Number)' }
+    inverse: { pat: [{aim: cag}, {update: room}]
+               map: { id: 'params.id'
+                      name: 'result.prev.name'
+                      capacity: 'result.prev.capacity'
+                      floor: 'result.prev.floor'
+                      access: 'result.prev.access'
+                      order: 'result.prev.order' } } }
+
+  { pat: [{aim: cag}, {remove: room}]
+    params: { id: 'String' } }
+
+  { pat: [{aim: cag}, {make: track}]
+    params: { conference_id: 'String', name: 'Skip(String)', color: 'Skip(String)', desc: 'Skip(String)', order: 'Skip(Number)' }
+    inverse: { pat: [{aim: cag}, {remove: track}]
+               map: { id: 'result.id' } } }
+
+  { pat: [{aim: cag}, {update: track}]
+    params: { id: 'String', name: 'Skip(String)', color: 'Skip(String)', desc: 'Skip(String)', order: 'Skip(Number)' }
+    inverse: { pat: [{aim: cag}, {update: track}]
+               map: { id: 'params.id'
+                      name: 'result.prev.name'
+                      color: 'result.prev.color'
+                      desc: 'result.prev.desc'
+                      order: 'result.prev.order' } } }
+
+  { pat: [{aim: cag}, {remove: track}]
+    params: { id: 'String' } }
+
+  { pat: [{aim: cag}, {make: speaker}]
+    params: { conference_id: 'String', name: 'Skip(String)', email: 'Skip(String)', bio: 'Skip(String)', photo: 'Skip(String)', org_name: 'Skip(String)', w_site: 'Skip(String)' }
+    inverse: { pat: [{aim: cag}, {remove: speaker}]
+               map: { id: 'result.id' } } }
+
+  { pat: [{aim: cag}, {update: speaker}]
+    params: { id: 'String', name: 'Skip(String)', email: 'Skip(String)', bio: 'Skip(String)', photo: 'Skip(String)', org_name: 'Skip(String)', w_site: 'Skip(String)' }
+    inverse: { pat: [{aim: cag}, {update: speaker}]
+               map: { id: 'params.id'
+                      name: 'result.prev.name'
+                      email: 'result.prev.email'
+                      bio: 'result.prev.bio'
+                      photo: 'result.prev.photo'
+                      org_name: 'result.prev.org_name'
+                      w_site: 'result.prev.w_site' } } }
+
+  { pat: [{aim: cag}, {remove: speaker}]
+    params: { id: 'String' } }
+
+  # role and order only: an appearance's identity is (fixture_id, speaker_id),
+  # and changing either is remove-then-add.
+  { pat: [{aim: cag}, {update: appearance}]
+    params: { id: 'String', role: 'Skip(String)', order: 'Skip(Number)' }
+    inverse: { pat: [{aim: cag}, {update: appearance}]
+               map: { id: 'params.id'
+                      role: 'result.prev.role'
+                      order: 'result.prev.order' } } }
+
+
   # ---- browser surface ---------------------------------------------------
   # aim:web is the ONLY namespace the gateway accepts from a browser. Each
   # entry is a declared proxy to a real service message; a proxy shares its
@@ -165,6 +245,38 @@
 
   { pat: [{aim: web}, {on: cag}, {remove: appearance}]
     file: './web_remove_appearance' }
+
+  # The admin's writes.
+  { pat: [{aim: web}, {on: cag}, {make: room}]
+    file: './web_make_room' }
+
+  { pat: [{aim: web}, {on: cag}, {update: room}]
+    file: './web_update_room' }
+
+  { pat: [{aim: web}, {on: cag}, {remove: room}]
+    file: './web_remove_room' }
+
+  { pat: [{aim: web}, {on: cag}, {make: track}]
+    file: './web_make_track' }
+
+  { pat: [{aim: web}, {on: cag}, {update: track}]
+    file: './web_update_track' }
+
+  { pat: [{aim: web}, {on: cag}, {remove: track}]
+    file: './web_remove_track' }
+
+  { pat: [{aim: web}, {on: cag}, {make: speaker}]
+    file: './web_make_speaker' }
+
+  { pat: [{aim: web}, {on: cag}, {update: speaker}]
+    file: './web_update_speaker' }
+
+  { pat: [{aim: web}, {on: cag}, {remove: speaker}]
+    file: './web_remove_speaker' }
+
+  { pat: [{aim: web}, {on: cag}, {update: appearance}]
+    file: './web_update_appearance' }
+
 
 
   # ---- agenda service ----------------------------------------------------

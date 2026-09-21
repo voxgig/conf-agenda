@@ -31,6 +31,16 @@ message maps to the action file named after its last pattern pair.
 | `aim:web,on:cag,remove:segment` | `web_remove_segment.ts` |
 | `aim:web,on:cag,add:appearance` | `web_add_appearance.ts` |
 | `aim:web,on:cag,remove:appearance` | `web_remove_appearance.ts` |
+| `aim:web,on:cag,make:room` | `web_make_room.ts` |
+| `aim:web,on:cag,update:room` | `web_update_room.ts` |
+| `aim:web,on:cag,remove:room` | `web_remove_room.ts` |
+| `aim:web,on:cag,make:track` | `web_make_track.ts` |
+| `aim:web,on:cag,update:track` | `web_update_track.ts` |
+| `aim:web,on:cag,remove:track` | `web_remove_track.ts` |
+| `aim:web,on:cag,make:speaker` | `web_make_speaker.ts` |
+| `aim:web,on:cag,update:speaker` | `web_update_speaker.ts` |
+| `aim:web,on:cag,remove:speaker` | `web_remove_speaker.ts` |
+| `aim:web,on:cag,update:appearance` | `web_update_appearance.ts` |
 | `aim:web,on:auth,signin:user` | `web_signin_user.ts` |
 | `aim:web,on:auth,signout:user` | `web_signout_user.ts` |
 | `aim:web,on:auth,load:auth` | `web_load_auth.ts` |
@@ -78,6 +88,16 @@ flowchart LR
   srv --> web_remove_segment["aim:web,on:cag,remove:segment<br>web_remove_segment.ts"]
   srv --> web_add_appearance["aim:web,on:cag,add:appearance<br>web_add_appearance.ts"]
   srv --> web_remove_appearance["aim:web,on:cag,remove:appearance<br>web_remove_appearance.ts"]
+  srv --> web_make_room["aim:web,on:cag,make:room<br>web_make_room.ts"]
+  srv --> web_update_room["aim:web,on:cag,update:room<br>web_update_room.ts"]
+  srv --> web_remove_room["aim:web,on:cag,remove:room<br>web_remove_room.ts"]
+  srv --> web_make_track["aim:web,on:cag,make:track<br>web_make_track.ts"]
+  srv --> web_update_track["aim:web,on:cag,update:track<br>web_update_track.ts"]
+  srv --> web_remove_track["aim:web,on:cag,remove:track<br>web_remove_track.ts"]
+  srv --> web_make_speaker["aim:web,on:cag,make:speaker<br>web_make_speaker.ts"]
+  srv --> web_update_speaker["aim:web,on:cag,update:speaker<br>web_update_speaker.ts"]
+  srv --> web_remove_speaker["aim:web,on:cag,remove:speaker<br>web_remove_speaker.ts"]
+  srv --> web_update_appearance["aim:web,on:cag,update:appearance<br>web_update_appearance.ts"]
   srv --> web_signin_user["aim:web,on:auth,signin:user<br>web_signin_user.ts"]
   srv --> web_signout_user["aim:web,on:auth,signout:user<br>web_signout_user.ts"]
   srv --> web_load_auth["aim:web,on:auth,load:auth<br>web_load_auth.ts"]

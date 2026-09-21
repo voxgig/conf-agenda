@@ -1009,3 +1009,11 @@ tr:hover .vg-rowmenu-btn,
   padding: 13px 18px;
   font-size: 12px; color: var(--vg-muted);
 }
+
+/* An armed Delete. Loud, because the next click is the one that acts and
+ * there is no undo behind it - remove: declares no inverse on purpose. */
+.vg-del.vg-armed {
+  background: var(--vg-danger);
+  color: var(--vg-on-danger, #fff);
+  font-weight: 600;
+}

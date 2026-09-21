@@ -98,12 +98,50 @@ deliberate act in both `msg.aon` and `api.js`. `cag/fixture` is deliberately abs
 through `load:tree`, which resolves effective status down the ancestor chain, and a raw
 `list:fixture` would bypass that.
 
-### Read-only at Stage 1
+### RESOLVED: the writes, as per-entity intents
 
-List and load only. Writes arrive at Stage 2 as the per-field intents §9 specifies (`update:speaker`
-with exactly the editable fields), which is a shape decision this stage does not need to make.
-`save`/`remove` return `{ ok: false, why: 'read-only-stage-1' }` with a message saying so, rather
-than failing in a way that looks like a bug.
+`make:` / `update:` / `remove:` per entity, hand-written in `src/srv/cag/ent_intent.ts` for the
+same reason the reads were: SPEC §9 wants them *generated* from the model, PLATFORM §1.2 calls
+that a `@voxgig/build` delta, and it does not exist. The shape is what matters — the entity is
+named by the **pattern**, the editable fields are a **closed list**, and no write message carries
+a tenant at all.
+
+`EDITABLE` is the hand-written half, so a test walks the model and asserts it still matches. **That
+test is the generator we do not have**, and it is what stops the list drifting from `ent.aon`
+silently.
+
+**A create names its conference.** Every other intent reads the tenant off the stored row it is
+changing; a create has no such row. The first attempt derived it from "the caller's only
+organisation", which reads well and does not work — this project's own seed carries `org_tiny` and
+`org_demo` and the signed-in user is linked to neither, so every create refused with `no-org`. So
+`make:*` takes a `conference_id` and reads the org off *that fixture*, exactly as `make:segment`
+takes it from its parent. "New room" means "new room in the conference I am working on", and the
+grid is what tells the app which one that is.
+
+**A delete is refused while anything still references the row**, naming what holds it. Deleting a
+room a session points at turns every one of those sessions into an `unknown-reference` at validate
+time — the organiser would find out at publish rather than at the click.
+
+**`remove:` declares no inverse**, and the two-step confirm is the guard instead. Re-creating a
+deleted row gives it a **new id**, so every reference to the old one would still be broken — an
+undo that looked like it worked and did not.
+
+**Both faces of the `Skip`/`Empty` trap meet here.** `Skip` lets a field be absent but rejects
+`''`; `'Empty'` permits `''` but still *requires* the key. So a create can neither default
+everything to `''` nor omit everything — it reads the validator off the model and fills only the
+`'Empty'` fields. `cag/speaker.email` is what found this, for the third time in this project.
+
+**`cag/snapshot` stays read-only.** It is published output, written by `publish:fixture`; an admin
+that could edit one could make the public agenda disagree with the programme it was built from.
+Gating is therefore per entity rather than global.
+
+### The cache, again
+
+`Api` invalidates the entity's group explicitly after every successful write. The store classifies
+`update` and `remove` as writes — landing them in `web/cag/speaker`, which *is* the group behind
+`list:speaker` — but **`make` is not a classified verb at all** and passed straight through. A
+created row saved correctly and never appeared. Rather than depend on which verbs the store
+happens to know, every write drops its own entity's group.
 
 ### One thing corrected on the way
 

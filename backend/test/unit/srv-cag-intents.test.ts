@@ -27,6 +27,7 @@ import Model from '../../model/model.json'
 const { basic } = require('../../dist/env/shared/basic.js')
 const CagSrv = require('../../dist/srv/cag/cag-srv.js')
 const { saveRow } = require('../../dist/srv/cag/intent_util.js')
+const { EDITABLE } = require('../../dist/srv/cag/ent_intent.js')
 
 const TINY = JSON.parse(
   Fs.readFileSync(Path.join(process.cwd(), 'test/fixtures/tiny/tiny.json'), 'utf8'),
@@ -451,6 +452,19 @@ describe('undo is an inverse, not a rewind', () => {
       appearance_id: added.appearance_id,
     })
 
+    // The admin's per-entity writes, exercised for the same reason.
+    const madeRoom = await seneca.post('aim:cag,make:room', { conference_id: 'conf_tiny', name: 'Room Z' })
+    const updRoom = await seneca.post('aim:cag,update:room',
+      { id: 'room_a', name: 'Room A (renamed)' })
+    const madeTrack = await seneca.post('aim:cag,make:track', { conference_id: 'conf_tiny', name: 'Track Z' })
+    const updTrack = await seneca.post('aim:cag,update:track',
+      { id: (await seneca.entity('cag/track').list$({}))[0].id, name: 'T' })
+    const madeSpk = await seneca.post('aim:cag,make:speaker', { conference_id: 'conf_tiny', name: 'Zed' })
+    const updSpk = await seneca.post('aim:cag,update:speaker',
+      { id: 'spk_ada', name: 'Ada B' })
+    const updApp = await seneca.post('aim:cag,update:appearance',
+      { id: 'app_keynote_ada', role: 'host' })
+
     const results: Record<string, any> = {
       'aim:cag,make:segment': made,
       'aim:cag,duplicate:segment': made,
@@ -458,6 +472,13 @@ describe('undo is an inverse, not a rewind', () => {
       'aim:cag,set:status': statused,
       'aim:cag,add:appearance': added,
       'aim:cag,remove:appearance': removedApp,
+      'aim:cag,make:room': madeRoom,
+      'aim:cag,update:room': updRoom,
+      'aim:cag,make:track': madeTrack,
+      'aim:cag,update:track': updTrack,
+      'aim:cag,make:speaker': madeSpk,
+      'aim:cag,update:speaker': updSpk,
+      'aim:cag,update:appearance': updApp,
     }
 
     let checked = 0
@@ -480,5 +501,113 @@ describe('undo is an inverse, not a rewind', () => {
     assert.ok(0 < checked, 'no inverse map was actually walked')
 
     await seneca.close()
+  })
+})
+
+
+describe('the admin\u2019s per-entity writes', () => {
+  test('EDITABLE still matches the model', async () => {
+    // THE GENERATOR WE DO NOT HAVE. SPEC 9 wants these intents generated from
+    // the model; PLATFORM 1.2 calls that a @voxgig/build delta that does not
+    // exist, so the field lists are hand-written - and a hand-written copy of
+    // the model drifts from it silently. This is the check that it has not.
+    const ent = (Model as any).main.ent
+    const SERVER = ['id', 'org_id', 't_c', 't_m', 't_mh', 't_ch', 'owner_id']
+
+    for (const [canon, editable] of Object.entries(EDITABLE) as [string, string[]][]) {
+      const [zone, name] = canon.split('/')
+      const fields = Object.keys(ent[zone][name].field).filter((f) => !SERVER.includes(f))
+
+      if ('cag/appearance' === canon) {
+        // Deliberately narrower: fixture_id and speaker_id are the identity,
+        // and `invite` is the calendar's to write, not a form's.
+        assert.deepEqual(editable, ['role', 'order'])
+        continue
+      }
+      assert.deepEqual(editable.slice().sort(), fields.slice().sort(),
+        canon + ': EDITABLE has drifted from the model')
+    }
+  })
+
+  test('a create takes its org from the named conference, never from the payload', async () => {
+    // The same rule every other intent follows: tenancy comes from a STORED
+    // row. A create has none of its own, so it names the conference it
+    // belongs to and reads the org off that fixture.
+    const seneca = await makeSeneca()
+    const out = await seneca.post('aim:cag,make:room',
+      { conference_id: 'conf_tiny', name: 'Room C', org_id: 'org_other' } as any)
+    assert.equal(out.ok, true, out.why)
+    assert.equal(out.item.org_id, 'org_tiny')
+
+    // And the OTHER conference puts it in the other org - which is the whole
+    // point of naming one rather than guessing.
+    const other = await seneca.post('aim:cag,make:room',
+      { conference_id: 'conf_other', name: 'Room D' })
+    assert.equal(other.ok, true, other.why)
+    assert.equal(other.item.org_id, 'org_other')
+
+    await seneca.close()
+  })
+
+  test('a create that names no conference is refused', async () => {
+    const seneca = await makeSeneca()
+    const out = await seneca.post('aim:cag,make:room',
+      { conference_id: 'nope', name: 'Nowhere' })
+    assert.equal(out.ok, false)
+    assert.equal(out.why, 'unknown-conference')
+    await seneca.close()
+  })
+
+  test('an update keeps the stored org, and returns every editable field as prev', async () => {
+    const seneca = await makeSeneca()
+    const before = await load(seneca, 'cag/room', 'room_a')
+
+    const out = await seneca.post('aim:cag,update:room',
+      { id: 'room_a', name: 'Renamed', org_id: 'org_other' } as any)
+    assert.equal(out.ok, true, out.why)
+    assert.equal(out.item.name, 'Renamed')
+    assert.equal(out.item.org_id, 'org_tiny')
+
+    // Every editable field, because the declared inverse map names them all -
+    // a partial prev would make buildInverse refuse.
+    assert.deepEqual(Object.keys(out.prev).sort(),
+      ['access', 'capacity', 'floor', 'id', 'name', 'order'])
+    assert.equal(out.prev.name, before.name)
+    await seneca.close()
+  })
+
+  test('a delete is refused while anything still references the row', async () => {
+    // Deleting a room a session points at turns every one of those sessions
+    // into an unknown-reference at validate time - the organiser would find
+    // out at publish rather than at the click.
+    const seneca = await makeSeneca()
+
+    const out = await seneca.post('aim:cag,remove:room', { id: 'room_a' })
+    assert.equal(out.ok, false)
+    assert.equal(out.why, 'in-use')
+    assert.ok(0 < out.count, 'it did not say how many')
+    assert.ok(await load(seneca, 'cag/room', 'room_a'), 'the row went anyway')
+
+    await seneca.close()
+  })
+
+  test('a delete goes through once nothing references it', async () => {
+    const seneca = await makeSeneca()
+    const made = await seneca.post('aim:cag,make:room', { conference_id: 'conf_tiny', name: 'Spare' })
+    const out = await seneca.post('aim:cag,remove:room', { id: made.id })
+    assert.equal(out.ok, true, out.why)
+    assert.equal(await load(seneca, 'cag/room', made.id), null)
+    await seneca.close()
+  })
+
+  test('known-ABSENT: there is no update:snapshot', async () => {
+    // A snapshot is published OUTPUT, written by publish:fixture. An admin
+    // that could edit one could make the public agenda disagree with the
+    // programme it was built from.
+    const patterns = MSG.map(pattern)
+    for (const p of patterns) {
+      assert.ok(!/:(snapshot)$/.test(p) || /^aim:(web,on:)?cag,(list|load):/.test(p),
+        'a snapshot write is declared: ' + p)
+    }
   })
 })

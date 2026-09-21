@@ -26,10 +26,10 @@ validation in the header — is open as **PR #18** on branch `grid-intents`.
 | The UI | the voxgig design language across app, public page and embed |
 | The editable grid | seven named intents, `Shift`-arrows and drag, `n`/`d`/`t`, undo-as-inverse, the header's live error count |
 | Live validation | the header count, and `v` for the diagnostics panel — `j`/`k`, `Enter` to jump, and the publish gate stated |
+| The admin's writes | per-entity `make`/`update`/`remove` intents, a two-step delete, and a refusal that names what still holds a row |
 
 | Not done, in rough order | |
 |---|---|
-| **The entity admin's writes** | The grid edits; the admin does not. `Api.save`/`Api.remove` still return `read-only-stage-1`, so New / Edit / Delete stay disabled. They need per-entity intents (`update:speaker` with exactly the editable fields, SPEC §9) — a shape decision the grid work did not have to make. **The two-step delete confirmation goes in at the same time** (`admin.js` says so at the line where it belongs; today Delete cannot delete, so confirming nothing would be theatre). |
 
 | `provider:google` | Needs OAuth credentials that do not exist yet. Last among the OAuth providers **on purpose** — the machinery it plugs into is already proven by two providers that can be tested offline. |
 | Validation | 4 of 10 error rules and 8 of 14 warnings missing (`fixture-cycle` as a diagnostic, `bad-color-contrast`, `broken-asset`, `asset-escapes-root`). Plus live validation in the app (mockup 3). |
@@ -59,7 +59,7 @@ cd web     && PLAYWRIGHT_CHROMIUM_PATH=/home/jose/.cache/ms-playwright/chromium-
 ```
 
 Sign in as `alice@example.com` / `alice-pass-01`. Current green:
-**222 backend · 40 e2e · 13 web unit · 7 embed**.
+**229 backend · 44 e2e · 13 web unit · 7 embed**.
 
 `web/` has a unit runner now — `cd web && npm test` (`node --test test/*.test.mjs`) — because
 `buildInverse` is pure and the path resolution, the falsy-value case and the undo stack semantics

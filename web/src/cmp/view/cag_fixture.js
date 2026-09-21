@@ -20,6 +20,7 @@
 // Data comes from aim:web,on:cag,load:tree - NOT the published snapshot. The
 // organiser must see drafts, which agenda.json deliberately never contains.
 
+import * as Api from '../../api.js'
 import { bus } from '../../bus.js'
 import { msgFor, patterns } from '../../model.js'
 import { buildInverse, makeUndoStack, webMessage } from '../../undo.js'
@@ -159,6 +160,10 @@ class VgViewCagFixture extends HTMLElement {
     }
     this.data = r
     this.fixtureId = r.top ? r.top.id : null
+    // THE ADMIN'S CREATES NEED A CONFERENCE. A new room has no stored row to
+    // take a tenant from, so it names one - and this grid is where the app
+    // learns which conference the organiser is working on.
+    Api.setConference(this.fixtureId)
     // Days are a grouping, not an entity (SPEC 8.1) - a day is an ordinary
     // intermediate fixture, so a conference may have none.
     const days = this.days
