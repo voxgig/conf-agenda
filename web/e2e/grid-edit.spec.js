@@ -174,8 +174,12 @@ test('t cycles the status, and u puts it back', async ({ page }) => {
 
 
 test('the footer lists only bindings that work', async ({ page }) => {
-  // "A hint for a key that does nothing is worse than no hint." v and P are
-  // not implemented yet, so they must not be advertised.
+  // "A hint for a key that does nothing is worse than no hint." Every key
+  // listed here has a test above or in validate-panel.spec.js; `P` (publish)
+  // does not exist yet, so it stays off the list until it does.
+  //
+  // This assertion is meant to break when a binding lands - it broke when `v`
+  // did, which is the point of writing it as a list rather than a floor.
   await signIn(page)
   const foot = await page.locator('.ca-foot').innerText()
 
@@ -183,7 +187,7 @@ test('the footer lists only bindings that work', async ({ page }) => {
   expect(foot).toContain('n')
   expect(foot).toContain('d')
   expect(foot).toContain('t')
-  expect(foot).not.toContain('validate')
+  expect(foot).toContain('validate')
   expect(foot).not.toContain('publish')
 })
 

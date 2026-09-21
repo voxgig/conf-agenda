@@ -24,6 +24,7 @@ import { bus } from '../../bus.js'
 import { msgFor, patterns } from '../../model.js'
 import { buildInverse, makeUndoStack, webMessage } from '../../undo.js'
 import { renderSyncPlan } from './sync_plan.js'
+import { renderValidatePanel } from './validate_panel.js'
 import { renderSyncRun } from './sync_run.js'
 
 const STATUS_LABEL = { draft: 'Draft', confirmed: '', cancelled: 'Cancelled' }
@@ -99,8 +100,9 @@ class VgViewCagFixture extends HTMLElement {
     this.focusIndex = 0
     this.fixtureId = null
     this.dayId = null
-    // 'grid' | 'sync'. The sync plan is one keystroke away rather than a nav
-    // item, because it is a thing you do TO a conference, not a place.
+    // 'grid' | 'sync' | 'run' | 'validate'. Each is a thing you do TO a
+    // conference rather than a place you navigate to, which is why they are
+    // keystrokes and not nav items.
     this.mode = 'grid'
     this.onKey = this.onKey.bind(this)
 
@@ -124,6 +126,9 @@ class VgViewCagFixture extends HTMLElement {
     // Live validation (SPEC 19.4), re-run after every settled intent. The
     // header shows the count; the panel is a separate piece of work.
     this.diagnostics = []
+    // Which diagnostic the panel's ring is on. Separate from focusIndex:
+    // walking the list must not move the grid's selection until Enter says so.
+    this.diagIndex = 0
   }
 
   connectedCallback() {
@@ -422,6 +427,28 @@ class VgViewCagFixture extends HTMLElement {
   }
 
   onKey(ev) {
+    // THE PANEL OWNS j/k/Enter WHILE IT IS OPEN. Same vocabulary, different
+    // list - walking diagnostics must not drag the grid's selection with it,
+    // which is why diagIndex is separate from focusIndex.
+    if ('validate' === this.mode) {
+      if ('Escape' === ev.key || 'v' === ev.key) {
+        ev.preventDefault()
+        this.showGrid()
+      } else if ('j' === ev.key) {
+        ev.preventDefault()
+        this.diagIndex = Math.min(this.diagIndex + 1, Math.max(0, this.diagnostics.length - 1))
+        this.render()
+      } else if ('k' === ev.key && !ev.metaKey && !ev.ctrlKey) {
+        ev.preventDefault()
+        this.diagIndex = Math.max(this.diagIndex - 1, 0)
+        this.render()
+      } else if ('Enter' === ev.key) {
+        ev.preventDefault()
+        this.jumpToDiagnostic()
+      }
+      return
+    }
+
     if ('grid' !== this.mode) {
       if ('Escape' === ev.key) { ev.preventDefault(); this.showGrid() }
       return
@@ -486,6 +513,11 @@ class VgViewCagFixture extends HTMLElement {
       this.undoLast()
       return
     }
+    if ('v' === ev.key) {
+      ev.preventDefault()
+      this.showValidation()
+      return
+    }
 
     // j/k/Enter are the SHARED vocabulary (PLATFORM 5.2) - the same keys mean
     // the same things in both apps. Focus is always somewhere and always
@@ -505,6 +537,50 @@ class VgViewCagFixture extends HTMLElement {
     }
     ev.preventDefault()
     this.paintFocus()
+  }
+
+  /**
+   * `v`: the diagnostics list.
+   *
+   * It REVALIDATES on open rather than trusting what the header happens to be
+   * showing. The count is refreshed after every settled intent, but the panel
+   * is also the thing an organiser opens after doing nothing for ten minutes,
+   * and "validate now" is what SPEC 13.1 says `v` means.
+   */
+  async showValidation() {
+    await this.revalidate()
+    this.diagIndex = 0
+    this.mode = 'validate'
+    this.render()
+    this.focus()
+  }
+
+  /**
+   * `Enter`: go to the session a diagnostic is about.
+   *
+   * The diagnostic names its anchor entity, so this is a lookup rather than a
+   * search - and if the anchor is not a session on the current day (a clash
+   * spanning two days, a rule about the conference itself) it says so instead
+   * of silently landing somewhere arbitrary.
+   */
+  jumpToDiagnostic() {
+    const d = this.diagnostics[this.diagIndex]
+    if (null == d || null == d.entity) return
+
+    const at = this.sessions.findIndex((s) => s.id === d.entity.id)
+    if (at < 0) {
+      // Most often: the diagnostic is on another day. Changing the day under
+      // the organiser without saying so is worse than not moving.
+      this.say('That one is not on this day — ' + d.rule, false)
+      this.render()
+      return
+    }
+
+    this.focusIndex = at
+    this.mode = 'grid'
+    this.render()
+    this.openDetail(this.sessions[at])
+    this.focus()
   }
 
   showGrid() {
@@ -1010,6 +1086,7 @@ class VgViewCagFixture extends HTMLElement {
       hint('n', 'new'),
       hint('d', 'duplicate'),
       hint('t', 'status'),
+      hint('v', 'validate'),
       hint('Enter', 'open'),
       hint('⌘K', 'commands'),
       hint('S', 'sync plan'),
@@ -1018,7 +1095,9 @@ class VgViewCagFixture extends HTMLElement {
     ])
 
     this.replaceChildren(
-      el('div', { class: 'vg-entity vg-agenda' }, [
+      el('div', {
+        class: 'vg-entity vg-agenda' + ('validate' === this.mode ? ' ca-dimmed' : ''),
+      }, [
         this.renderHead(top, list),
         bar,
         help,
@@ -1028,6 +1107,11 @@ class VgViewCagFixture extends HTMLElement {
         el('div', { 'data-detail': '', class: 'vg-detail-panel', hidden: '' }),
         foot,
         this.renderToast(),
+        // The panel OVERLAYS the grid, dimmed behind it - a diagnostic about
+        // a double-booking is not readable without the thing it is about.
+        'validate' === this.mode
+          ? renderValidatePanel(this.diagnostics, this.diagIndex)
+          : null,
         el('div', { 'data-live': '', 'aria-live': 'polite', class: 'vg-sr' }),
       ]),
     )

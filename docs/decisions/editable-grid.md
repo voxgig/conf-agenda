@@ -184,3 +184,26 @@ undo as well: an undo settles focus on the session that came back.
 which meant a conference that was already invalid opened clean and only admitted it after an
 unrelated move. The seeded tiny fixture *is* already invalid — two talks overlap in one room, which
 is what `rule-room-double-booked.test.ts` was built on — so the grid now recounts on every load.
+
+## The validation panel
+
+`v`, per SPEC §13.1 — "validate now, focus the first diagnostic". It **overlays** the grid rather
+than replacing it, which is why `validate_panel.js` returns a node instead of mounting one the way
+`sync_plan.js` does: a diagnostic about a double-booking is not readable without the thing it is
+about, and `Enter` jumps into a grid that is still there.
+
+**`diagIndex` is separate from `focusIndex`.** Walking the diagnostics must not drag the grid's
+selection along behind the panel — the two lists are different lengths and in different orders, and
+tying them would move the ring to an unrelated session on every `j`.
+
+**Nothing here re-derives a rule or re-sorts a list.** The diagnostic structure is the backend's:
+a stable `rule` id, a severity, a message naming both sides, and a human `fix`, already sorted
+errors-first (SPEC §16.3, §17). The panel renders it. A browser that recomputed
+`room-double-booked` would be a second implementation of the rule, and the two would drift.
+
+**`Enter` on a diagnostic whose anchor is not on the current day says so.** Changing the day under
+the organiser without telling them is worse than not moving.
+
+It also opens with a fresh `validate:fixture` rather than trusting the header's count. The count is
+refreshed after every settled intent, but `v` is also what an organiser presses after doing nothing
+for ten minutes, and §13.1 says `v` means *validate now*.
