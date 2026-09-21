@@ -150,7 +150,14 @@ One more, if they are paying attention: the keynote ends at 10:00 and the next s
 > "Half-open intervals. Touching is not overlapping. Get that wrong and the product emails every
 > speaker about a collision that does not exist."
 
-**Say it is read-only.** Editing is Stage 2. Do not let anyone discover that by dragging.
+**The grid edits.** `Shift`-arrows or drag to move a session, `n` new, `d` duplicate, `t` to cycle
+status, `u` to undo. Every one posts a NAMED INTENT — the browser never composes an entity, and the
+result of a drag is an intent rather than a payload. Undo runs the message's own declared
+`inverse`, not a snapshot restore, so the ledger sees an ordinary edit.
+
+**Move something onto an occupied slot on purpose.** It saves, both cards go red, and the header
+count changes. Validation gates *publish*, not editing — an organiser rebuilding a schedule has to
+be able to pass through an invalid state.
 
 **Two more things in the header**, both computed rather than decorative:
 
@@ -383,9 +390,14 @@ Finish where you started: **one agenda, many outputs.**
 ## What to say when asked
 
 **"Can I edit the grid?"**
-Not yet — Stage 2. The move is designed already: dragging emits a named intent (`move:segment`),
-never a computed row, and undo runs the message's own declared `inverse` rather than restoring a
-snapshot. Stage 1 was deliberately shallow so the shape could be proven cheaply.
+Yes. Dragging emits a named intent (`move:segment`), never a computed row, and undo runs the
+message's own declared `inverse` rather than restoring a snapshot — so an undo is an ordinary edit
+that the ledger, the validator and the audit trail all see like any other.
+
+The generated admin edits too, through per-entity intents — `update:speaker` with exactly the
+editable fields, never a generic save. **Delete takes two presses**, and refuses outright while
+anything still references the row: try deleting a room the programme uses and it names what is
+holding it. A published **Snapshot** stays read-only, because it is written by publishing.
 
 **"Does it actually send invitations?"**
 Not yet, and that is on purpose. The hard part is not sending — it is **never sending twice**. The
@@ -418,7 +430,8 @@ browser.
 
 ## Do not demo these
 
-- **Editing the grid.** Read-only. Stage 2.
+- **Anything on a second organisation.** Org scoping is real in the data and not yet enforced on
+  the admin's reads — `concern:tenant` is Stage 4.
 - **Sending to a real address.** The whole calendar track is built — the ledger, the safety chain,
   the lock, the queue, both sync screens and `provider:ics` with real iTIP invitations — and `S`
   through to the run screen is worth showing. What does not exist is a **deliverer**: with none

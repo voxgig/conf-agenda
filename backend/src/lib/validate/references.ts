@@ -12,6 +12,23 @@ import { Fixture, Row, ValidateInput, fixRef, quoted, ref } from './input'
 export const UNKNOWN = 'unknown-reference'
 export const CROSS_TENANT = 'cross-tenant-reference'
 
+/**
+ * Do these two rows belong to different organisations?
+ *
+ * ONE DEFINITION OF THE RULE, for the same reason parentKindVerdict exists.
+ * SPEC 16.1 requires cross-tenant-reference "at save time as well as at
+ * validate", and the grid's intents are that save time - a move that repoints
+ * room_id has to refuse BEFORE storing, not report afterwards.
+ *
+ * Absence is not a mismatch: a row with no org_id is unscoped, and treating
+ * that as cross-tenant would refuse every write in a single-org install.
+ */
+export function crossTenant(owner: any, target: any): boolean {
+  const a = owner && owner.org_id
+  const b = target && target.org_id
+  return null != a && null != b && a !== b
+}
+
 type Link = { field: string; canon: string; id: string }
 
 function linksOf(f: Fixture): Link[] {
@@ -59,7 +76,7 @@ export function references(input: ValidateInput): Diagnostic[] {
     // to graft one org's tree onto another's room (SPEC 16.1). Checked at save
     // time as well as here.
     const ownerOrg = (owner as any).org_id
-    if (null != ownerOrg && null != target.org_id && ownerOrg !== target.org_id) {
+    if (crossTenant(owner, target)) {
       out.push({
         rule: CROSS_TENANT,
         severity: 'error',

@@ -121,3 +121,52 @@ describe('aim:cag,validate:fixture', () => {
     await seneca.close()
   })
 })
+
+
+describe('the rules that need more than the tree are actually WIRED IN', () => {
+  // THE SILENT-SKIP GUARD. bad-color-contrast needs the theme's surfaces and
+  // the asset rules need a filesystem checker; both return [] when they are
+  // not given one. That is the right behaviour for a pure function and the
+  // wrong thing to discover in production, so this asserts the SERVICE
+  // supplies them - the unit tests only prove the rules work when they are.
+
+  test('bad-color-contrast fires through validate:fixture', async () => {
+    const seneca = await makeSeneca()
+    // vox-teal: 2.1:1 on the light card surface.
+    const track = (await seneca.entity('cag/track').list$({}))[0]
+    await track.data$({ color: '#00c6d8' }).save$()
+
+    const out = await seneca.post('aim:cag,validate:fixture', { fixture_id: 'conf_tiny' })
+    const found = out.diagnostics.filter((d: any) => 'bad-color-contrast' === d.rule)
+    assert.equal(found.length, 1,
+      'the rule never ran - the service is not passing the theme surfaces')
+    assert.equal(found[0].severity, 'error')
+
+    await seneca.close()
+  })
+
+  test('broken-asset fires through validate:fixture', async () => {
+    const seneca = await makeSeneca()
+    const sp = (await seneca.entity('cag/speaker').list$({}))[0]
+    await sp.data$({ photo: 'definitely-not-here.jpg' }).save$()
+
+    const out = await seneca.post('aim:cag,validate:fixture', { fixture_id: 'conf_tiny' })
+    assert.ok(out.diagnostics.some((d: any) => 'broken-asset' === d.rule),
+      'the rule never ran - the service is not passing an asset checker')
+
+    await seneca.close()
+  })
+
+  test('fixture-cycle fires through validate:fixture', async () => {
+    // The runtime pair of the save-time guard: data that already has a cycle,
+    // which check:cycle can only prevent, not repair.
+    const seneca = await makeSeneca()
+    const row = await seneca.entity('cag/fixture').load$('seg_buses')
+    await row.data$({ parent_id: 'seg_buses' }).save$()
+
+    const out = await seneca.post('aim:cag,validate:fixture', { fixture_id: 'conf_tiny' })
+    assert.ok(out.diagnostics.some((d: any) => 'fixture-cycle' === d.rule))
+
+    await seneca.close()
+  })
+})

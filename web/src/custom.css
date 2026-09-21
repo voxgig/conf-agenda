@@ -872,3 +872,148 @@ tr:hover .vg-rowmenu-btn,
   .ca-run-row { grid-template-columns: 6rem minmax(0, 1fr); row-gap: 4px; }
   .ca-run-ms { text-align: left; }
 }
+
+/* ---- editing: the ghost, the drop slots, the toast, the error count ----
+ *
+ * Built to GridMove.dc.html. Every value here is a theme token rather than
+ * the mockup's hex, so the grid stays one system with the rest of the app in
+ * both modes - the mockup is the dark rendering of these, not a palette.
+ */
+
+/* The origin slot's placeholder, held until the move settles. It keeps the
+ * ORIGINAL row span so the grid does not reflow under the pointer. */
+.ca-ghost {
+  border: 1px dashed var(--vg-border-strong);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: var(--vg-muted);
+  pointer-events: none;
+}
+
+/* Drop targets. Invisible until something is being dragged - an empty grid
+ * ruled into boxes reads as a table, which is the thing this grid is not. */
+.ca-slot {
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: background var(--vg-t-fast), border-color var(--vg-t-fast);
+}
+.ca-grid:has([draggable='true']:active) .ca-slot,
+.ca-slot.ca-slot-over {
+  border-color: var(--vg-border);
+  background: color-mix(in srgb, var(--vg-accent) 6%, transparent);
+}
+
+.ca-seg[draggable='true'] { cursor: grab; }
+.ca-seg[draggable='true']:active { cursor: grabbing; }
+
+/* The toast IS the undo affordance, so it sits above the footer where the
+ * eye already is after a move, and it names what happened. */
+.ca-toast {
+  position: fixed; left: 50%; bottom: 56px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 12px;
+  background: var(--vg-surface-raised, var(--vg-surface));
+  border: 1px solid var(--vg-border-strong);
+  border-radius: 8px;
+  padding: 10px 16px;
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.5);
+  font-size: 12.5px;
+  z-index: 20;
+}
+.ca-toast-undo { display: flex; align-items: center; gap: 6px; color: var(--vg-muted); }
+
+/* "2 errors — room-double-booked +1". Publication is blocked while any
+ * remain (SPEC 16), so this belongs beside the publish state. */
+.ca-errpill {
+  display: flex; align-items: center; gap: 7px;
+  background: color-mix(in srgb, var(--vg-danger) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--vg-danger) 50%, transparent);
+  border-radius: 6px;
+  padding: 4px 11px;
+  font-size: 11.5px;
+  color: var(--vg-danger);
+}
+.ca-errdot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--vg-danger); flex-shrink: 0;
+}
+
+/* ---- the validation panel (mockups/src/Validate.dc.html) --------------
+ *
+ * An OVERLAY, not a replacement: the grid dims behind it because a
+ * diagnostic about a double-booking is unreadable without the thing it is
+ * about, and Enter jumps into a grid that is still there.
+ */
+.ca-dimmed .ca-scroll { opacity: .45; transition: opacity var(--vg-t-fast); }
+
+.ca-val-panel {
+  position: fixed; right: 0; top: 0; bottom: 0; width: 420px; max-width: 92vw;
+  background: var(--vg-surface-raised, var(--vg-surface));
+  border-left: 1px solid var(--vg-border-strong);
+  box-shadow: -18px 0 40px rgb(0 0 0 / 0.45);
+  display: flex; flex-direction: column;
+  z-index: 30;
+}
+.ca-val-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 18px 12px;
+}
+.ca-val-title { font-size: 14px; font-weight: 700; margin: 0; }
+.ca-val-count { font-size: 11.5px; }
+.ca-val-count--error { color: var(--vg-danger); }
+.ca-val-count--warn { color: var(--vg-warning); }
+
+.ca-val-list {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 2px 18px; overflow-y: auto; flex-grow: 1;
+}
+
+.ca-diag {
+  border: 1px solid var(--vg-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 5px;
+  background: var(--vg-surface);
+}
+/* The ring, and the same one the grid uses - j/k mean the same thing here. */
+.ca-diag--on { outline: 2px solid var(--vg-accent); outline-offset: 1px; }
+.ca-diag--clean { border-style: dashed; }
+
+.ca-diag-head { display: flex; align-items: center; gap: 8px; }
+.ca-sev {
+  font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  border-radius: 4px; padding: 1px 7px;
+}
+.ca-sev--error {
+  background: color-mix(in srgb, var(--vg-danger) 16%, transparent);
+  color: var(--vg-danger);
+}
+.ca-sev--warn {
+  background: color-mix(in srgb, var(--vg-warning) 14%, transparent);
+  color: var(--vg-warning);
+}
+/* The stable rule id, in the monospace face a code deserves. */
+.ca-diag-code { font-family: var(--vg-font-mono, ui-monospace, monospace); font-size: 11px; }
+.ca-diag--on .ca-diag-code,
+.ca-diag .ca-sev--error + .ca-diag-code { color: inherit; }
+
+.ca-diag-what { font-size: 12.5px; line-height: 1.35; color: var(--vg-text); }
+.ca-diag-fix { font-size: 11.5px; color: var(--vg-muted); }
+.ca-diag-jump {
+  display: flex; align-items: center; gap: 7px;
+  color: var(--vg-muted); font-size: 11px;
+}
+
+.ca-val-foot {
+  display: flex; align-items: center; gap: 9px;
+  border-top: 1px solid var(--vg-border);
+  padding: 13px 18px;
+  font-size: 12px; color: var(--vg-muted);
+}
+
+/* An armed Delete. Loud, because the next click is the one that acts and
+ * there is no undo behind it - remove: declares no inverse on purpose. */
+.vg-del.vg-armed {
+  background: var(--vg-danger);
+  color: var(--vg-on-danger, #fff);
+  font-weight: 600;
+}

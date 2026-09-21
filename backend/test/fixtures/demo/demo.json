@@ -35,7 +35,7 @@
       "id": "dt_frontend",
       "org_id": "org_demo",
       "name": "Frontend",
-      "color": "#00c6d8",
+      "color": "#2f7fd4",
       "order": 2
     },
     {
@@ -138,7 +138,7 @@
       "kind": "key",
       "room_id": "dr_main",
       "track_id": "dt_platform",
-      "title": "Keynote — Boring Infrastructure, Exciting Products",
+      "title": "Keynote \u2014 Boring Infrastructure, Exciting Products",
       "desc": "Why the dull parts decide whether the exciting parts ship.",
       "t_start": 1825232400000,
       "t_end": 1825236000000
@@ -196,7 +196,7 @@
       "kind": "wrk",
       "room_id": "dr_lab",
       "track_id": "dt_platform",
-      "title": "Workshop — Aontu in Anger",
+      "title": "Workshop \u2014 Aontu in Anger",
       "desc": "Bring a laptop. Three hours, hands on keyboards.",
       "t_start": 1825241400000,
       "t_end": 1825252200000
@@ -241,7 +241,7 @@
       "kind": "pan",
       "room_id": "dr_main",
       "track_id": "dt_community",
-      "title": "Panel — Self-hosting Forever",
+      "title": "Panel \u2014 Self-hosting Forever",
       "desc": "What it takes to still run in ten years.",
       "t_start": 1825324200000,
       "t_end": 1825327800000
@@ -269,7 +269,7 @@
       "kind": "key",
       "room_id": "dr_main",
       "track_id": "dt_community",
-      "title": "Closing — What We Ship Next",
+      "title": "Closing \u2014 What We Ship Next",
       "desc": "A short one, then the pub.",
       "t_start": 1825344000000,
       "t_end": 1825346700000

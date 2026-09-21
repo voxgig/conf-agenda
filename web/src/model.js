@@ -141,6 +141,31 @@ function displayFields(canon) {
   return Object.keys(f).filter((k) => SYS_FIELDS.indexOf(k) < 0)
 }
 
+// THE MESSAGE LIST (PLATFORM 1.4). main.msg is a LIST of definitions, each
+// carrying its pattern as data. The backend serves the whole compiled model at
+// /model.json, so the undo contract - each definition's declared `inverse` -
+// is readable here without a second request or a second source of truth.
+function msgs() {
+  return (_model && _model.main && _model.main.msg) || []
+}
+
+// 'aim:web,on:cag,move:segment' for a definition.
+function patternOf(def) {
+  return (def.pat || []).map((p) => Object.keys(p)[0] + ':' + Object.values(p)[0]).join(',')
+}
+
+// Every declared pattern - what undo.js checks a proxy against.
+function patterns() {
+  return msgs().map(patternOf)
+}
+
+// The definition behind a pattern, or null. The grid asks for the SERVICE
+// pattern (aim:cag,move:segment) rather than the proxy it posts, because the
+// inverse contract is declared on the service message.
+function msgFor(pattern) {
+  return msgs().find((m) => patternOf(m) === pattern) || null
+}
+
 // Custom view: an entity may declare ux:{view:'custom'} to replace the
 // generic entity admin with a hand-coded component. Returns that component's
 // custom-element tag (vg-view-<zone>-<name>) or null for the generic admin.
@@ -155,6 +180,10 @@ function customViewTag(canon) {
 
 export {
   loadModel,
+  msgs,
+  msgFor,
+  patterns,
+  patternOf,
   entities,
   fieldsOf,
   refsOf,

@@ -44,12 +44,159 @@
   { pat: [{aim: cag}, {apply: sync}]
     params: { fixture_id: 'String', confirm: 'Boolean' } }
 
+  # ---- the segment intents (SPEC 9) --------------------------------------
+  # Every grid interaction is a NAMED INTENT with its own closed params shape.
+  # The browser never composes an entity and never computes the new row - the
+  # result of a drag is an intent, not a payload (PLATFORM 1.2).
+  #
+  # NOTE WHAT IS ABSENT: no definition below declares org_id, owner_id or
+  # top_id. Tenancy comes from the STORED row, and the closed shape is the
+  # structural half of that - there is no key to send.
+  #
+  # `inverse` is the declared undo contract (PLATFORM 1.4). It names its
+  # target BY PATTERN, and `map` says how that message's params are built from
+  # this one's params and result. Undo runs the inverse as an ORDINARY EDIT,
+  # which the ledger, the validator and the audit trail all see like any
+  # other - not a snapshot restore, which would put back state the server may
+  # have moved on from.
+  #
+  # `inverse` is stripped from the model before the Lambda generators see it
+  # (build/msg_meta.js) - @voxgig/build's MsgMetaShape is closed and rejects
+  # it, and the failure is a FALSE GREEN. model.json keeps it, which is what
+  # the SPA reads.
+
+  { pat: [{aim: cag}, {move: segment}]
+    params: { fixture_id: 'String', room_id: 'Skip(String)', t_start: 'Number' }
+    inverse: { pat: [{aim: cag}, {move: segment}]
+               map: { fixture_id: 'params.fixture_id'
+                      room_id: 'result.prev.room_id'
+                      t_start: 'result.prev.t_start' } } }
+
+  { pat: [{aim: cag}, {set: status}]
+    params: { fixture_id: 'String', status: 'String' }
+    inverse: { pat: [{aim: cag}, {set: status}]
+               map: { fixture_id: 'params.fixture_id'
+                      status: 'result.prev.status' } } }
+
+  { pat: [{aim: cag}, {make: segment}]
+    params: { parent_id: 'String', t_start: 'Number', t_end: 'Number'
+              room_id: 'Skip(String)', kind: 'Skip(String)', title: 'Skip(String)' }
+    inverse: { pat: [{aim: cag}, {remove: segment}]
+               map: { fixture_id: 'result.fixture_id' } } }
+
+  # SPEC 9: duplicate "declares the removal of the copy" as its inverse -
+  # which is why remove:segment is declared at all. PLATFORM 1.4 requires an
+  # inverse.pat to match a DECLARED definition.
+  { pat: [{aim: cag}, {duplicate: segment}]
+    params: { fixture_id: 'String' }
+    inverse: { pat: [{aim: cag}, {remove: segment}]
+               map: { fixture_id: 'result.fixture_id' } } }
+
+  # NO INVERSE, deliberately. Restoring a deleted segment is not an ordinary
+  # edit, and PLATFORM 1.4 says a definition without one "is not undoable, and
+  # the UI must show it that way".
+  { pat: [{aim: cag}, {remove: segment}]
+    params: { fixture_id: 'String' } }
+
+  { pat: [{aim: cag}, {add: appearance}]
+    params: { fixture_id: 'String', speaker_id: 'String', role: 'Skip(String)' }
+    inverse: { pat: [{aim: cag}, {remove: appearance}]
+               map: { appearance_id: 'result.appearance_id' } } }
+
+  { pat: [{aim: cag}, {remove: appearance}]
+    params: { appearance_id: 'String' }
+    inverse: { pat: [{aim: cag}, {add: appearance}]
+               map: { fixture_id: 'result.prev.fixture_id'
+                      speaker_id: 'result.prev.speaker_id'
+                      role: 'result.prev.role' } } }
+
+
   # Per-segment progress for one run. Read-only, and deliberately NOT named
   # `get:` - see web_watch_run.ts. A run's state changes on the server with no
   # client write to invalidate a cache, so it must never be treated as a
   # cacheable read.
   { pat: [{aim: cag}, {watch: run}]
     params: { run_id: 'String' } }
+
+
+  # ---- the admin's per-entity writes (SPEC 9) ------------------------------
+  # "The generated admin screens drive entity-specific intent messages
+  # generated from the model - `update:speaker` with exactly the editable
+  # fields - never a generic canon-plus-item save."
+  #
+  # Generated is what the spec wants and what does not exist yet: PLATFORM 1.2
+  # calls it a @voxgig/build delta. Hand-written until it lands, exactly as the
+  # per-entity READS were. The shape is what matters - the entity is named by
+  # the PATTERN, the editable fields are a CLOSED list, and no definition here
+  # carries org_id, so tenancy cannot arrive in a payload.
+  #
+  # `remove:` declares NO inverse. Re-creating a deleted row gives it a new id,
+  # so every reference to the old one would still be broken - an undo that
+  # looked like it worked and did not. The admin's two-step confirmation is the
+  # guard instead.
+
+  { pat: [{aim: cag}, {make: room}]
+    params: { conference_id: 'String', name: 'Skip(String)', capacity: 'Skip(Number)', floor: 'Skip(String)', access: 'Skip(String)', order: 'Skip(Number)' }
+    inverse: { pat: [{aim: cag}, {remove: room}]
+               map: { id: 'result.id' } } }
+
+  { pat: [{aim: cag}, {update: room}]
+    params: { id: 'String', name: 'Skip(String)', capacity: 'Skip(Number)', floor: 'Skip(String)', access: 'Skip(String)', order: 'Skip(Number)' }
+    inverse: { pat: [{aim: cag}, {update: room}]
+               map: { id: 'params.id'
+                      name: 'result.prev.name'
+                      capacity: 'result.prev.capacity'
+                      floor: 'result.prev.floor'
+                      access: 'result.prev.access'
+                      order: 'result.prev.order' } } }
+
+  { pat: [{aim: cag}, {remove: room}]
+    params: { id: 'String' } }
+
+  { pat: [{aim: cag}, {make: track}]
+    params: { conference_id: 'String', name: 'Skip(String)', color: 'Skip(String)', desc: 'Skip(String)', order: 'Skip(Number)' }
+    inverse: { pat: [{aim: cag}, {remove: track}]
+               map: { id: 'result.id' } } }
+
+  { pat: [{aim: cag}, {update: track}]
+    params: { id: 'String', name: 'Skip(String)', color: 'Skip(String)', desc: 'Skip(String)', order: 'Skip(Number)' }
+    inverse: { pat: [{aim: cag}, {update: track}]
+               map: { id: 'params.id'
+                      name: 'result.prev.name'
+                      color: 'result.prev.color'
+                      desc: 'result.prev.desc'
+                      order: 'result.prev.order' } } }
+
+  { pat: [{aim: cag}, {remove: track}]
+    params: { id: 'String' } }
+
+  { pat: [{aim: cag}, {make: speaker}]
+    params: { conference_id: 'String', name: 'Skip(String)', email: 'Skip(String)', bio: 'Skip(String)', photo: 'Skip(String)', org_name: 'Skip(String)', w_site: 'Skip(String)' }
+    inverse: { pat: [{aim: cag}, {remove: speaker}]
+               map: { id: 'result.id' } } }
+
+  { pat: [{aim: cag}, {update: speaker}]
+    params: { id: 'String', name: 'Skip(String)', email: 'Skip(String)', bio: 'Skip(String)', photo: 'Skip(String)', org_name: 'Skip(String)', w_site: 'Skip(String)' }
+    inverse: { pat: [{aim: cag}, {update: speaker}]
+               map: { id: 'params.id'
+                      name: 'result.prev.name'
+                      email: 'result.prev.email'
+                      bio: 'result.prev.bio'
+                      photo: 'result.prev.photo'
+                      org_name: 'result.prev.org_name'
+                      w_site: 'result.prev.w_site' } } }
+
+  { pat: [{aim: cag}, {remove: speaker}]
+    params: { id: 'String' } }
+
+  # role and order only: an appearance's identity is (fixture_id, speaker_id),
+  # and changing either is remove-then-add.
+  { pat: [{aim: cag}, {update: appearance}]
+    params: { id: 'String', role: 'Skip(String)', order: 'Skip(Number)' }
+    inverse: { pat: [{aim: cag}, {update: appearance}]
+               map: { id: 'params.id'
+                      role: 'result.prev.role'
+                      order: 'result.prev.order' } } }
 
 
   # ---- browser surface ---------------------------------------------------
@@ -69,6 +216,73 @@
 
   { pat: [{aim: web}, {on: cag}, {watch: run}]
     file: './web_watch_run' }
+
+  # The grid re-runs validation after every settled intent, for the header's
+  # error count - live validation (SPEC 19.4), minus the panel.
+  { pat: [{aim: web}, {on: cag}, {validate: fixture}]
+    file: './web_validate_fixture' }
+
+  # Publishing is the organiser's own data going public, and it gates on
+  # validate:fixture. Unlike apply:sync it carries no `confirm`: the
+  # confirmation is a SCREEN, because nothing here reaches a third party.
+  { pat: [{aim: web}, {on: cag}, {publish: fixture}]
+    file: './web_publish_fixture' }
+
+  # The segment intents. Each is a declared proxy, and each names its own
+  # action file because a proxy shares its LAST pattern pair with the message
+  # it forwards to (PLATFORM 1.4).
+  { pat: [{aim: web}, {on: cag}, {move: segment}]
+    file: './web_move_segment' }
+
+  { pat: [{aim: web}, {on: cag}, {set: status}]
+    file: './web_set_status' }
+
+  { pat: [{aim: web}, {on: cag}, {make: segment}]
+    file: './web_make_segment' }
+
+  { pat: [{aim: web}, {on: cag}, {duplicate: segment}]
+    file: './web_duplicate_segment' }
+
+  { pat: [{aim: web}, {on: cag}, {remove: segment}]
+    file: './web_remove_segment' }
+
+  { pat: [{aim: web}, {on: cag}, {add: appearance}]
+    file: './web_add_appearance' }
+
+  { pat: [{aim: web}, {on: cag}, {remove: appearance}]
+    file: './web_remove_appearance' }
+
+  # The admin's writes.
+  { pat: [{aim: web}, {on: cag}, {make: room}]
+    file: './web_make_room' }
+
+  { pat: [{aim: web}, {on: cag}, {update: room}]
+    file: './web_update_room' }
+
+  { pat: [{aim: web}, {on: cag}, {remove: room}]
+    file: './web_remove_room' }
+
+  { pat: [{aim: web}, {on: cag}, {make: track}]
+    file: './web_make_track' }
+
+  { pat: [{aim: web}, {on: cag}, {update: track}]
+    file: './web_update_track' }
+
+  { pat: [{aim: web}, {on: cag}, {remove: track}]
+    file: './web_remove_track' }
+
+  { pat: [{aim: web}, {on: cag}, {make: speaker}]
+    file: './web_make_speaker' }
+
+  { pat: [{aim: web}, {on: cag}, {update: speaker}]
+    file: './web_update_speaker' }
+
+  { pat: [{aim: web}, {on: cag}, {remove: speaker}]
+    file: './web_remove_speaker' }
+
+  { pat: [{aim: web}, {on: cag}, {update: appearance}]
+    file: './web_update_appearance' }
+
 
 
   # ---- agenda service ----------------------------------------------------

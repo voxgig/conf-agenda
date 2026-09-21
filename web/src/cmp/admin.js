@@ -27,6 +27,15 @@ function esc(s) {
 // designed.
 
 function closeRowMenus(root) {
+  // A CLOSED MENU IS A DISARMED ONE. The popup is hidden rather than
+  // re-rendered, so an armed Delete would still read "Delete — confirm" the
+  // next time it opened - and the second click would land on a confirmation
+  // the organiser never gave.
+  for (const armed of (root || document).querySelectorAll('.vg-del[data-state="armed"]')) {
+    armed.dataset.state = ''
+    armed.textContent = 'Delete'
+    armed.classList.remove('vg-armed')
+  }
   for (const btn of (root || document).querySelectorAll('.vg-rowmenu-btn[aria-expanded="true"]')) {
     btn.setAttribute('aria-expanded', 'false')
     const pop = btn.nextElementSibling
@@ -213,13 +222,15 @@ class VgEntityAdmin extends HTMLElement {
     // One row, one overflow menu. Three bordered buttons per row means thirty
     // of them on a normal list, all competing with the data they act on; the
     // row itself becomes the Open target and the rest move behind the menu.
-    // Writes are Stage 2 (see api.js). Say so on the controls rather than
-    // letting them look live: Api.remove() returns { ok: false } and this
-    // component used to ignore the result, so Delete re-rendered the list and
-    // looked exactly like a successful delete of a row that was still there.
-    const wr = Api.canWrite()
+    // GATING IS PER ENTITY, not global. Most entities are writable now; a
+    // published snapshot is not, because it is written by publishing rather
+    // than by hand. A control that looks live and silently does nothing is
+    // worse than one that is plainly disabled and says why - this component
+    // used to ignore the refusal, so Delete re-rendered the list and looked
+    // exactly like a successful delete of a row that was still there.
+    const wr = Api.canWrite(canon)
       ? { off: '', why: '' }
-      : { off: 'disabled', why: Api.writeBlockedReason() }
+      : { off: 'disabled', why: Api.writeBlockedReason(canon) }
 
     const rows = items.map((item) => {
       const name = item[Model.labelField(canon)] || item.id
@@ -302,15 +313,46 @@ class VgEntityAdmin extends HTMLElement {
     }
     for (const b of this.querySelectorAll('.vg-del')) {
       b.onclick = async () => {
+        // THE TWO-STEP CONFIRM. One click, no undo, on every row is not a
+        // thing to ship - and remove: declares no inverse on purpose, because
+        // re-creating a deleted row gives it a NEW id and every reference to
+        // the old one would still be broken. So the guard is here rather than
+        // in the undo stack.
+        //
+        // Armed in place rather than in a dialog: the row is the context, and
+        // a modal asking "are you sure?" about a name you can no longer see is
+        // the weakest form of this. Clicking anything else disarms it.
+        if ('armed' !== b.dataset.state) {
+          // The menu must STAY OPEN, or the confirm button vanishes the
+          // moment it appears. `pop.onclick`'s stopPropagation below is what
+          // makes that possible - it is the line that made a two-step delete
+          // arm-able at all.
+          b.dataset.state = 'armed'
+          b.textContent = 'Delete — confirm'
+          b.classList.add('vg-armed')
+          clearTimeout(this._armTimer)
+          this._armTimer = setTimeout(() => {
+            b.dataset.state = ''
+            b.textContent = 'Delete'
+            b.classList.remove('vg-armed')
+          }, 4000)
+          return
+        }
+        clearTimeout(this._armTimer)
+
         const res = await Api.remove(canon, b.dataset.id)
         // Report the refusal. This call used to be awaited and thrown away,
         // so a delete that did nothing looked identical to one that worked.
-        // When writes land in Stage 2 this is where the confirm step goes -
-        // one click, no undo, on every row is not a thing to ship.
         if (!res || !res.ok) {
           closeRowMenus(this)
           const note = this.querySelector('#vg-count')
-          if (note) note.textContent = res && res.message ? res.message : 'Delete failed.'
+          // Name what is holding it. "Cannot delete" with no reason sends an
+          // organiser hunting through the whole programme.
+          const why = 'in-use' === (res && res.why)
+            ? 'Still in use by ' + res.count + ' ' +
+              String(res.held_by || '').split('/')[1] + ' row(s).'
+            : (res && res.message) || 'Delete failed: ' + ((res && res.why) || 'unknown')
+          if (note) note.textContent = why
           return
         }
         this.afterMutation()
