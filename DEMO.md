@@ -1,5 +1,10 @@
 # Demo runbook
 
+> **Showing what changed this week?** Use **[DEMO-STAGE2.md](DEMO-STAGE2.md)** — five minutes on
+> the editable grid, live validation, the admin's writes and the sync plan. This file is the full
+> nine-minute tour of every surface, and is still the one to use with somebody who has not seen the
+> product at all.
+
 **Stage 1, the walking skeleton.** Nine minutes: the six screens in the sidebar, then the six
 things that come out of them. Everything below is real and runs locally — nothing is mocked for
 the demo, and the one thing that is deliberately broken stays broken because that is the point of
