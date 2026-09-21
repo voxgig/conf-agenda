@@ -495,117 +495,143 @@ class VgViewCagFixture extends HTMLElement {
     return scoped.sort((a, b) => a.t_start - b.t_start || (a.id < b.id ? -1 : 1))
   }
 
-  onKey(ev) {
-    // THE PANEL OWNS j/k/Enter WHILE IT IS OPEN. Same vocabulary, different
-    // list - walking diagnostics must not drag the grid's selection with it,
-    // which is why diagIndex is separate from focusIndex.
-    if ('validate' === this.mode) {
-      if ('Escape' === ev.key || 'v' === ev.key) {
-        ev.preventDefault()
-        this.showGrid()
-      } else if ('j' === ev.key) {
-        ev.preventDefault()
-        this.diagIndex = Math.min(this.diagIndex + 1, Math.max(0, this.diagnostics.length - 1))
-        this.render()
-      } else if ('k' === ev.key && !ev.metaKey && !ev.ctrlKey) {
-        ev.preventDefault()
-        this.diagIndex = Math.max(this.diagIndex - 1, 0)
-        this.render()
-      } else if ('Enter' === ev.key) {
-        ev.preventDefault()
-        this.jumpToDiagnostic()
-      }
-      return
-    }
+  /**
+   * THE BINDING REGISTRY — one ordered list, four readers.
+   *
+   * SPEC §18: "the shortcut overlay is generated from the binding registry so
+   * they cannot drift." They had already drifted: the footer listed the Stage
+   * 2 keys and the `?` overlay still described a read-only grid, because they
+   * were two hand-maintained lists and nothing compared them.
+   *
+   * So the handler, the `?` overlay (K6), the footer hint bar and the command
+   * bar (K2, which must show the key beside each command) all read THIS.
+   * Adding a binding is adding one entry.
+   *
+   * ORDER IS PRECEDENCE, and it is load-bearing rather than tidy. `ev.key` is
+   * still `'k'` when Cmd is held, so a bare-`k` entry above the Cmd-K entry
+   * makes the command bar unreachable — which is exactly what happened here
+   * once, and why e2e/grid-keys.spec.js exists. Putting it in a list means
+   * first-match-wins is visible, and a test can assert it.
+   *
+   * `bar: false` marks a binding the command bar cannot sensibly run: a
+   * direction needs the key that was pressed, and "move session" with no
+   * arrow is not a command.
+   */
+  bindings() {
+    const list = () => this.sessions
+    const focused = () => this.sessions[this.focusIndex]
 
-    if ('grid' !== this.mode) {
-      if ('Escape' === ev.key) { ev.preventDefault(); this.showGrid() }
-      return
-    }
-
-    const list = this.sessions
-    // `n` and `u` are the two that mean something on an EMPTY day - which is
-    // exactly the day you most want to add a session to.
-    if (0 === list.length && 'n' !== ev.key && 'u' !== ev.key) return
-
-    // S: the sync plan. Read-only and it sends nothing - see sync_plan.js.
-    if ('S' === ev.key) {
-      ev.preventDefault()
-      this.showSync()
-      return
-    }
-
-    // Cmd-K/Ctrl-K FIRST. The modifier check has to come before the bare
-    // 'k' case, because ev.key is still 'k' when the modifier is held - test
-    // plain 'k' first and the command bar is unreachable, which is exactly
-    // what happened here.
-    if ('k' === ev.key.toLowerCase() && (ev.metaKey || ev.ctrlKey)) {
-      ev.preventDefault()
-      this.toggleBar()
-      return
-    }
-
-    // SHIFT-ARROWS BEFORE THE BARE KEYS, and for the same reason Cmd-K goes
-    // before 'k': a modifier does not change ev.key, so anything that tests
-    // the plain key first wins and the modified binding is unreachable. That
-    // is not hypothetical here - it is what kept Cmd-K dead for its whole
-    // life, and e2e/grid-keys.spec.js exists because of it.
     const ARROW = {
       ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1],
     }
-    if (ev.shiftKey && ARROW[ev.key]) {
-      ev.preventDefault()
-      const [dx, dy] = ARROW[ev.key]
-      this.nudge(list[this.focusIndex], dx, dy)
-      return
-    }
 
-    // The editing keys (SPEC 13.1). Each posts a NAMED INTENT; none of them
-    // computes a row.
-    if ('n' === ev.key) {
-      ev.preventDefault()
-      this.makeSegment(list[this.focusIndex])
-      return
-    }
-    if ('d' === ev.key) {
-      ev.preventDefault()
-      this.duplicateSegment(list[this.focusIndex])
-      return
-    }
-    if ('t' === ev.key) {
-      ev.preventDefault()
-      this.cycleStatus(list[this.focusIndex])
-      return
-    }
-    if ('u' === ev.key) {
-      ev.preventDefault()
-      this.undoLast()
-      return
-    }
-    if ('v' === ev.key) {
-      ev.preventDefault()
-      this.showValidation()
-      return
-    }
+    return [
+      // ---- the validation panel owns j/k/Enter while it is open -----------
+      // Same vocabulary, different list: walking diagnostics must not drag
+      // the grid's selection with it.
+      { when: 'validate', keys: 'Esc', label: 'Close validation', bar: false,
+        match: (ev) => 'Escape' === ev.key || 'v' === ev.key,
+        run: () => this.showGrid() },
+      { when: 'validate', keys: 'j k', label: 'Next / previous diagnostic', bar: false,
+        match: (ev) => ('j' === ev.key || 'k' === ev.key) && !ev.metaKey && !ev.ctrlKey,
+        run: (ev) => {
+          const last = Math.max(0, this.diagnostics.length - 1)
+          this.diagIndex = 'j' === ev.key
+            ? Math.min(this.diagIndex + 1, last)
+            : Math.max(this.diagIndex - 1, 0)
+          this.render()
+        } },
+      { when: 'validate', keys: 'Enter', label: 'Jump to session', bar: false,
+        match: (ev) => 'Enter' === ev.key,
+        run: () => this.jumpToDiagnostic() },
 
-    // j/k/Enter are the SHARED vocabulary (PLATFORM 5.2) - the same keys mean
-    // the same things in both apps. Focus is always somewhere and always
-    // visible (K8).
-    if ('j' === ev.key) {
-      this.focusIndex = Math.min(this.focusIndex + 1, list.length - 1)
-    } else if ('k' === ev.key) {
-      this.focusIndex = Math.max(this.focusIndex - 1, 0)
-    } else if ('Enter' === ev.key) {
-      this.openDetail(list[this.focusIndex])
-      return
-    } else if ('?' === ev.key) {
-      this.toggleHelp()
-      return
-    } else {
+      // ---- the sync and run screens ---------------------------------------
+      { when: 'other', keys: 'Esc', label: 'Back to the grid', bar: false,
+        match: (ev) => 'Escape' === ev.key,
+        run: () => this.showGrid() },
+
+      // ---- the grid --------------------------------------------------------
+      { when: 'grid', keys: 'S', label: 'Sync plan', foot: true,
+        match: (ev) => 'S' === ev.key,
+        run: () => this.showSync() },
+
+      // BEFORE the bare `k`. See the note above.
+      { when: 'grid', keys: '⌘K', label: 'Command bar', foot: true, bar: false,
+        match: (ev) => 'k' === ev.key.toLowerCase() && (ev.metaKey || ev.ctrlKey),
+        run: () => this.toggleBar() },
+
+      // BEFORE the bare keys, for the same reason: a modifier does not change
+      // ev.key.
+      { when: 'grid', keys: 'Shift-arrows', label: 'Move session', foot: true, bar: false,
+        match: (ev) => ev.shiftKey && null != ARROW[ev.key],
+        run: (ev) => {
+          const [dx, dy] = ARROW[ev.key]
+          this.nudge(focused(), dx, dy)
+        } },
+
+      // The editing keys (SPEC §13.1). Each posts a NAMED INTENT.
+      { when: 'grid', keys: 'n', label: 'New session', foot: true, empty: true,
+        match: (ev) => 'n' === ev.key,
+        run: () => this.makeSegment(focused()) },
+      { when: 'grid', keys: 'd', label: 'Duplicate session', foot: true,
+        match: (ev) => 'd' === ev.key,
+        run: () => this.duplicateSegment(focused()) },
+      { when: 'grid', keys: 't', label: 'Cycle status', foot: true,
+        match: (ev) => 't' === ev.key,
+        run: () => this.cycleStatus(focused()) },
+      { when: 'grid', keys: 'u', label: 'Undo', empty: true,
+        match: (ev) => 'u' === ev.key,
+        run: () => this.undoLast() },
+      { when: 'grid', keys: 'v', label: 'Validate now', foot: true,
+        match: (ev) => 'v' === ev.key,
+        run: () => this.showValidation() },
+
+      // j/k/Enter are the SHARED vocabulary (PLATFORM §5.2) — the same keys
+      // mean the same things in both apps. Focus is always somewhere and
+      // always visible (K8).
+      { when: 'grid', keys: 'j k', label: 'Next / previous session', foot: true, bar: false,
+        match: (ev) => 'j' === ev.key || 'k' === ev.key,
+        run: (ev) => {
+          this.focusIndex = 'j' === ev.key
+            ? Math.min(this.focusIndex + 1, list().length - 1)
+            : Math.max(this.focusIndex - 1, 0)
+          this.paintFocus()
+        } },
+      { when: 'grid', keys: 'Enter', label: 'Open session', foot: true, bar: false,
+        match: (ev) => 'Enter' === ev.key,
+        run: () => this.openDetail(focused()) },
+      { when: 'grid', keys: '?', label: 'Show shortcuts', foot: true, empty: true,
+        match: (ev) => '?' === ev.key,
+        run: () => this.toggleHelp() },
+
+      // Reachable from the command bar only — there is no spare letter worth
+      // spending on it, and K2 says the bar reaches everything.
+      { when: 'grid', keys: '', label: 'Reload agenda', empty: true,
+        match: () => false,
+        run: () => this.reload() },
+    ]
+  }
+
+  /** The bindings that apply to the mode the grid is in right now (K6). */
+  activeBindings() {
+    const scope = 'grid' === this.mode || 'validate' === this.mode ? this.mode : 'other'
+    return this.bindings().filter((b) => b.when === scope)
+  }
+
+  onKey(ev) {
+    // FIRST MATCH WINS, in registry order. The precedence that used to live in
+    // the order of a dozen if-statements is now the order of a list.
+    const empty = 0 === this.sessions.length
+
+    for (const b of this.activeBindings()) {
+      // `n`, `u` and `?` are the ones that mean something on an EMPTY day —
+      // which is exactly the day you most want to add a session to.
+      if ('grid' === b.when && empty && true !== b.empty) continue
+      if (!b.match(ev)) continue
+      ev.preventDefault()
+      b.run(ev)
       return
     }
-    ev.preventDefault()
-    this.paintFocus()
   }
 
   /**
@@ -785,13 +811,15 @@ class VgViewCagFixture extends HTMLElement {
     if (!bar.hidden) bar.querySelector('input').focus()
   }
 
-  /** Three commands, hard-coded until the binding registry lands (SPEC 19.2). */
+  /**
+   * The command bar's entries, from the registry (K2).
+   *
+   * "It shows the key binding beside each command and teaches as it is used"
+   * - which only works if the key beside a command is the key that actually
+   * runs it. Two lists could not promise that; one can.
+   */
   commands() {
-    return [
-      { key: 'r', label: 'Reload agenda', run: () => this.reload() },
-      { key: 'g', label: 'Go to first session', run: () => { this.focusIndex = 0; this.paintFocus() } },
-      { key: '?', label: 'Show shortcuts', run: () => this.toggleHelp() },
-    ]
+    return this.activeBindings().filter((b) => false !== b.bar)
   }
 
   /**
@@ -1121,18 +1149,41 @@ class VgViewCagFixture extends HTMLElement {
 
     const bar = el('div', { 'data-bar': '', hidden: '', class: 'vg-bar' }, [
       el('input', { type: 'text', placeholder: 'Command…', 'aria-label': 'Command bar' }),
+      // K2: "it shows the key binding beside each command and teaches as it
+      // is used". The key shown is now the key that runs it, because both
+      // come from the same registry entry.
       el('ul', {}, this.commands().map((c) =>
-        el('li', {}, [el('kbd', { class: 'vg-kbd', text: c.key }), el('span', { text: c.label })]))),
+        el('li', { 'data-command': c.label }, [
+          el('kbd', { class: 'vg-kbd', text: c.keys || '—' }),
+          el('span', { text: c.label }),
+        ]))),
     ])
     bar.querySelector('input').addEventListener('keydown', (ev) => {
-      const hit = this.commands().find((c) => c.key === ev.key)
-      if (hit) { ev.preventDefault(); bar.hidden = true; this.focus(); hit.run() }
-      if ('Escape' === ev.key) { bar.hidden = true; this.focus() }
+      if ('Escape' === ev.key) { bar.hidden = true; this.focus(); return }
+      if ('Enter' !== ev.key) return
+      ev.preventDefault()
+      const typed = String(ev.target.value || '').trim().toLowerCase()
+      if ('' === typed) return
+      // Fuzzy enough to be useful and simple enough to read: first label that
+      // contains what was typed. K7's ranked search is its own piece of work.
+      const hit = this.commands().find((c) => c.label.toLowerCase().includes(typed))
+      if (null == hit) return
+      bar.hidden = true
+      this.focus()
+      hit.run()
     })
 
-    const help = el('div', { 'data-help': '', hidden: '', class: 'vg-help' }, [
-      el('p', { text: 'j / k  move · Enter  open · S  sync plan · ?  this list · Cmd-K  commands' }),
-    ])
+    // K6: the shortcut overlay, CONTEXT-SENSITIVE to the current view and
+    // GENERATED from the registry - so it cannot describe a key that does not
+    // exist, or miss one that does. It used to say "j/k move, Enter open,
+    // S sync plan" long after Shift-arrows, n, d, t, u and v had landed.
+    const help = el('div', { 'data-help': '', hidden: '', class: 'vg-help' },
+      this.activeBindings()
+        .filter((b) => '' !== b.keys)
+        .map((b) => el('div', { class: 'ca-hint' }, [
+          el('span', { class: 'vg-kbd', text: b.keys }),
+          el('span', { text: b.label }),
+        ])))
 
     // The mockup's footer hint bar. Only keys that WORK are listed: a hint for
     // a binding that does nothing is worse than no hint at all. The Stage 2
@@ -1141,19 +1192,15 @@ class VgViewCagFixture extends HTMLElement {
       el('span', { class: 'vg-kbd', text: keys }),
       el('span', { text: label }),
     ])
-    // ONLY KEYS THAT WORK. A hint for a binding that does nothing is worse
-    // than no hint - `v` (validate panel) and `P` (publish) stay off until
-    // they do something.
+    // ONLY KEYS THAT WORK - and now that is structural rather than a promise.
+    // The hint bar is the registry filtered by `foot`, so a binding cannot be
+    // advertised here without existing, and cannot exist without being
+    // listed in the `?` overlay. `P` (publish) has no entry yet, so it
+    // appears in neither.
     const foot = el('div', { class: 'ca-foot' }, [
-      hint('j k', 'move'),
-      hint('Shift-arrows', 'move session'),
-      hint('n', 'new'),
-      hint('d', 'duplicate'),
-      hint('t', 'status'),
-      hint('v', 'validate'),
-      hint('Enter', 'open'),
-      hint('⌘K', 'commands'),
-      hint('S', 'sync plan'),
+      ...this.activeBindings()
+        .filter((b) => true === b.foot && '?' !== b.keys)
+        .map((b) => hint(b.keys, b.label.toLowerCase())),
       el('div', { class: 'vg-spacer' }),
       hint('?', 'all shortcuts'),
     ])

@@ -296,3 +296,37 @@ code from a comment fails on its own documentation.
 
 All three are confirmed to bite: reverting the bus subscription, the navigate subscription, or the
 `window.seneca` handle each fails the journey, and a sneaked `click()` fails the guard.
+
+## The binding registry
+
+SPEC §18: *"the shortcut overlay is generated from the binding registry so they cannot drift."*
+They had already drifted. The footer listed `Shift`-arrows, `n`, `d`, `t` and `v`; the `?` overlay
+still described a read-only grid — *"j / k move · Enter open · S sync plan"* — because they were
+two hand-maintained lists and nothing compared them. The command bar was a third, with three
+hard-coded entries that were not actions anyone would look for.
+
+One ordered list now, four readers: the key handler, the `?` overlay (K6), the footer hint bar, and
+the command bar (K2). Adding a binding is adding one entry.
+
+**Order is precedence, and that is the point rather than tidiness.** `ev.key` is still `'k'` when
+Cmd is held, so a bare-`k` entry above the Cmd-K entry makes the command bar unreachable — which is
+exactly what happened here once, and why `grid-keys.spec.js` exists at all. As a list, first-match-
+wins is visible on the page, and a test can assert it: moving `j k` above `⌘K` fails the suite.
+
+**The footer is the registry filtered by `foot`; the overlay is the registry whole.** So a key
+cannot be advertised without existing, and cannot exist without being listed. There is an e2e test
+that reads both and asserts every footer key appears in the overlay — the drift itself, rather than
+a snapshot of today's keys.
+
+**The command bar became fuzzy-matched**, which is what K2 asks for: *"every action, every
+navigation target, every entity, fuzzy-matched"*. Single-letter commands were never that. It also
+now shows the real key beside each command, and the key shown is the key that runs it, because both
+come from the same entry.
+
+`bar: false` marks a binding the bar cannot sensibly run — a direction needs the key that was
+pressed, and "move session" with no arrow is not a command.
+
+**Still missing from the registry, deliberately:** `P` (publish) has no entry, so it appears in
+neither the footer nor the overlay, and `g`-prefixed navigation (§13.1's `g a` / `g s` / `g p` /
+`g c`) needs a chord mechanism the registry does not model yet. PLATFORM §3.1 wants all of this in
+`@voxgig/ui` eventually; this is the local version that proves the shape.

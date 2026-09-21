@@ -52,10 +52,42 @@ test('Cmd-K opens the command bar, and a command runs and closes it', async ({ p
   await page.keyboard.press('Control+k')
   await expect(page.locator('[data-bar]')).toBeVisible()
 
-  // 'g' - go to first session. The bar closes and the command has acted.
-  await page.keyboard.press('g')
+  // K2: the bar shows the KEY BESIDE EACH COMMAND, and the key shown is the
+  // key that runs it - both come from the same registry entry now.
+  const sync = page.locator('[data-bar] li[data-command="Sync plan"]')
+  await expect(sync).toBeVisible()
+  await expect(sync.locator('.vg-kbd')).toHaveText('S')
+
+  // Fuzzy-matched rather than single-letter: "every action, every navigation
+  // target, every entity, fuzzy-matched" (K2). Type enough, press Enter.
+  await page.keyboard.type('reload')
+  await page.keyboard.press('Enter')
   await expect(page.locator('[data-bar]')).toBeHidden()
   await expect(page.locator('.vg-focus')).toHaveCount(1)
+})
+
+test('the ? overlay is GENERATED from the registry, so it cannot drift', async ({ page }) => {
+  // SPEC 18: "the shortcut overlay is generated from the binding registry so
+  // they cannot drift." They had drifted - the footer listed the Stage 2 keys
+  // while the overlay still described a read-only grid.
+  await signIn(page)
+  await page.keyboard.press('?')
+
+  const help = page.locator('.vg-help')
+  await expect(help).toBeVisible()
+
+  // Every key the footer advertises is in the overlay. The footer is the
+  // registry filtered; the overlay is the registry whole.
+  const footKeys = await page.locator('.ca-foot .vg-kbd').allInnerTexts()
+  const helpKeys = await help.locator('.vg-kbd').allInnerTexts()
+  for (const k of footKeys) {
+    expect(helpKeys, 'the footer advertises ' + k + ' and the overlay does not list it')
+      .toContain(k)
+  }
+
+  // And the overlay carries keys the footer has no room for - `u` is the one
+  // that matters, because the toast offers it.
+  expect(helpKeys).toContain('u')
 })
 
 test('? toggles the shortcut list', async ({ page }) => {

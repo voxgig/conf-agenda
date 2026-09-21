@@ -30,6 +30,7 @@ validation in the header — is open as **PR #18** on branch `grid-intents`.
 | Validation | **all 10 §16.1 errors and all 14 §16.2 warnings**, each with a triggering case and a near-miss |
 | The `nodeconf` fixture | the real published NodeConf EU 2026 programme — 2 days, 34 sessions, 27 speakers. Not seeded; `tiny` + `demo` still are |
 | Bus-drive | the full journey through `window.seneca.post()` with zero DOM interaction (PLATFORM §10), and a guard that fails if the spec ever grows a click |
+| The binding registry | one ordered list behind the key handler, the `?` overlay, the footer and the command bar — order is precedence, and the overlay cannot drift |
 
 | Not done, in rough order | |
 |---|---|
@@ -62,7 +63,7 @@ cd web     && PLAYWRIGHT_CHROMIUM_PATH=/home/jose/.cache/ms-playwright/chromium-
 ```
 
 Sign in as `alice@example.com` / `alice-pass-01`. Current green:
-**272 backend · 46 e2e · 13 web unit · 7 embed**.
+**272 backend · 47 e2e · 13 web unit · 7 embed**.
 
 `web/` has a unit runner now — `cd web && npm test` (`node --test test/*.test.mjs`) — because
 `buildInverse` is pure and the path resolution, the falsy-value case and the undo stack semantics
