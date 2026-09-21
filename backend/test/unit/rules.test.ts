@@ -303,6 +303,37 @@ describe('warnings: the SPEC 16.2 rules added with the rest', () => {
     assert.ok(rules(out).includes('no-turnover'))
   })
 
+  test('no-turnover near-miss: back-to-back in ONE room is a scheduling CHOICE', () => {
+    // Found by the real NodeConf EU programme: 33 zero-gap pairs and NOT ONE
+    // in the 0-to-10-minute band this rule exists for. A single-track
+    // conference runs back-to-back by design - the next speaker steps up to
+    // the same lectern - so at a `>= 0` threshold the rule caught nothing it
+    // was designed to catch and thirty-three things it was not.
+    const out = warnings(input({
+      segments: [
+        seg({ id: 'a', title: 'A', room_id: 'r1', t_start: T(10), t_end: T(11) }),
+        seg({ id: 'b', title: 'B', room_id: 'r1', t_start: T(11), t_end: T(12) }),
+      ],
+    }))
+    assert.ok(!rules(out).includes('no-turnover'))
+  })
+
+  test('long-gap near-miss: an OVERNIGHT gap is not a hole in the programme', () => {
+    // Also found by the real programme: one day's dinner to the next day's
+    // first coffee was reported as ten hours with nothing on. Two sessions on
+    // different days are not consecutive in any sense an organiser cares
+    // about, so the walk is grouped by room AND parent.
+    const out = warnings(input({
+      segments: [
+        seg({ id: 'd1', kind: 'day', title: 'Day 1' }),
+        seg({ id: 'd2', kind: 'day', title: 'Day 2' }),
+        seg({ id: 'a', title: 'A', parent_id: 'd1', room_id: 'r1', t_start: T(9), t_end: T(10) }),
+        seg({ id: 'b', title: 'B', parent_id: 'd2', room_id: 'r1', t_start: T(30), t_end: T(31) }),
+      ],
+    }))
+    assert.ok(!rules(out).includes('long-gap'))
+  })
+
   test('no-turnover near-miss: an OVERLAP is an error, and is not said twice', () => {
     // room-double-booked already reports it. Saying it again as a warning is
     // one problem wearing two severities.

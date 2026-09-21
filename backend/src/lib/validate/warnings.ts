@@ -255,11 +255,16 @@ export function warnings(input: ValidateInput): Diagnostic[] {
   // from opposite ends: too short to change over, or so long it looks like
   // something is missing.
   {
+    // GROUPED BY ROOM *AND* PARENT. Two sessions on different days are not
+    // consecutive in any sense an organiser cares about - comparing them
+    // reported the gap between one day's dinner and the next day's first
+    // coffee as a hole in the programme. Found by the real NodeConf EU
+    // programme, which is what that fixture is for.
     const byRoom = new Map<string, Fixture[]>()
     for (const s of segments) {
       if (null == s.room_id || '' === s.room_id) continue
       if (!timed(s) || 'cancelled' === effective(s)) continue
-      const key = String(s.room_id)
+      const key = String(s.room_id) + '\u0000' + String(s.parent_id ?? '')
       const list = byRoom.get(key) ?? []
       list.push(s)
       byRoom.set(key, list)
@@ -277,10 +282,19 @@ export function warnings(input: ValidateInput): Diagnostic[] {
         const gap = (next.t_start as number) - (prev.t_end as number)
         // A negative gap is an overlap, which room-double-booked already
         // reports as an ERROR. Saying it twice in two severities is noise.
-        if (0 > gap) continue
+        //
+        // AND EXACTLY ZERO IS A SCHEDULING CHOICE, not a missing turnover.
+        // Back-to-back sessions in ONE room are how every single-track
+        // conference runs: the next speaker steps up to the same lectern.
+        // The real NodeConf EU programme has 33 such pairs and NOT ONE in
+        // the 0-to-10-minute band this rule exists for - so at a `>= 0`
+        // threshold it caught nothing it was designed to catch and
+        // thirty-three things it was not. A warning that fires like that is
+        // one people learn to scroll past.
+        if (0 >= gap) continue
 
-        const room = roomById.get(key)
-        const where = ' in ' + JSON.stringify(String(room?.name ?? key))
+        const room = roomById.get(key.split('\u0000')[0])
+        const where = ' in ' + JSON.stringify(String(room?.name ?? key.split('\u0000')[0]))
 
         if (gap < THRESHOLD.turnover) {
           out.push({
@@ -289,7 +303,7 @@ export function warnings(input: ValidateInput): Diagnostic[] {
             message: 'Only ' + Math.round(gap / MINUTE) + ' min between ' +
               quoted(prev) + ' and ' + quoted(next) + where + '.',
             entity: fixRef(next),
-            related: [fixRef(prev), fixRef(next), ref('cag/room', key)],
+            related: [fixRef(prev), fixRef(next), ref('cag/room', key.split('\u0000')[0])],
             fix: 'Allow at least ' + Math.round(THRESHOLD.turnover / MINUTE) +
               ' min for the room to change over.',
             data: { gap_ms: gap },
@@ -301,7 +315,7 @@ export function warnings(input: ValidateInput): Diagnostic[] {
             message: Math.round(gap / MINUTE) + ' min with nothing on' + where +
               ', between ' + quoted(prev) + ' and ' + quoted(next) + '.',
             entity: fixRef(next),
-            related: [fixRef(prev), fixRef(next), ref('cag/room', key)],
+            related: [fixRef(prev), fixRef(next), ref('cag/room', key.split('\u0000')[0])],
             fix: 'Add a session or a break, or accept the gap.',
             data: { gap_ms: gap },
           })

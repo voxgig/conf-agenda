@@ -28,12 +28,14 @@ validation in the header — is open as **PR #18** on branch `grid-intents`.
 | Live validation | the header count, and `v` for the diagnostics panel — `j`/`k`, `Enter` to jump, and the publish gate stated |
 | The admin's writes | per-entity `make`/`update`/`remove` intents, a two-step delete, and a refusal that names what still holds a row |
 | Validation | **all 10 §16.1 errors and all 14 §16.2 warnings**, each with a triggering case and a near-miss |
+| The `nodeconf` fixture | the real published NodeConf EU 2026 programme — 2 days, 34 sessions, 27 speakers. Not seeded; `tiny` + `demo` still are |
 
 | Not done, in rough order | |
 |---|---|
 
 | `provider:google` | Needs OAuth credentials that do not exist yet. Last among the OAuth providers **on purpose** — the machinery it plugs into is already proven by two providers that can be tested offline. |
-| Content | The `nodeconf` fixture from the real programme; the public Astro page; the `go` SDK; a second MCP tool. |
+| Content | The public Astro page; the `go` SDK; a second MCP tool. |
+| **A workshop fixture** | No fixture carries `wrk` or outdoor sessions — the real NodeConf EU 2026 edition has neither, and SPEC §2's description of a country-house edition no longer matches the conference. See `docs/decisions/nodeconf-fixture.md`; needs a programme somebody has a copy of. |
 | Blocked | The SDK chain — neither `apidef` nor `sdkgen` bootstraps the `.sdk/` scaffold both require. Written up in `sdk/README.md`. |
 
 ---
@@ -59,7 +61,7 @@ cd web     && PLAYWRIGHT_CHROMIUM_PATH=/home/jose/.cache/ms-playwright/chromium-
 ```
 
 Sign in as `alice@example.com` / `alice-pass-01`. Current green:
-**263 backend · 44 e2e · 13 web unit · 7 embed**.
+**272 backend · 44 e2e · 13 web unit · 7 embed**.
 
 `web/` has a unit runner now — `cd web && npm test` (`node --test test/*.test.mjs`) — because
 `buildInverse` is pure and the path resolution, the falsy-value case and the undo stack semantics
@@ -153,6 +155,10 @@ confirmed to bite by reintroducing the bug on purpose — worth doing for anythi
   must be off for Workers, and the handler-map problem is unsolved for `@voxgig/build` apps.
 
   A red check that means nothing on every PR is how a red check that means something gets missed.
+- **SPEC §2's `nodeconf` description no longer matches the conference** — it asks for multiple
+  rooms, workshops and outdoor sessions; the 2026 edition is single-track in a city hotel. Either
+  §2 names the edition it means, or somebody supplies an older programme. Written up in
+  `docs/decisions/nodeconf-fixture.md`.
 - **Five PLATFORM.md corrections to raise with Richard verbally** — §3.1's "does not exist" entries
   for the Cloudflare packages, the retired §6 Cloudflare risk, the `.aon`/`.aontu` extension
   mismatches, §1.4's `web.allow`/`api.active` shape, and the duplicate Cloudflare repo pairs.

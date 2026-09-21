@@ -1,0 +1,941 @@
+{
+  "_readme": "The REAL NodeConf EU 2026 programme (https://www.nodeconf.eu/program), fetched 2026-09-21. See README.md for what is verbatim, what is derived, and what this fixture deliberately does not carry.",
+  "cag/room": [
+    {
+      "id": "nceu2026_main",
+      "org_id": "org_nearform",
+      "name": "Main Hall",
+      "capacity": 300,
+      "order": 1
+    }
+  ],
+  "cag/track": [],
+  "cag/speaker": [
+    {
+      "id": "nceu_spk_abdelrahman_awad",
+      "org_id": "org_nearform",
+      "name": "Abdelrahman Awad",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_aki_rose_braun",
+      "org_id": "org_nearform",
+      "name": "Aki Rose Braun",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_anna_henningsen",
+      "org_id": "org_nearform",
+      "name": "Anna Henningsen",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_antoine_du_hamel",
+      "org_id": "org_nearform",
+      "name": "Antoine du Hamel",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_brian_muenzenmeyer",
+      "org_id": "org_nearform",
+      "name": "Brian Muenzenmeyer",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_bryan_english",
+      "org_id": "org_nearform",
+      "name": "Bryan English",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_caio_lima",
+      "org_id": "org_nearform",
+      "name": "Caio Lima",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_claudio_wunder",
+      "org_id": "org_nearform",
+      "name": "Claudio Wunder",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_david_mark_clements",
+      "org_id": "org_nearform",
+      "name": "David Mark Clements",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_fabrizio_fenoglio",
+      "org_id": "org_nearform",
+      "name": "Fabrizio Fenoglio",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_filip_skokan",
+      "org_id": "org_nearform",
+      "name": "Filip Skokan",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_guy_bedford",
+      "org_id": "org_nearform",
+      "name": "Guy Bedford",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_james_m_snell",
+      "org_id": "org_nearform",
+      "name": "James M Snell",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_lois_zhao",
+      "org_id": "org_nearform",
+      "name": "Lois Zhao",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_luca_del_puppo",
+      "org_id": "org_nearform",
+      "name": "Luca Del Puppo",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_marco_ippolito",
+      "org_id": "org_nearform",
+      "name": "Marco Ippolito",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_marina_ionel",
+      "org_id": "org_nearform",
+      "name": "Marina Ionel",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_mikola_lysenko",
+      "org_id": "org_nearform",
+      "name": "Mikola Lysenko",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_nestor_lopez",
+      "org_id": "org_nearform",
+      "name": "Néstor López",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_nodeconf_eu_staff",
+      "org_id": "org_nearform",
+      "name": "NodeConf EU Staff",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_paolo_insogna",
+      "org_id": "org_nearform",
+      "name": "Paolo Insogna",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_rafael_gonzaga",
+      "org_id": "org_nearform",
+      "name": "Rafael Gonzaga",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_robert_nagy",
+      "org_id": "org_nearform",
+      "name": "Robert Nagy",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_stephen_belanger",
+      "org_id": "org_nearform",
+      "name": "Stephen Belanger",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_tamar_twena_stern",
+      "org_id": "org_nearform",
+      "name": "Tamar Twena-Stern",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_yagiz_nizipli",
+      "org_id": "org_nearform",
+      "name": "Yagiz Nizipli",
+      "email": ""
+    },
+    {
+      "id": "nceu_spk_zbyszek_tenerowicz",
+      "org_id": "org_nearform",
+      "name": "Zbyszek Tenerowicz",
+      "email": ""
+    }
+  ],
+  "cag/fixture": [
+    {
+      "id": "nceu2026",
+      "org_id": "org_nearform",
+      "top_id": "nceu2026",
+      "kind": "con",
+      "slug": "nodeconf-eu-2026",
+      "title": "NodeConf EU 2026",
+      "desc": "The real published programme, as a test fixture. See README.md.",
+      "t_start": 1790663400000,
+      "t_end": 1790783100000,
+      "t_tzn": "Europe/Rome",
+      "p_name": "Hotel Savoia Regency, Via del Pilastro 2, 40127 Bologna, Italy",
+      "w_site": "https://www.nodeconf.eu/",
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu2026_d1",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026",
+      "top_id": "nceu2026",
+      "kind": "day",
+      "title": "Day 1 — 29 September",
+      "t_start": 1790663400000,
+      "t_end": 1790695800000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu2026_d2",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026",
+      "top_id": "nceu2026",
+      "kind": "day",
+      "title": "Day 2 — 30 September",
+      "t_start": 1790749800000,
+      "t_end": 1790783100000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_registration_welcome_coffee",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d1",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "reg",
+      "title": "Registration & welcome coffee",
+      "t_start": 1790663400000,
+      "t_end": 1790665200000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_welcome_to_nodeconf_eu_2026",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d1",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "key",
+      "title": "Welcome to NodeConf EU 2026",
+      "t_start": 1790665200000,
+      "t_end": 1790665800000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_a_common_minimum_node_js_subset_for_all_",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d1",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "A common minimum Node.js subset for all runtimes",
+      "t_start": 1790665800000,
+      "t_end": 1790667600000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_a_leak_in_the_shell_how_refactoring_auto",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d1",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "A Leak in the Shell — How Refactoring Autocomplete Broke Us and How We Fixed It",
+      "t_start": 1790667600000,
+      "t_end": 1790669400000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_nodejs_performance_tips_tricks",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d1",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "NodeJS Performance Tips & Tricks",
+      "t_start": 1790669400000,
+      "t_end": 1790671200000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_morning_coffee_break",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d1",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "brk",
+      "title": "Morning coffee break",
+      "t_start": 1790671200000,
+      "t_end": 1790673000000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_the_four_memory_layers_inside_node_js",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d1",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "The Four Memory Layers Inside Node.js",
+      "t_start": 1790673000000,
+      "t_end": 1790674800000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_rethinking_http_in_node_js",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d1",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "Rethinking HTTP in Node.js",
+      "t_start": 1790674800000,
+      "t_end": 1790676600000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_the_past_present_and_future_of_node_js_o",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d1",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "The Past, Present, and Future of Node.js Observability",
+      "t_start": 1790676600000,
+      "t_end": 1790678400000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_lunch",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d1",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "mea",
+      "title": "Lunch",
+      "t_start": 1790678400000,
+      "t_end": 1790683200000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_tracing_without_the_tax",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d1",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "Tracing Without the Tax",
+      "t_start": 1790683200000,
+      "t_end": 1790685000000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_diagnostics_channel_deserves_better",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d1",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "diagnostics_channel Deserves Better",
+      "t_start": 1790685000000,
+      "t_end": 1790686800000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_cyber_resilience_for_application_develop",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d1",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "Cyber Resilience for Application Developers",
+      "t_start": 1790686800000,
+      "t_end": 1790688600000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_afternoon_coffee_break",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d1",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "brk",
+      "title": "Afternoon coffee break",
+      "t_start": 1790688600000,
+      "t_end": 1790690400000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_post_quantum_cryptography_in_node_js",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d1",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "Post-Quantum Cryptography in Node.js",
+      "t_start": 1790690400000,
+      "t_end": 1790692200000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_getting_ahead_of_supply_chain_attacks_in",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d1",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "Getting ahead of supply-chain attacks in 2026",
+      "t_start": 1790692200000,
+      "t_end": 1790694000000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_delete_all_cves",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d1",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "Delete all CVEs",
+      "t_start": 1790694000000,
+      "t_end": 1790695800000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_welcome_coffee",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d2",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "brk",
+      "title": "Welcome coffee",
+      "t_start": 1790749800000,
+      "t_end": 1790751600000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_the_new_node_js_release_model_why_node_2",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d2",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "The New Node.js Release Model: Why Node 27 Changes Everything",
+      "t_start": 1790751600000,
+      "t_end": 1790753400000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_ffi_crossing_the_native_boundary_in_node",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d2",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "FFI: Crossing the Native Boundary in Node.js",
+      "t_start": 1790753400000,
+      "t_end": 1790755200000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_50_more_requests_for_free_speeding_up_no",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d2",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "50% More Requests for Free: Speeding Up Node.js HTTP From the Inside",
+      "t_start": 1790755200000,
+      "t_end": 1790757000000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_morning_coffee_break",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d2",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "brk",
+      "title": "Morning coffee break",
+      "t_start": 1790757000000,
+      "t_end": 1790758800000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_replacing_what_works_doc_kit_and_the_nex",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d2",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "Replacing What Works: doc-kit and the Next 10 Years of Node.js Documentation",
+      "t_start": 1790758800000,
+      "t_end": 1790760600000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_federated_but_contained_exploring_shadow",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d2",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "Federated, but Contained: Exploring ShadowRealm and SES for Module Federation on Node.js",
+      "t_start": 1790760600000,
+      "t_end": 1790762400000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_what_if_everything_was_javascript_an_exp",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d2",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "What if everything was JavaScript? An exploratory runtime experiment",
+      "t_start": 1790762400000,
+      "t_end": 1790764200000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_lunch",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d2",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "mea",
+      "title": "Lunch",
+      "t_start": 1790764200000,
+      "t_end": 1790769600000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_the_architecture_of_a_massive_multi_tena",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d2",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "The architecture of a massive multi-tenant storage system with Node.js at Supabase",
+      "t_start": 1790769600000,
+      "t_end": 1790771400000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_success_looks_like_nothing_happened",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d2",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "Success Looks Like Nothing Happened",
+      "t_start": 1790771400000,
+      "t_end": 1790773200000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_don_t_trust_your_types_type_testing_with",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d2",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "Don't Trust Your Types: Type Testing with TSTyche",
+      "t_start": 1790773200000,
+      "t_end": 1790775000000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_afternoon_coffee_break",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d2",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "brk",
+      "title": "Afternoon coffee break",
+      "t_start": 1790775000000,
+      "t_end": 1790776800000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_improving_the_capabilities_of_emscripten",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d2",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "Improving the capabilities of Emscripten, WebAssembly and Rust",
+      "t_start": 1790776800000,
+      "t_end": 1790778600000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_eliminate_infrastructure_with_pear_cli_b",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d2",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "Eliminate Infrastructure with Pear CLI & Bare JS Runtime",
+      "t_start": 1790778600000,
+      "t_end": 1790780400000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_overview_of_v8_heap_management",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d2",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "tak",
+      "title": "Overview of V8 heap management",
+      "t_start": 1790780400000,
+      "t_end": 1790782200000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_closing_remarks",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026_d2",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "key",
+      "title": "Closing remarks",
+      "t_start": 1790782200000,
+      "t_end": 1790783100000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_happy_hour",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "soc",
+      "title": "Happy hour",
+      "t_start": 1790697600000,
+      "t_end": 1790703000000,
+      "status": "confirmed",
+      "private": false
+    },
+    {
+      "id": "nceu_social_dinner",
+      "org_id": "org_nearform",
+      "parent_id": "nceu2026",
+      "top_id": "nceu2026",
+      "room_id": "nceu2026_main",
+      "kind": "soc",
+      "title": "Social dinner",
+      "t_start": 1790703000000,
+      "t_end": 1790713800000,
+      "status": "confirmed",
+      "private": false
+    }
+  ],
+  "cag/appearance": [
+    {
+      "id": "nceu_app_a_common_minimum_node_js_sub_james_m_snell",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_a_common_minimum_node_js_subset_for_all_",
+      "speaker_id": "nceu_spk_james_m_snell",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_a_leak_in_the_shell_how_refa_anna_henningsen",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_a_leak_in_the_shell_how_refactoring_auto",
+      "speaker_id": "nceu_spk_anna_henningsen",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_nodejs_performance_tips_tric_robert_nagy",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_nodejs_performance_tips_tricks",
+      "speaker_id": "nceu_spk_robert_nagy",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_the_four_memory_layers_insid_tamar_twena_stern",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_the_four_memory_layers_inside_node_js",
+      "speaker_id": "nceu_spk_tamar_twena_stern",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_rethinking_http_in_node_js_marco_ippolito",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_rethinking_http_in_node_js",
+      "speaker_id": "nceu_spk_marco_ippolito",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_the_past_present_and_future__bryan_english",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_the_past_present_and_future_of_node_js_o",
+      "speaker_id": "nceu_spk_bryan_english",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_tracing_without_the_tax_abdelrahman_awad",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_tracing_without_the_tax",
+      "speaker_id": "nceu_spk_abdelrahman_awad",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_diagnostics_channel_deserves_lois_zhao",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_diagnostics_channel_deserves_better",
+      "speaker_id": "nceu_spk_lois_zhao",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_cyber_resilience_for_applica_aki_rose_braun",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_cyber_resilience_for_application_develop",
+      "speaker_id": "nceu_spk_aki_rose_braun",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_post_quantum_cryptography_in_filip_skokan",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_post_quantum_cryptography_in_node_js",
+      "speaker_id": "nceu_spk_filip_skokan",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_getting_ahead_of_supply_chai_zbyszek_tenerowicz",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_getting_ahead_of_supply_chain_attacks_in",
+      "speaker_id": "nceu_spk_zbyszek_tenerowicz",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_delete_all_cves_mikola_lysenko",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_delete_all_cves",
+      "speaker_id": "nceu_spk_mikola_lysenko",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_the_new_node_js_release_mode_rafael_gonzaga",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_the_new_node_js_release_model_why_node_2",
+      "speaker_id": "nceu_spk_rafael_gonzaga",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_the_new_node_js_release_mode_antoine_du_hamel",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_the_new_node_js_release_model_why_node_2",
+      "speaker_id": "nceu_spk_antoine_du_hamel",
+      "role": "speaker",
+      "invite": "none",
+      "order": 2
+    },
+    {
+      "id": "nceu_app_ffi_crossing_the_native_boun_paolo_insogna",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_ffi_crossing_the_native_boundary_in_node",
+      "speaker_id": "nceu_spk_paolo_insogna",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_50_more_requests_for_free_sp_yagiz_nizipli",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_50_more_requests_for_free_speeding_up_no",
+      "speaker_id": "nceu_spk_yagiz_nizipli",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_replacing_what_works_doc_kit_brian_muenzenmeyer",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_replacing_what_works_doc_kit_and_the_nex",
+      "speaker_id": "nceu_spk_brian_muenzenmeyer",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_replacing_what_works_doc_kit_claudio_wunder",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_replacing_what_works_doc_kit_and_the_nex",
+      "speaker_id": "nceu_spk_claudio_wunder",
+      "role": "speaker",
+      "invite": "none",
+      "order": 2
+    },
+    {
+      "id": "nceu_app_federated_but_contained_expl_nestor_lopez",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_federated_but_contained_exploring_shadow",
+      "speaker_id": "nceu_spk_nestor_lopez",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_what_if_everything_was_javas_stephen_belanger",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_what_if_everything_was_javascript_an_exp",
+      "speaker_id": "nceu_spk_stephen_belanger",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_the_architecture_of_a_massiv_fabrizio_fenoglio",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_the_architecture_of_a_massive_multi_tena",
+      "speaker_id": "nceu_spk_fabrizio_fenoglio",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_success_looks_like_nothing_h_marina_ionel",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_success_looks_like_nothing_happened",
+      "speaker_id": "nceu_spk_marina_ionel",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_don_t_trust_your_types_type__luca_del_puppo",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_don_t_trust_your_types_type_testing_with",
+      "speaker_id": "nceu_spk_luca_del_puppo",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_improving_the_capabilities_o_guy_bedford",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_improving_the_capabilities_of_emscripten",
+      "speaker_id": "nceu_spk_guy_bedford",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_eliminate_infrastructure_wit_david_mark_clements",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_eliminate_infrastructure_with_pear_cli_b",
+      "speaker_id": "nceu_spk_david_mark_clements",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_overview_of_v8_heap_manageme_caio_lima",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_overview_of_v8_heap_management",
+      "speaker_id": "nceu_spk_caio_lima",
+      "role": "speaker",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_welcome_staff",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_welcome_to_nodeconf_eu_2026",
+      "speaker_id": "nceu_spk_nodeconf_eu_staff",
+      "role": "host",
+      "invite": "none",
+      "order": 1
+    },
+    {
+      "id": "nceu_app_closing_staff",
+      "org_id": "org_nearform",
+      "fixture_id": "nceu_closing_remarks",
+      "speaker_id": "nceu_spk_nodeconf_eu_staff",
+      "role": "host",
+      "invite": "none",
+      "order": 1
+    }
+  ]
+}
