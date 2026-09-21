@@ -155,13 +155,14 @@ confirmed to bite by reintroducing the bug on purpose — worth doing for anythi
   must be off for Workers, and the handler-map problem is unsolved for `@voxgig/build` apps.
 
   A red check that means nothing on every PR is how a red check that means something gets missed.
-- **SPEC §2's `nodeconf` description no longer matches the conference** — it asks for multiple
-  rooms, workshops and outdoor sessions; the 2026 edition is single-track in a city hotel. Either
-  §2 names the edition it means, or somebody supplies an older programme. Written up in
-  `docs/decisions/nodeconf-fixture.md`.
-- **Five PLATFORM.md corrections to raise with Richard verbally** — §3.1's "does not exist" entries
-  for the Cloudflare packages, the retired §6 Cloudflare risk, the `.aon`/`.aontu` extension
-  mismatches, §1.4's `web.allow`/`api.active` shape, and the duplicate Cloudflare repo pairs.
+- **Seven things to raise with Richard verbally** — all of them written up, with the evidence, in
+  **`docs/decisions/to-raise-upstream.md`**. Read that rather than this line. In short:
+  `inverse: Skip({})` in `@voxgig/build` (it breaks `model-build` as a *false green*, and we carry
+  `build/msg_meta.js` because of it); the SDK chain's missing `.sdk/` bootstrap (blocks the `go`
+  SDK); §3.1's wrong Cloudflare entries **and the duplicate repo pairs, where the empty stubs are
+  newer than the real repos**; §6's retired Cloudflare risk; three `.aon`/`.aontu` mismatches, two
+  of which disagree with each other; §1.4's `web.allow`/`api.active`, which drive nothing; and
+  SPEC §2's `nodeconf` description, which no longer matches the conference.
 - **The interface freeze** with the repo-manager developer.
 - `senecajs/Calendar#2` (the deliberate-absences note) is open on the upstream plugin.
 
