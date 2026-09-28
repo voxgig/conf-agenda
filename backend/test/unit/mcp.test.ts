@@ -59,7 +59,13 @@ describe('the MCP surface', () => {
     const { tools } = await client.listTools()
     const names = tools.map((t: any) => t.name).sort()
 
-    assert.deepEqual(names, ['conf_agenda_agenda', 'conf_agenda_session_find'])
+    // SPEC 14's set of four, complete.
+    assert.deepEqual(names, [
+      'conf_agenda_agenda',
+      'conf_agenda_session_find',
+      'conf_agenda_speaker_find',
+      'conf_agenda_validate',
+    ])
 
     for (const t of tools) {
       assert.ok(!/(move|set|make|remove|add|update|duplicate|publish|apply|sync)_/.test(t.name),
@@ -190,5 +196,137 @@ describe('conf_agenda_session_find', () => {
     const res = await find({ ...base, conference: 'no-such-conference' })
     assert.equal(res.isError, true)
     assert.match(text(res), /not-published/)
+  })
+})
+
+
+describe('conf_agenda_speaker_find', () => {
+  const find = (args: any) =>
+    client.callTool({ name: 'conf_agenda_speaker_find', arguments: args })
+
+  const base = { org: 'org_demo', conference: 'demo-conf-2027' }
+
+  test('it returns speakers with the sessions they are on', async () => {
+    // An agent asking about a person wants the talks, not a row from a join
+    // table.
+    const out = json(await find(base))
+    assert.ok(0 < out.matched)
+
+    const speaking = out.speakers.find((s: any) => 0 < (s.sessions || []).length)
+    assert.ok(speaking, 'no speaker carries any session')
+    assert.ok(speaking.sessions[0].title)
+    assert.ok(speaking.sessions[0].t_start)
+  })
+
+  test('free text matches name, bio and organisation', async () => {
+    const all = json(await find(base))
+    const one = json(await find({ ...base, query: all.speakers[0].name.split(' ')[0] }))
+    assert.ok(0 < one.matched)
+    assert.ok(one.matched <= all.matched, 'a query widened the result')
+  })
+
+  test('a room is named as well as identified', async () => {
+    const out = json(await find(base))
+    const withRoom = out.speakers
+      .flatMap((s: any) => s.sessions || [])
+      .find((x: any) => null != x.room)
+    assert.ok(withRoom, 'no session has a room')
+    assert.ok(withRoom.room.name)
+    assert.notEqual(withRoom.room.id, withRoom.room.name)
+  })
+
+  test('known-ABSENT: no contact details, because the snapshot has none', async () => {
+    const raw = text(await find(base))
+    assert.ok(!raw.includes('"email"'), 'a speaker email reached an agent through speaker_find')
+  })
+
+  test('no matches says so, and says the conference IS published', async () => {
+    const out = text(await find({ ...base, query: 'zzzz-nobody-zzzz' }))
+    assert.match(out, /no matching speakers/)
+    assert.match(out, /is published/)
+  })
+
+  test('truncation is announced', async () => {
+    const out = json(await find({ ...base, limit: 1 }))
+    assert.equal(out.returned, 1)
+    assert.ok(1 < out.matched)
+    assert.equal(out.truncated, true)
+  })
+
+  test('an unpublished conference is an ERROR', async () => {
+    const res = await find({ ...base, conference: 'no-such-conference' })
+    assert.equal(res.isError, true)
+    assert.match(text(res), /not-published/)
+  })
+})
+
+
+describe('conf_agenda_validate', () => {
+  const run = (args: any) =>
+    client.callTool({ name: 'conf_agenda_validate', arguments: args })
+
+  test('it resolves a conference by SLUG, not by internal id', async () => {
+    // An agent should not have to know an internal fixture id to ask about a
+    // conference it found by slug, which is what the other three tools use.
+    const out = json(await run({ org: 'org_demo', conference: 'demo-conf-2027' }))
+    assert.equal(out.conference.slug, 'demo-conf-2027')
+    assert.ok(out.conference.id)
+    assert.ok(out.conference.title)
+  })
+
+  test('it reports the publication gate plainly', async () => {
+    const out = json(await run({ org: 'org_demo', conference: 'demo-conf-2027' }))
+    assert.equal('boolean', typeof out.valid)
+    assert.equal('number', typeof out.error_count)
+    assert.equal('number', typeof out.warn_count)
+  })
+
+  test('severity filters the list but NOT the counts', async () => {
+    // "No errors returned" and "passes" must not be inferrable from a list
+    // that was filtered. The counts and `valid` stay whole.
+    //
+    // Filtered to ERRORS on purpose. The demo fixture validates clean, so
+    // asking for warnings and checking error_count survives compares zero with
+    // zero and proves nothing. Asking for errors and checking warn_count
+    // survives compares a real number.
+    const all = json(await run({ org: 'org_demo', conference: 'demo-conf-2027' }))
+    assert.ok(0 < all.warn_count, 'the demo fixture has warnings, or this proves nothing')
+
+    const errors = json(await run({
+      org: 'org_demo', conference: 'demo-conf-2027', severity: 'error',
+    }))
+
+    for (const d of errors.diagnostics) assert.equal(d.severity, 'error')
+    assert.equal(errors.warn_count, all.warn_count, 'the counts were filtered too')
+    assert.equal(errors.valid, all.valid)
+    assert.equal(errors.severity, 'error')
+  })
+
+  test('every diagnostic carries a stable rule id and a fix', async () => {
+    // SPEC 16.3: one structure renders in the app, the CLI and the API. An
+    // agent reading prose instead of a rule id cannot act on it.
+    const out = json(await run({ org: 'org_demo', conference: 'demo-conf-2027' }))
+    assert.ok(0 < out.diagnostics.length, 'the demo fixture has warnings to report')
+    for (const d of out.diagnostics) {
+      assert.match(d.rule, /^[a-z][a-z-]+$/)
+      assert.ok(d.message)
+      assert.ok(d.fix)
+    }
+  })
+
+  test('known-ABSENT: a diagnostic never carries a contact detail', async () => {
+    // Unlike the other tools this reads the LIVE programme, so the structural
+    // guarantee that the snapshot has no emails does not apply here. The
+    // diagnostics carry names by construction; this is what keeps it that way.
+    const raw = text(await run({ org: 'org_demo', conference: 'demo-conf-2027' }))
+    assert.ok(!raw.includes('"email"'), 'a diagnostic exposed an email field')
+    assert.ok(!/@[a-z0-9.-]+\.[a-z]{2,}/i.test(raw), 'a diagnostic exposed an address: ' +
+      (raw.match(/\S*@\S*/) || [''])[0])
+  })
+
+  test('an unknown conference is an ERROR, not an empty result', async () => {
+    const res = await run({ org: 'org_demo', conference: 'no-such-conference' })
+    assert.equal(res.isError, true)
+    assert.match(text(res), /not-found/)
   })
 })

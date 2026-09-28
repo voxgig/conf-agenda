@@ -39,6 +39,13 @@ not declared.
 surface test PLATFORM.md §10 names by name, was **rewritten for the surface we actually have** and
 runs on every build, including the known-absent assertions.
 
+**One generated suite is worth keeping, and is named explicitly** in the test script:
+`dist-test/unit/env/web/api-router.test.js`. It passes 9/9 against our real `env/web/api.js`,
+covering the REST routing, key auth, status codes and result shaping with mock messages, and the
+one-level glob was scoping it out alongside the twelve that legitimately fail. Regenerated
+byte-identically on every `model-build` (verified by deleting it and rebuilding), so listing it is
+stable rather than a hostage to the generator.
+
 ## Vendored browser bundles
 
 `web/package.json` asks for `@voxgig/seneca-browser-store` and `@voxgig/seneca-browser-debug`.

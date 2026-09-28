@@ -220,4 +220,175 @@ server.registerTool(
   },
 )
 
+server.registerTool(
+  'conf_agenda_speaker_find',
+  {
+    title: 'Find speakers in a published conference',
+    description:
+      'Search the published speakers of one conference by name, bio or organisation, and ' +
+      'return each with the sessions they appear on. Reads the published snapshot, so ' +
+      'contact details are never present: the snapshot does not carry them. ' +
+      'Use this to answer "who is speaking about X" or "what is this person talking about".',
+    inputSchema: {
+      org: z.string().describe('Organisation id, e.g. "org_demo"'),
+      conference: z.string().describe('Conference slug, e.g. "demo-conf-2027"'),
+      query: z.string().optional()
+        .describe('Free text, matched against name, bio and organisation, case-insensitively'),
+      limit: z.number().int().positive().max(200).optional()
+        .describe('Maximum matches to return. Default 50.'),
+    },
+  },
+  async ({ org, conference, query, limit }) => {
+    const out = await seneca.post('aim:agenda,get:agenda', { org_id: org, slug: conference })
+    if (!out.ok) {
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: 'not-published: no published agenda for ' + org + '/' + conference,
+        }],
+      }
+    }
+
+    const agenda = JSON.parse(out.agenda_json)
+    const has = (v, needle) =>
+      null != v && String(v).toLowerCase().includes(String(needle).toLowerCase())
+
+    const roomName = new Map((agenda.rooms || []).map((r) => [r.id, r.name]))
+
+    // Which sessions each speaker is on. An agent asking about a person wants
+    // the talks, not a row from a join table.
+    const bySpeaker = new Map()
+    for (const sess of agenda.sessions || []) {
+      for (const sid of sess.speakers || []) {
+        const list = bySpeaker.get(sid) || []
+        list.push({
+          id: sess.id,
+          title: sess.title,
+          status: sess.status,
+          t_start: sess.t_start,
+          t_end: sess.t_end,
+          room: null == sess.room ? undefined : { id: sess.room, name: roomName.get(sess.room) },
+        })
+        bySpeaker.set(sid, list)
+      }
+    }
+
+    const matches = (agenda.speakers || []).filter((sp) =>
+      null == query || has(sp.name, query) || has(sp.bio, query) || has(sp.org_name, query))
+
+    if (0 === matches.length) {
+      return {
+        content: [{
+          type: 'text',
+          text: 'no matching speakers in ' + org + '/' + conference +
+            ' (the conference is published and lists ' +
+            (agenda.speakers || []).length + ' speakers)',
+        }],
+      }
+    }
+
+    const shaped = matches.slice(0, limit || 50).map((sp) => ({
+      id: sp.id,
+      name: sp.name,
+      org_name: sp.org_name,
+      bio: sp.bio,
+      // A speaker listed in the snapshot but on no session cannot happen
+      // (buildAgenda only includes speakers with appearances), so an empty
+      // array here would be a bug rather than a fact. Reported as-is.
+      sessions: bySpeaker.get(sp.id) || [],
+    }))
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          conference: agenda.conference,
+          matched: matches.length,
+          returned: shaped.length,
+          truncated: shaped.length < matches.length,
+          speakers: shaped,
+        }, null, 2),
+      }],
+    }
+  },
+)
+
+
+server.registerTool(
+  'conf_agenda_validate',
+  {
+    title: 'Validate a conference before publishing',
+    description:
+      'Run the validation rules over a conference and return the diagnostics: errors that ' +
+      'block publication and warnings that do not. Each diagnostic carries a stable rule id, ' +
+      'a one-line message naming both sides of any clash, and a suggested fix. ' +
+      'Unlike the other tools this reads the LIVE programme rather than the published ' +
+      'snapshot, because validation exists to catch problems BEFORE publishing: it therefore ' +
+      'names draft and unpublished sessions. It still never returns contact details.',
+    inputSchema: {
+      org: z.string().describe('Organisation id, e.g. "org_tiny"'),
+      conference: z.string().describe('Conference slug, e.g. "tiny-conf-2027"'),
+      severity: z.enum(['all', 'error', 'warn']).optional()
+        .describe('Filter the diagnostics. Default "all".'),
+    },
+  },
+  async ({ org, conference, severity }) => {
+    // The other tools take org + slug, so this one does too, and resolves the
+    // fixture id itself. An agent should not have to know an internal id to
+    // ask about a conference it found by slug.
+    const tops = (await seneca.entity('cag/fixture').list$({ org_id: org, slug: conference }))
+      .map((r) => r.data$(false))
+      .filter((f) => null == f.parent_id || '' === f.parent_id)
+
+    if (0 === tops.length) {
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: 'not-found: no conference ' + org + '/' + conference,
+        }],
+      }
+    }
+
+    const out = await seneca.post('aim:cag,validate:fixture', { fixture_id: tops[0].id })
+    if (!out.ok) {
+      return { isError: true, content: [{ type: 'text', text: String(out.why || 'validate-failed') }] }
+    }
+
+    const want = severity || 'all'
+    const diagnostics = (out.diagnostics || [])
+      .filter((d) => 'all' === want || d.severity === want)
+      .map((d) => ({
+        rule: d.rule,
+        severity: d.severity,
+        message: d.message,
+        fix: d.fix,
+        // Ids AND labels, the same reasoning as the other tools: an agent
+        // needs something exact for a follow-up call and something readable
+        // for its answer.
+        entity: d.entity,
+        related: d.related,
+      }))
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          conference: { id: tops[0].id, slug: conference, title: tops[0].title },
+          // `valid` is the gate publish and apply:sync read. Stated plainly,
+          // because "no errors returned" and "passes" must not be inferred
+          // from an empty list that was filtered by `severity`.
+          valid: true === out.valid,
+          error_count: out.error_count || 0,
+          warn_count: out.warn_count || 0,
+          severity: want,
+          diagnostics,
+        }, null, 2),
+      }],
+    }
+  },
+)
+
+
 await server.connect(new StdioServerTransport())
