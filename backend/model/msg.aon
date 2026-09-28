@@ -38,6 +38,12 @@
   { pat: [{aim: cag}, {plan: sync}]
     params: { fixture_id: 'String' } }
 
+  # What publishing would change, and whether it can. Read-only, and named
+  # `plan:` rather than `get:` for the reason web_watch_run.ts records: the SPA
+  # caches any get/list/load message and invalidates only on a client write.
+  { pat: [{aim: cag}, {plan: publish}]
+    params: { fixture_id: 'String' } }
+
   # Applying reaches real speakers, so `confirm` is REQUIRED on this surface -
   # C4's "explicit confirmation stating the invitation and recipient counts".
   # It enqueues; the queue sends (SPEC 10.6).
@@ -227,6 +233,9 @@
   # confirmation is a SCREEN, because nothing here reaches a third party.
   { pat: [{aim: web}, {on: cag}, {publish: fixture}]
     file: './web_publish_fixture' }
+
+  { pat: [{aim: web}, {on: cag}, {plan: publish}]
+    file: './web_plan_publish' }
 
   # The segment intents. Each is a declared proxy, and each names its own
   # action file because a proxy shares its LAST pattern pair with the message

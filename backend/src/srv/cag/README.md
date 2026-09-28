@@ -15,6 +15,7 @@ Requires a signed-in user (`user.required: true`).
 | `aim:cag,publish:fixture` | `publish_fixture.ts` |
 | `aim:cag,load:tree` | `load_tree.ts` |
 | `aim:cag,plan:sync` | `plan_sync.ts` |
+| `aim:cag,plan:publish` | `plan_publish.ts` |
 | `aim:cag,apply:sync` | `apply_sync.ts` |
 | `aim:cag,move:segment` | `move_segment.ts` |
 | `aim:cag,set:status` | `set_status.ts` |
@@ -50,6 +51,7 @@ Requires a signed-in user (`user.required: true`).
 | `aim:web,on:cag,watch:run` | `web_watch_run.ts` |
 | `aim:web,on:cag,validate:fixture` | `web_validate_fixture.ts` |
 | `aim:web,on:cag,publish:fixture` | `web_publish_fixture.ts` |
+| `aim:web,on:cag,plan:publish` | `web_plan_publish.ts` |
 | `aim:web,on:cag,move:segment` | `web_move_segment.ts` |
 | `aim:web,on:cag,set:status` | `web_set_status.ts` |
 | `aim:web,on:cag,make:segment` | `web_make_segment.ts` |
@@ -96,6 +98,7 @@ flowchart LR
   srv --> publish_fixture["aim:cag,publish:fixture<br>publish_fixture.ts"]
   srv --> load_tree["aim:cag,load:tree<br>load_tree.ts"]
   srv --> plan_sync["aim:cag,plan:sync<br>plan_sync.ts"]
+  srv --> plan_publish["aim:cag,plan:publish<br>plan_publish.ts"]
   srv --> apply_sync["aim:cag,apply:sync<br>apply_sync.ts"]
   srv --> move_segment["aim:cag,move:segment<br>move_segment.ts"]
   srv --> set_status["aim:cag,set:status<br>set_status.ts"]
@@ -131,6 +134,7 @@ flowchart LR
   srv --> web_watch_run["aim:web,on:cag,watch:run<br>web_watch_run.ts"]
   srv --> web_validate_fixture["aim:web,on:cag,validate:fixture<br>web_validate_fixture.ts"]
   srv --> web_publish_fixture["aim:web,on:cag,publish:fixture<br>web_publish_fixture.ts"]
+  srv --> web_plan_publish["aim:web,on:cag,plan:publish<br>web_plan_publish.ts"]
   srv --> web_move_segment["aim:web,on:cag,move:segment<br>web_move_segment.ts"]
   srv --> web_set_status["aim:web,on:cag,set:status<br>web_set_status.ts"]
   srv --> web_make_segment["aim:web,on:cag,make:segment<br>web_make_segment.ts"]

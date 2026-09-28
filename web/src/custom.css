@@ -1017,3 +1017,82 @@ tr:hover .vg-rowmenu-btn,
   color: var(--vg-on-danger, #fff);
   font-weight: 600;
 }
+
+/* ---- the publish confirmation (mockups/src/PublishConfirm.dc.html) ------
+ *
+ * A centred panel over the dimmed grid. K5 forbids a modal dialog in a common
+ * path; this one earns it by STATING THE CHANGES rather than asking "are you
+ * sure?", which is the organiser reading their own work back before it goes
+ * public.
+ */
+.ca-pub-panel {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 560px; max-width: 92vw; max-height: 86vh;
+  background: var(--vg-surface-raised, var(--vg-surface));
+  border: 1px solid var(--vg-border-strong);
+  border-radius: 10px;
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.6);
+  display: flex; flex-direction: column;
+  z-index: 40;
+}
+
+.ca-pub-head { padding: 20px 22px 6px; }
+.ca-pub-title { font-size: 17px; font-weight: 700; margin: 0; }
+.ca-pub-state { font-size: 12.5px; color: var(--vg-muted); margin-top: 4px; }
+.ca-pub-state--blocked { color: var(--vg-danger); }
+
+.ca-pub-changes {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 14px 22px; margin-top: 12px;
+  border-top: 1px solid var(--vg-border);
+  border-bottom: 1px solid var(--vg-border);
+  overflow-y: auto;
+}
+.ca-pub-label {
+  font-size: 11px; font-weight: 600; letter-spacing: .07em;
+  color: var(--vg-muted);
+}
+.ca-pub-change { display: flex; align-items: baseline; gap: 10px; font-size: 12.5px; }
+/* The verb is the column an organiser scans, so it gets a fixed width and the
+ * monospace face rather than being buried in a sentence. */
+.ca-pub-verb {
+  flex: 0 0 74px;
+  font-family: var(--vg-font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  color: var(--vg-muted);
+}
+.ca-pub-change[data-verb='cancelled'] .ca-pub-verb,
+.ca-pub-change[data-verb='removed'] .ca-pub-verb { color: var(--vg-danger); }
+.ca-pub-change[data-verb='added'] .ca-pub-verb,
+.ca-pub-change[data-verb='restored'] .ca-pub-verb { color: var(--vg-success); }
+.ca-pub-what { color: var(--vg-text); }
+
+.ca-pub-note {
+  padding: 13px 22px; font-size: 12px; line-height: 1.5; color: var(--vg-muted);
+}
+.ca-pub-note code {
+  font-family: var(--vg-font-mono, ui-monospace, monospace); font-size: 11px;
+}
+
+.ca-pub-foot {
+  display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+  padding: 14px 22px 18px;
+}
+.ca-pub-cancel {
+  display: flex; align-items: center; gap: 8px;
+  border: 1px solid var(--vg-border); border-radius: 7px;
+  padding: 10px 16px; font-size: 13px;
+  background: transparent; color: var(--vg-text-soft); cursor: pointer;
+}
+.ca-pub-go {
+  display: flex; align-items: center; gap: 8px;
+  border: 0; border-radius: 7px;
+  padding: 10px 18px; font-size: 13px; font-weight: 600;
+  background: var(--vg-accent, var(--vg-focus)); color: var(--vg-on-accent, #06282c);
+  cursor: pointer;
+}
+.ca-pub-go[disabled] {
+  background: color-mix(in srgb, var(--vg-danger) 16%, transparent);
+  color: var(--vg-danger);
+  cursor: not-allowed;
+}

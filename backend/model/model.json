@@ -857,6 +857,19 @@
       },
       {
         "params": {
+          "fixture_id": "String"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "plan": "publish"
+          }
+        ]
+      },
+      {
+        "params": {
           "confirm": "Boolean",
           "fixture_id": "String"
         },
@@ -1417,6 +1430,20 @@
           },
           {
             "publish": "fixture"
+          }
+        ]
+      },
+      {
+        "file": "./web_plan_publish",
+        "pat": [
+          {
+            "aim": "web"
+          },
+          {
+            "on": "cag"
+          },
+          {
+            "plan": "publish"
           }
         ]
       },

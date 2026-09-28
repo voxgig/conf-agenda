@@ -31,6 +31,8 @@ validation in the header — is open as **PR #18** on branch `grid-intents`.
 | The `nodeconf` fixture | the real published NodeConf EU 2026 programme — 2 days, 34 sessions, 27 speakers. Not seeded; `tiny` + `demo` still are |
 | Bus-drive | the full journey through `window.seneca.post()` with zero DOM interaction (PLATFORM §10), and a guard that fails if the spec ever grows a click |
 | The binding registry | one ordered list behind the key handler, the `?` overlay, the footer and the command bar — order is precedence, and the overlay cannot drift |
+| `P` and the publish confirmation | `plan:publish` diffs the snapshot publishing would write against the stored one, so the screen states the changes with verbs rather than a count. **Every §13.1 binding for the grid now exists.** |
+| Deleting a session | command bar only, confirmed in the toast, and it names `t` as the alternative |
 | The second MCP tool | `conf_agenda_session_find`, plus the first tests the MCP surface has ever had |
 
 | Not done, in rough order | |
@@ -65,7 +67,7 @@ cd embed   && npm test
 ```
 
 Sign in as `alice@example.com` / `alice-pass-01`. Current green:
-**285 backend · 47 e2e · 13 web unit · 7 embed**.
+**300 backend · 55 e2e · 13 web unit · 7 embed**.
 
 `web/` has a unit runner now — `cd web && npm test` (`node --test test/*.test.mjs`) — because
 `buildInverse` is pure and the path resolution, the falsy-value case and the undo stack semantics

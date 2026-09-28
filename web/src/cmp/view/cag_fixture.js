@@ -25,6 +25,7 @@ import { bus, onEvent } from '../../bus.js'
 import { msgFor, patterns } from '../../model.js'
 import { buildInverse, makeUndoStack, webMessage } from '../../undo.js'
 import { renderSyncPlan } from './sync_plan.js'
+import { renderPublishConfirm } from './publish_confirm.js'
 import { renderValidatePanel } from './validate_panel.js'
 import { renderSyncRun } from './sync_run.js'
 
@@ -118,7 +119,7 @@ class VgViewCagFixture extends HTMLElement {
     this.focusIndex = 0
     this.fixtureId = null
     this.dayId = null
-    // 'grid' | 'sync' | 'run' | 'validate'. Each is a thing you do TO a
+    // 'grid' | 'sync' | 'run' | 'validate' | 'publish'. Each is a thing you do TO a
     // conference rather than a place you navigate to, which is why they are
     // keystrokes and not nav items.
     this.mode = 'grid'
@@ -147,6 +148,10 @@ class VgViewCagFixture extends HTMLElement {
     // Which diagnostic the panel's ring is on. Separate from focusIndex:
     // walking the list must not move the grid's selection until Enter says so.
     this.diagIndex = 0
+
+    // What publishing would change, from plan:publish. Held rather than
+    // recomputed on render, because it is a round-trip.
+    this.publishPlan = null
   }
 
   connectedCallback() {
@@ -545,6 +550,19 @@ class VgViewCagFixture extends HTMLElement {
         match: (ev) => 'Enter' === ev.key,
         run: () => this.jumpToDiagnostic() },
 
+      // ---- the publish confirmation ---------------------------------------
+      { when: 'publish', keys: 'Esc', label: 'Cancel publishing', bar: false,
+        match: (ev) => 'Escape' === ev.key,
+        run: () => this.showGrid() },
+      { when: 'publish', keys: 'Enter', label: 'Confirm publish', bar: false,
+        match: (ev) => 'Enter' === ev.key,
+        run: () => this.doPublish() },
+      // Offered only while errors block it, and it is the useful key there:
+      // the answer to "fix them first" is to go and look at them.
+      { when: 'publish', keys: 'v', label: 'Show the errors', bar: false,
+        match: (ev) => 'v' === ev.key,
+        run: () => this.showValidation() },
+
       // ---- the sync and run screens ---------------------------------------
       { when: 'other', keys: 'Esc', label: 'Back to the grid', bar: false,
         match: (ev) => 'Escape' === ev.key,
@@ -585,6 +603,9 @@ class VgViewCagFixture extends HTMLElement {
       { when: 'grid', keys: 'v', label: 'Validate now', foot: true,
         match: (ev) => 'v' === ev.key,
         run: () => this.showValidation() },
+      { when: 'grid', keys: 'P', label: 'Publish', foot: true,
+        match: (ev) => 'P' === ev.key,
+        run: () => this.showPublish() },
 
       // j/k/Enter are the SHARED vocabulary (PLATFORM §5.2) — the same keys
       // mean the same things in both apps. Focus is always somewhere and
@@ -599,32 +620,55 @@ class VgViewCagFixture extends HTMLElement {
         } },
       { when: 'grid', keys: 'Enter', label: 'Open session', foot: true, bar: false,
         match: (ev) => 'Enter' === ev.key,
-        run: () => this.openDetail(focused()) },
+        run: () => {
+          // An armed delete owns Enter until it disarms. Opening the detail
+          // panel on the very keypress meant to confirm a deletion is the
+          // kind of near-miss a two-step guard exists to prevent.
+          if (null != this.armedDelete) return this.confirmDelete()
+          this.openDetail(focused())
+        } },
       { when: 'grid', keys: '?', label: 'Show shortcuts', foot: true, empty: true,
         match: (ev) => '?' === ev.key,
         run: () => this.toggleHelp() },
 
-      // Reachable from the command bar only — there is no spare letter worth
-      // spending on it, and K2 says the bar reaches everything.
+      // Reachable from the command bar only: there is no spare letter worth
+      // spending on either, and K2 says the bar reaches everything.
       { when: 'grid', keys: '', label: 'Reload agenda', empty: true,
         match: () => false,
         run: () => this.reload() },
+      { when: 'grid', keys: '', label: 'Delete session',
+        match: () => false,
+        run: () => this.confirmDelete() },
     ]
   }
 
   /** The bindings that apply to the mode the grid is in right now (K6). */
   activeBindings() {
-    const scope = 'grid' === this.mode || 'validate' === this.mode ? this.mode : 'other'
+    const own = ['grid', 'validate', 'publish']
+    const scope = own.includes(this.mode) ? this.mode : 'other'
     return this.bindings().filter((b) => b.when === scope)
   }
 
   onKey(ev) {
+    // A KEYSTROKE TYPED INTO A FIELD IS NOT A SHORTCUT.
+    //
+    // The listener is on the host, so the command bar's own input bubbles
+    // straight into it: typing "delete" fired `d` (duplicate) and `t` (cycle
+    // status) on the way past, and typing "reload" fired `d`. The command
+    // bar's search box was quietly editing the programme, and the existing
+    // test did not notice because it only checked that the bar closed.
+    //
+    // The bar handles its own Enter and Escape, so returning here costs it
+    // nothing. The header's conference <select> gets the same protection.
+    const target = ev.target
+    if (target !== this && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName || '')) return
+
     // FIRST MATCH WINS, in registry order. The precedence that used to live in
     // the order of a dozen if-statements is now the order of a list.
     const empty = 0 === this.sessions.length
 
     for (const b of this.activeBindings()) {
-      // `n`, `u` and `?` are the ones that mean something on an EMPTY day —
+      // `n`, `u` and `?` are the ones that mean something on an EMPTY day,
       // which is exactly the day you most want to add a session to.
       if ('grid' === b.when && empty && true !== b.empty) continue
       if (!b.match(ev)) continue
@@ -678,8 +722,105 @@ class VgViewCagFixture extends HTMLElement {
     this.focus()
   }
 
+  /**
+   * `P`: what publishing would change, then a confirmation.
+   *
+   * plan:publish is read-only and computes the diff against the stored
+   * snapshot, so this screen can state the changes and the validation gate
+   * before the button is pressed rather than failing when it is.
+   */
+  async showPublish() {
+    if (null == this.fixtureId) return
+
+    let r
+    try {
+      r = await bus.post({
+        aim: 'web', on: 'cag', plan: 'publish', fixture_id: this.fixtureId,
+      })
+    } catch (e) {
+      r = null
+    }
+
+    if (!r || !r.ok) {
+      // Name the refusal. `no-slug` and `not-publishable` are different
+      // problems with different fixes, and "could not publish" is neither.
+      this.say('Cannot publish: ' + ((r && r.why) || 'unknown'), false)
+      this.render()
+      return
+    }
+
+    this.publishPlan = r
+    this.mode = 'publish'
+    this.render()
+    this.focus()
+  }
+
+  /** Enter, or the button. The screen is the confirmation (see publish_confirm.js). */
+  async doPublish() {
+    const plan = this.publishPlan
+    if (null == plan || true !== plan.valid) return
+
+    const out = await bus.post({
+      aim: 'web', on: 'cag', publish: 'fixture', fixture_id: this.fixtureId,
+    })
+
+    this.mode = 'grid'
+    this.publishPlan = null
+
+    if (!out || !out.ok) {
+      this.say('Publish failed: ' + ((out && out.why) || 'unknown'), false)
+      this.render()
+      return
+    }
+
+    this.say('Published \u00b7 ' + out.session_count +
+      (1 === out.session_count ? ' session' : ' sessions') + ' live', false)
+
+    // The header's publish state comes from load:tree, so it has to be
+    // refetched for "Published just now" to be true.
+    await this.settle()
+  }
+
+  /**
+   * Delete the focused session. Command bar only, and confirmed in the toast.
+   *
+   * NOT A KEY. remove:segment declares no inverse on purpose: re-creating a
+   * row gives it a NEW id, so every reference to the old one would still be
+   * broken, and an undo that looks like it worked is worse than no undo. So
+   * the confirmation is the only guard, and a destructive action with one
+   * guard should not also be one keystroke away.
+   */
+  async confirmDelete() {
+    const session = this.sessions[this.focusIndex]
+    if (null == session) return
+
+    const name = session.title || session.id
+
+    if (this.armedDelete !== session.id) {
+      this.armedDelete = session.id
+      // NAME THE ALTERNATIVE. Cancelling is what an organiser usually means,
+      // and a cancelled session stays publicly visible marked cancelled
+      // (SPEC 9.1) instead of vanishing from a printed programme.
+      this.say('Delete ' + name + '? Press Enter to confirm, or t to cancel it instead', false)
+      this.render()
+
+      clearTimeout(this.armTimer)
+      this.armTimer = setTimeout(() => {
+        this.armedDelete = null
+      }, 6000)
+      return
+    }
+
+    clearTimeout(this.armTimer)
+    this.armedDelete = null
+    await this.mutate('aim:cag,remove:segment', { fixture_id: session.id },
+      'Deleted ' + name)
+  }
+
   showGrid() {
     this.mode = 'grid'
+    this.publishPlan = null
+    this.armedDelete = null
     this.stopPolling()
     this.render()
     this.focus()
@@ -1207,7 +1348,8 @@ class VgViewCagFixture extends HTMLElement {
 
     this.replaceChildren(
       el('div', {
-        class: 'vg-entity vg-agenda' + ('validate' === this.mode ? ' ca-dimmed' : ''),
+        class: 'vg-entity vg-agenda' +
+          ('validate' === this.mode || 'publish' === this.mode ? ' ca-dimmed' : ''),
       }, [
         this.renderHead(top, list),
         bar,
@@ -1222,6 +1364,10 @@ class VgViewCagFixture extends HTMLElement {
         // a double-booking is not readable without the thing it is about.
         'validate' === this.mode
           ? renderValidatePanel(this.diagnostics, this.diagIndex)
+          : null,
+        'publish' === this.mode && null != this.publishPlan
+          ? renderPublishConfirm(this.publishPlan,
+            () => this.doPublish(), () => this.showGrid())
           : null,
         el('div', { 'data-live': '', 'aria-live': 'polite', class: 'vg-sr' }),
       ]),

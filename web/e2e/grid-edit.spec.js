@@ -178,8 +178,10 @@ test('the footer lists only bindings that work', async ({ page }) => {
   // listed here has a test above or in validate-panel.spec.js; `P` (publish)
   // does not exist yet, so it stays off the list until it does.
   //
-  // This assertion is meant to break when a binding lands - it broke when `v`
-  // did, which is the point of writing it as a list rather than a floor.
+  // This assertion is meant to break when a binding lands. It broke when `v`
+  // landed, and again when `P` did, which is the point of writing it as a list
+  // rather than a floor. Nothing is left off the list now: every SPEC 13.1
+  // binding for this view exists.
   await signIn(page)
   const foot = await page.locator('.ca-foot').innerText()
 
@@ -188,7 +190,7 @@ test('the footer lists only bindings that work', async ({ page }) => {
   expect(foot).toContain('d')
   expect(foot).toContain('t')
   expect(foot).toContain('validate')
-  expect(foot).not.toContain('publish')
+  expect(foot).toContain('publish')
 })
 
 

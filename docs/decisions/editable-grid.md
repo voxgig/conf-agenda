@@ -330,3 +330,65 @@ pressed, and "move session" with no arrow is not a command.
 neither the footer nor the overlay, and `g`-prefixed navigation (§13.1's `g a` / `g s` / `g p` /
 `g c`) needs a chord mechanism the registry does not model yet. PLATFORM §3.1 wants all of this in
 `@voxgig/ui` eventually; this is the local version that proves the shape.
+
+## `P`, and what a confirmation is for
+
+SPEC §13.1 asks `P` to confirm "and state what changed since the last publish". Both halves matter.
+A confirmation that only asks "are you sure?" is a modal in a common path, which K5 forbids. One
+that states the changes is the organiser reading their own work back before it goes public, and that
+earns the interruption.
+
+**`load:tree` could not supply it.** It returns `publish.unpublished`, a count derived from
+`t_m > published_at`, and a count cannot say what changed. Worse, a timestamp cannot tell a change
+that matters from one that does not: editing an abstract bumps `t_m` and changes nothing an attendee
+sees, while a draft session bumps it and is not published at all.
+
+**So `plan:publish` diffs two snapshots**, not a tree against a clock. It calls `buildAgenda` to get
+the snapshot publishing *would* write and compares it against the stored one. Every question about
+what is publishable (drafts, private ancestors, which rooms are in use) stays `buildAgenda`'s to
+answer, and asking it rather than restating its rules is what stops the two drifting. A draft is
+absent from both sides and therefore silent, which is correct: it is not going out either way.
+
+Named `plan:` and not `get:`, for the reason `web_watch_run.ts` records.
+
+**Cancellation is checked before room and time**, the same ordering the calendar reconciliation is
+built on and for the same reason: a cancelled session keeps its slot and its times, so nothing else
+about it need have changed. "Room" as the headline on a talk that has been called off is the wrong
+story. Reverting that ordering fails a test.
+
+**Moved and re-roomed is one line, not two.** An organiser who dragged a talk to another room at
+another time did one thing.
+
+**The screen states the gate rather than the button failing.** SPEC §16 makes errors a hard block,
+and `publish:fixture` already refuses with `validation-failed`. `plan:publish` asks
+`validate:fixture` the same question, so the confirm button can be disabled and name the count, with
+`v` offered to go and look. And it names what publishing touches, including that **speaker calendars
+are not among them**: an organiser who thinks publishing tells their speakers has not told their
+speakers.
+
+## Deleting a session
+
+**Command bar only, confirmed in the toast.** `remove:segment` declares no inverse on purpose, so
+there is no `u` behind this and the confirmation is the only guard. A destructive action with one
+guard should not also be one keystroke away, and SPEC §13.1 spends no letter on it.
+
+The armed toast **names the alternative**: `t` cycles to cancelled, which is usually what an
+organiser means, and a cancelled session stays publicly visible marked cancelled (§9.1) rather than
+vanishing from a printed programme.
+
+`Enter` belongs to an armed delete while it is armed. Opening the detail panel on the very keypress
+meant to confirm a deletion is the kind of near-miss a two-step guard exists to prevent.
+
+## The bug `P` uncovered: the command bar was editing the programme
+
+The key listener is on the host element, so the command bar's own `<input>` bubbled straight into
+it. Typing **"delete"** fired `d` (duplicate) and `t` (cycle status) on the way past. Typing
+**"reload"** fired `d`. The search box was quietly changing the schedule, and the existing command
+bar test did not notice because it only asserted that the bar closed afterwards.
+
+A keystroke typed into a field is not a shortcut. `onKey` now returns early for `INPUT`, `TEXTAREA`
+and `SELECT` targets, which also protects the header's conference picker. The bar handles its own
+`Enter` and `Escape`, so this costs it nothing.
+
+There is a test that types `dtnuv` into the bar and asserts the session count, the focused session
+and the absence of any panel are all unchanged. Reverting the guard fails it.

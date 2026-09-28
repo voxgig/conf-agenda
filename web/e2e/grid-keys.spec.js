@@ -66,6 +66,32 @@ test('Cmd-K opens the command bar, and a command runs and closes it', async ({ p
   await expect(page.locator('.vg-focus')).toHaveCount(1)
 })
 
+test('typing in the command bar does not fire grid shortcuts', async ({ page }) => {
+  // The listener is on the host, so the bar's input bubbles into it. Typing
+  // "delete" used to fire `d` (duplicate) and `t` (cycle status) on the way
+  // past, and typing "reload" fired `d`: the search box was quietly editing
+  // the programme. The test above did not notice, because it only checked
+  // that the bar closed afterwards.
+  await signIn(page)
+
+  const before = await page.locator('[data-session]').count()
+  const status = await page.locator('.vg-focus').first().getAttribute('aria-label')
+
+  await page.keyboard.press('Control+k')
+  await expect(page.locator('[data-bar]')).toBeVisible()
+
+  // Every letter here is a live binding on the grid: d, t, n, u, v.
+  await page.keyboard.type('dtnuv')
+  await page.waitForTimeout(600)
+
+  await expect(page.locator('[data-session]')).toHaveCount(before)
+  expect(await page.locator('.vg-focus').first().getAttribute('aria-label')).toBe(status)
+  // And no panel opened behind the bar.
+  await expect(page.locator('[data-validate]')).toHaveCount(0)
+
+  await page.keyboard.press('Escape')
+})
+
 test('the ? overlay is GENERATED from the registry, so it cannot drift', async ({ page }) => {
   // SPEC 18: "the shortcut overlay is generated from the binding registry so
   // they cannot drift." They had drifted - the footer listed the Stage 2 keys
