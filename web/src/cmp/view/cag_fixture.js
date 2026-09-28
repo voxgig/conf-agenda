@@ -21,7 +21,7 @@
 // organiser must see drafts, which agenda.json deliberately never contains.
 
 import * as Api from '../../api.js'
-import { bus, onEvent } from '../../bus.js'
+import { bus, emit, onEvent } from '../../bus.js'
 import { msgFor, patterns } from '../../model.js'
 import { buildInverse, makeUndoStack, webMessage } from '../../undo.js'
 import { renderSyncPlan } from './sync_plan.js'
@@ -630,6 +630,19 @@ class VgViewCagFixture extends HTMLElement {
       { when: 'grid', keys: '?', label: 'Show shortcuts', foot: true, empty: true,
         match: (ev) => '?' === ev.key,
         run: () => this.toggleHelp() },
+
+      // `g` CHORDS ARE HANDLED BY THE SHELL, not here: the grid is not mounted
+      // when you are looking at the speaker list, and `g a` has to work from
+      // there. These entries are display-only (`match` never fires) so the `?`
+      // overlay and the command bar still list them, which is where somebody
+      // discovers a chord. SPEC 13.1 also names `g p` and `g c`; those views
+      // do not exist, so they are absent rather than advertised and dead.
+      { when: 'grid', keys: 'g a', label: 'Go to the agenda grid',
+        match: () => false,
+        run: () => emit('navigate', { canon: 'cag/fixture' }) },
+      { when: 'grid', keys: 'g s', label: 'Go to speakers',
+        match: () => false,
+        run: () => emit('navigate', { canon: 'cag/speaker' }) },
 
       // Reachable from the command bar only: there is no spare letter worth
       // spending on either, and K2 says the bar reaches everything.

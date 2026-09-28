@@ -398,3 +398,34 @@ and `SELECT` targets, which also protects the header's conference picker. The ba
 
 There is a test that types `dtnuv` into the bar and asserts the session count, the focused session
 and the absence of any panel are all unchanged. Reverting the guard fails it.
+
+## `g` chords, and why they are not in the registry
+
+PLATFORM §5.2 puts navigation behind `g` then a letter, and the reason is arithmetic: there are
+only so many single letters, and a chord costs two keystrokes and none of that budget.
+
+**They live above the grid.** The binding registry owns the keys that act on a session, and the
+grid is not mounted when you are looking at the speaker list, which is exactly when `g a` has to
+work. So the reader is `web/src/chords.js`, the shell drives it from a document listener, and the
+registry carries **display-only entries** (`match: () => false`) so the `?` overlay and the command
+bar still list them. Nobody guesses a chord.
+
+**In the capture phase, and that took a test to find.** The grid's handler is on its own host,
+deeper in the tree, so on the way *up* it runs first: `g` then `d` armed the chord and then
+**duplicated a session**, because `d` reached the grid before the chord listener saw it. Capture
+gives the chord first refusal, and it swallows exactly two things: a prefix, and whatever follows
+one. Every other key is left alone and reaches the grid untouched.
+
+**A mistyped chord is consumed, not passed through.** `g` then `q` does nothing at all rather than
+doing `q`. On this grid the second letter of a fumbled chord could otherwise be `d` (duplicate) or
+`t` (cycle status), so "pass it through" means a typo edits the programme.
+
+**An expired prefix is not a failed chord.** A `g` typed by accident a minute ago must not eat the
+next real keystroke, so the timeout falls through to normal handling rather than swallowing.
+
+**Only the chords whose views exist.** SPEC §13.1 names four: `g a`, `g s`, `g p` (programme list)
+and `g c` (calendar console). The last two have nothing to go to yet, so they are absent rather
+than advertised and dead, which is the rule the footer already follows.
+
+The reader is pure with an injected clock, so the timeout is tested without waiting for it. Both
+the capture phase and the consume-a-mistyped-chord rule are confirmed to bite.

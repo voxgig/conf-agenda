@@ -5,6 +5,7 @@
 // and relationships come from /model.json, so it scales to any graph.
 
 import { bus, emit, onEvent } from '../bus.js'
+import { NAV_CHORDS, inField, makeChords } from '../chords.js'
 import * as Model from '../model.js'
 import * as Api from '../api.js'
 import * as Hooks from '../hooks.js'
@@ -40,6 +41,8 @@ class VgShell extends HTMLElement {
     onEvent('navigate', ({ canon }) => {
       if (null != canon) this.openEntity(canon)
     })
+
+    this.installChords()
     onEvent('projects-changed', () => {
       if (this.isConnected && this.hasProjects()) {
         this.loadProjects()
@@ -72,6 +75,56 @@ class VgShell extends HTMLElement {
   }
 
   // ---- navigation ----
+
+  /**
+   * `g` then a letter, app-wide.
+   *
+   * ON THE DOCUMENT, because the grid is not mounted when you are looking at
+   * the speaker list and `g a` has to work from there.
+   *
+   * IN THE CAPTURE PHASE, and that is the part that took a test to get right.
+   * The grid's handler is on its own host, deeper in the tree, so on the way
+   * UP it runs first: `g` then `d` armed the chord and then duplicated a
+   * session, because `d` reached the grid before this ever saw it. Capture
+   * gives the chord first refusal, and only on the keys it actually wants.
+   *
+   * It swallows exactly two things: a prefix, and whatever follows one. Every
+   * other key is left alone and reaches the grid untouched.
+   */
+  installChords() {
+    const chords = makeChords(NAV_CHORDS)
+
+    this.onChordKey = (ev) => {
+      // This listener has no auto-removal beyond disconnectedCallback, and a
+      // sign-out then in re-mounts the shell: a stale one must not navigate.
+      if (!this.isConnected) return
+      if (ev.metaKey || ev.ctrlKey || ev.altKey) return
+      if (inField(ev.target)) return
+
+      // An open dialog owns the keyboard. Navigating out from under a
+      // confirmation leaves the thing it was confirming half-answered.
+      if (document.querySelector('[role="dialog"]')) {
+        chords.reset()
+        return
+      }
+
+      const { target, swallowed } = chords.press(ev.key)
+      if (!swallowed) return
+
+      // Stop it reaching the grid. `d` and `t` are live bindings there, so a
+      // mistyped `g d` would otherwise duplicate a session.
+      ev.preventDefault()
+      ev.stopPropagation()
+
+      if (null != target) emit('navigate', { canon: target })
+    }
+
+    document.addEventListener('keydown', this.onChordKey, true)
+  }
+
+  disconnectedCallback() {
+    if (this.onChordKey) document.removeEventListener('keydown', this.onChordKey, true)
+  }
 
   openEntity(canon, detailId) {
     // Opening a project's detail makes it the current project, so children
