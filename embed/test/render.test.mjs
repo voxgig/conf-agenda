@@ -50,14 +50,32 @@ before(async () => {
   await new Promise((r) => server.listen(0, '127.0.0.1', r))
   base = 'http://127.0.0.1:' + server.address().port
   // Reuse a chromium already in the Playwright cache rather than downloading
-  // another. Set CHROMIUM_PATH to override; with neither, fall back to
-  // Playwright's own resolution (`npx playwright install chromium`).
+  // another. Set CHROMIUM_PATH to override.
+  //
+  // `chrome-linux*` and newest-first, both learned the hard way. Playwright
+  // renamed the directory from `chrome-linux` to `chrome-linux64` between
+  // builds, so a glob pinned to the old name silently matched nothing, fell
+  // through to Playwright's own resolution, threw in here, and node's test
+  // runner reported `pass 0, fail 0`. A suite that runs nothing looks exactly
+  // like a suite that passes.
   const cached = [
     process.env.CHROMIUM_PATH,
-    ...globSync(join(homedir(), '.cache/ms-playwright/chromium-*/chrome-linux/chrome')),
+    ...globSync(join(homedir(), '.cache/ms-playwright/chromium-*/chrome-linux*/chrome'))
+      .sort()
+      .reverse(),
   ].filter((p) => p && existsSync(p))
 
-  browser = await chromium.launch(cached.length ? { executablePath: cached[0] } : {})
+  // NAME THE FAILURE. Falling through to `chromium.launch({})` here throws
+  // from inside `before()`, which is the shape that reports zero tests. This
+  // says what is missing instead.
+  if (0 === cached.length) {
+    throw new Error(
+      'no chromium in ~/.cache/ms-playwright (looked for chromium-*/chrome-linux*/chrome). ' +
+      'Run `npx playwright install chromium`, or set CHROMIUM_PATH.',
+    )
+  }
+
+  browser = await chromium.launch({ executablePath: cached[0] })
 })
 
 after(async () => {

@@ -60,7 +60,8 @@ validation in the header — is open as **PR #18** on branch `grid-intents`.
 ```bash
 cd backend && npm run build && npm test && npm run web    # :50500, seeds itself
 cd embed   && npm run build && ./node_modules/.bin/serve -l 50600 .
-cd web     && PLAYWRIGHT_CHROMIUM_PATH=/home/jose/.cache/ms-playwright/chromium-1187/chrome-linux/chrome npx playwright test
+cd web     && PLAYWRIGHT_CHROMIUM_PATH=$(ls -d ~/.cache/ms-playwright/chromium-*/chrome-linux*/chrome | tail -1) npx playwright test
+cd embed   && npm test
 ```
 
 Sign in as `alice@example.com` / `alice-pass-01`. Current green:
@@ -76,6 +77,11 @@ changes when WSL restarts — `hostname -I`), or set `networkingMode=mirrored` i
 
 `PLAYWRIGHT_CHROMIUM_PATH` is an opt-in escape hatch: the cached browser build does not match the
 npm package's expected revision. Unset in CI.
+
+**Derive the path, never pin it.** It used to read `chromium-1187/chrome-linux/chrome`, and both
+halves went stale: the build number moved to 1228, and Playwright renamed the directory to
+`chrome-linux64`. The `ls ... | tail -1` form above survives both. `npx playwright install
+chromium` is the proper fix and needs npm, which does not work from here (see the trap below).
 
 ---
 
@@ -122,6 +128,12 @@ So it is node's outbound egress, not the network and not npm's config (it fails 
 `--userconfig /dev/null` too). **Everything already in `node_modules` works; nothing new can be
 added.** That is what blocks the public Astro page, which needs `astro` installed. There is also an
 npm auth token in `~/.npmrc` — unrelated to this, but worth rotating if it is stale.
+
+**`pass 0` is not a pass, and neither is `fail 0`.** The embed suite spent a week reporting
+`pass 0, fail 0` because its browser glob matched nothing and the launch threw inside `before()`,
+which node's runner counts as *cancelled* rather than failed. Grepping for `fail` saw zero and
+looked fine. **Read the `pass` count against the `tests` count, or read the exit code** (it is
+correctly 1). The launch now throws with a message naming what is missing.
 
 **A green suite is not a built suite.** `npm run build` is `model-build && tsc`, so a model-build
 failure means tsc never runs - and `npm test` then passes against the *previous* `dist-test`. A
