@@ -11,3 +11,6 @@ dist-test
 # voxgig-model: model-config.aon is the hand-authored source (build actions);
 # model-config.json is compiled from it by model-build.
 **/.model-config/model-config.json
+
+# Local Claude Code overrides: machine-specific, and may carry secrets.
+.claude/settings.local.json

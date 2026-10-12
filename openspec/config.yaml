@@ -1,0 +1,124 @@
+schema: cag
+
+# Context is background only. The rules are below, one sentence each.
+# AGENTS.md files hold facts (what exists, where, why); this file holds rules.
+# A rule's evidence stays where it was written (HANDOFF.md, docs/decisions/)
+# and the rule points at it. One rule lives in one place.
+context: |
+  conf-agenda: a Voxgig system project. One repo, four parts that install and run independently.
+  backend/ is Seneca 4 microservices driven by an aontu model (backend/model/*.aon compiled to
+  model.json by @voxgig/model 11.0.0 and @voxgig/build 4.16.0); web/ is the generated SPA
+  (create-once, developer-owned); embed/ is the deliberately framework-free <conf-agenda>
+  component; sdk/ is the generated client chain. Also a CLI (backend/bin/conf-agenda.mjs),
+  a REPL, a read-only MCP server (backend/mcp/server.mjs) and public Astro pages.
+  Facts (commands, layout, conventions, the traps and their evidence) are in AGENTS.md,
+  web/AGENTS.md and HANDOFF.md. The reasoning behind each major design is in docs/decisions/.
+  The specs are a separate repo, metsitaba/project-specs: PLATFORM.md plus
+  conf-agenda/SPEC.CONF-AGENDA.md, ARCHITECTURE.md and MOCKUPS.md. It is READ-ONLY.
+  Everything runs locally against an in-memory store; Cloudflare deployment is Stage 4.
+  The openspec CLI is a symlink in ~/.local/bin to cp_rocket's node_modules; see HANDOFF.md.
+
+rules:
+  proposal:
+    - Nothing is implemented until the user approves the proposal.
+    - Before drafting, list every fork (two or more viable ways to build it) and ask the user to choose; a recommendation made while exploring is not a decision.
+    - Recommend an option and say why; never pick one and write the proposal around it.
+    - Every change cites the SPEC or PLATFORM section it serves, by number, or says plainly that it serves neither.
+    - A spec defect goes in docs/decisions/to-raise-upstream.md with its evidence and is raised with the maintainer; never open a PR against metsitaba/project-specs.
+    - Fix a found defect in the PR that already touches the file; leaving it needs a reason a reviewer can weigh, and "not the task" is not one.
+    - Record disagreement with the requested design with the file:line, test or doc that proves it; never silently implement a different design.
+    - Name what stays shallow and which stage deepens it, the way the SPEC stage sections do.
+  specs:
+    - One requirement per rule, in this repo's vocabulary (message pattern, named intent, inverse, fixture, snapshot, ledger, binding, proxy, org scoping).
+    - Every scenario names the test file, fixture or command that exercises it.
+    - Describe observed or approved behaviour only; never invent behaviour to fill a section.
+    - A scenario about the browser names the message posted, not the click that posts it.
+  design:
+    - Every option carries proof (file:line, a test, plugin source, a model key), not assertion.
+    - Every fork is resolved by the user, never the agent; a design showing one approach where several were viable goes back to the user.
+    - Prefer the simplest viable design; no new entity, service or message when an existing intent, a prior-wrap or a model key covers it.
+    - Explain every mechanism as the concept it is, define it in one plain sentence, then bind it to the thing in this repo that implements it.
+    - Name which traps the change walks into, and say "none" deliberately rather than by omission.
+    - Say which values go in the model (.aon) and which are computed at runtime.
+    - Fail open where refusing would hide the programme; fail closed where an invitation or a published snapshot would reach the public.
+  tasks:
+    - '"Tests pass" is not a verification path; name the exact command, test or observable.'
+    - Confirm every new safety assertion bites by reverting its fix and watching it fail, then restoring.
+    - One task group is one PR and one apply session; the heading names its branch and what it stacks on.
+    - Every group ends with a Gate task running the suites of each package it touched plus `openspec validate --all --strict`.
+    - A task that changes the model verifies both halves, the build exiting 0 and the expected key being present.
+
+operations:
+  apply:
+    guidance:
+      # process
+      - Implement only what the approved proposal and tasks say; new scope goes back into the proposal and pauses for the user.
+      - One apply session implements one task group, gates it, commits it on its own branch, marks its tasks and stops; a fresh session takes the next group.
+      - A typo, a dependency bump or a one-line fix skips OpenSpec; its PR body says so.
+      - Run `/opsx:verify <change-id>` once a group's tasks are done and fix every CRITICAL finding before opening the PR.
+      - Never write a PLAN-*.md, an ADR or any planning document outside openspec/; never cite one.
+      - A decision record in docs/decisions/ explains WHY a design is shaped as it is and outlives the change; a proposal is the change. Neither replaces the other.
+      - Structure, convention or layout changes update AGENTS.md (and HANDOFF.md if the map shifts) in the same PR.
+      - Never hand-edit .agents/skills/openspec-*, .claude/skills/openspec-* or .claude/commands/opsx/*; regenerate with `openspec update`.
+      - Run `openspec validate --all --strict` before any PR touching openspec/, and quote any rule whose text contains a colon followed by a space.
+      - Never read or write ~/.npmrc, .claude/settings.local.json or any local-env file.
+      - Report the real result; a failing suite is a finding, not a reason to open the PR anyway.
+      # PR and commit
+      - Subject is Conventional Commits (feat:, fix:, chore:, ...) and leads with intent in one sentence.
+      - 'PR body carries `OpenSpec: <change-id>`.'
+      - Commit messages end with the Co-Authored-By trailer and PR bodies with the Claude Code line, as this repo has always done.
+      - A PR touches at most 15 files; bigger work is stacked, only the first PR targeting main, all citing the same change id.
+      - The 15-file cap counts hand-written files; a bootstrap or a regeneration of the generated skill and command trees is exempt and says so in the PR body.
+      - Before opening any PR, run the build and the suite of every touched package and open only when every run is green.
+      # model (aontu)
+      - Always `npm run model-build` before expecting any generated artifact or the web UI to reflect a model change.
+      - Read `npm run model-build` as a pair, exit 0 AND the expected content present, because model.json is written BEFORE the generators run.
+      - A green suite is not a built suite; `npm run build` is model-build then tsc, so a model-build failure leaves `npm test` passing on a stale dist-test.
+      - Never hand-edit a generated artifact under backend/gen/ or model/model.json; edit the .aon and rebuild.
+      - Application code (backend/src/, web/, embed/) is create-once and yours to edit freely.
+      - Prefer `npx voxgig-system add entity|srv|msg|field|env` over hand-editing model files; it appends jsonic blocks and preserves formatting.
+      - Aontu comments are `#` only, and a value containing a hyphen, a slash or a hash is quoted.
+      - In a generated file a doubled marker (`##` in jsonic, `////` in TS) is prose and a single one marks disabled example code.
+      - "`valid: Skip` permits a field to be ABSENT but still rejects the empty string; `valid: 'Empty'` permits the empty string but requires the key. Both faces are live in this model and the rest of it has never been audited."
+      - "A relationship field is `kind: String` plus a `ref: 'zone/name'` attribute, usually with `valid: Skip`; `kind: 'Ref'` is invalid."
+      - "`inverse` stays withheld from the in-memory model by backend/build/msg_meta.js, which must stay FIRST in `sys: model: order: action`, because @voxgig/build's MsgMetaShape is closed and rejects it."
+      - "`npm run model-breaking` exits 1 on an unchanged model and cannot gate CI until aontu can compare the cag spread template."
+      # messages
+      - "main.msg is a LIST of message definitions whose patterns are ordered pair-lists (PLATFORM 1.4); never a map."
+      - Only declare a model message when its action file exists; boot fails otherwise.
+      - A model message maps to the file named after its LAST pattern pair, so `save:item` is `save_item.ts`.
+      - Every operation is a named intent with a closed params shape; never a generic entity-save surface.
+      - "`aim:web` is the only browser-reachable namespace, and every browser operation is a declared proxy over a service message."
+      - "Never name a value that changes on the SERVER with `get:`, `list:` or `load:`; the SPA caches those and invalidates only on a client write, so the first poll is cached for ever."
+      - A message's declared `inverse` is its undo contract, mapping params and result paths; a write with no sane undo declares none and says why.
+      - Tenancy comes from the stored row, never from the payload.
+      - Behaviour is layered with prior-wraps, never with a DAO interface.
+      - "`id$` only creates; saving an existing id that way is entity-id-exists, so updating a row loads it first."
+      # browser
+      - A journey must be drivable through `window.seneca.post()` with no DOM interaction (PLATFORM 10), which is why a click posts a message and the message acts.
+      - A write verb must invalidate the cache group it affects explicitly, because the browser store's group is zone plus groupKeys plus the verb value and a write on one verb does not touch another.
+      - The binding registry is one ordered list and its order is precedence; the key handler, the `?` overlay, the footer and the command bar all read it, so none of them can drift.
+      - A binding whose view does not exist yet is absent rather than advertised; a hint for something that does nothing is worse than no hint.
+      - A key handler guards on the focused element, because a field owns its own keystrokes.
+      - A document-level chord listens in the CAPTURE phase, so a mistyped prefix cannot reach a deeper handler's live bindings.
+      - Non-text contrast is judged at 3:1 (WCAG 1.4.11); 4.5:1 is for colour actually drawn as text.
+      # tests
+      - "`pass 0` is not a pass and neither is `fail 0`: read the pass count against the test count, or read the exit code."
+      - A test that walks the model asserts a known-present AND a known-absent case, or it goes vacuously green.
+      - A rule needing more than the tree (a theme, a filesystem) can return an empty list and skip SILENTLY; assert it through the service, where the wiring is visible.
+      - Never await `seneca.ready()` twice; the test hangs rather than failing.
+      - Never assert on a raw .ics line; RFC 5545 folds anything past 75 octets, so that tests the folding and not the content.
+      - An e2e test creates the rows it mutates; one that deletes seeded data breaks a later spec that relied on it.
+      - Playwright runs with workers 1 against a shared in-memory backend, so specs share state and order matters.
+      - Derive the Playwright chromium path from the cache, never pin a build number or a directory layout.
+      - Nothing new can be installed; npm cannot reach the registry from this machine although curl can, so everything already in node_modules works and nothing can be added.
+      # calendar
+      - An invitation is iTIP (METHOD REQUEST or CANCEL, with UID and SEQUENCE) and a subscribable feed is METHOD PUBLISH; they are different artifacts and never one code path.
+      - The safety chain (cap, then redaction, then the ledger gate) sits as prior-wraps ABOVE the provider dispatch, so no provider can skip it.
+      - A change to the ledger's shape is read against docs/decisions/calendar-ledger.md first; the two orderings recorded there are load-bearing.
+      - A provider is proven against the recording fake and the plugin's injectable clock before anything reaches a real account.
+  archive:
+    guidance:
+      - Archive after the PR has merged; the change id in the PR body stays the record of the decision.
+      - Replace any placeholder Purpose written for a newly created capability with a real one before finishing.
+      - Update HANDOFF.md's status table in the same pass, so the map matches what merged.
