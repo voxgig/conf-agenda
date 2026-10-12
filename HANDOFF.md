@@ -1,7 +1,12 @@
 # Handoff — start here
 
-**As of 2026-09-20.** Written to be read cold, by a person or an assistant, with no memory of how
+**As of 2026-10-12.** Written to be read cold, by a person or an assistant, with no memory of how
 any of this got here. The reasoning lives in `docs/decisions/`; this is the map.
+
+**The rules are in `openspec/config.yaml` and the work is planned in `openspec/changes/`.** Every
+trap below has a one-sentence rule there, so an assistant gets it before it starts rather than
+after it has been bitten. This file keeps the evidence; that file keeps the rule. `AGENTS.md`
+holds the facts. See `AGENTS.md` for the workflow in one line.
 
 ---
 
@@ -11,9 +16,16 @@ any of this got here. The reasoning lives in `docs/decisions/`; this is the map.
 validation, the published snapshot, the public read path, the embed, the `.ics`/`.csv` feeds, the
 CLI, the MCP tool, and the calendar stub that was the last gap.
 
-**Stage 2 (§19.4): most of the way.** The calendar track is **merged** (PR #17, `087fef4`). The
-**editable grid** — the segment intents, undo via each message's declared `inverse`, and live
-validation in the header — is open as **PR #18** on branch `grid-intents`.
+**Stage 2 (§19.4): complete and merged.** The calendar track (PR #17, `087fef4`) and the editable
+grid (PR #18) are both on `main`. Every §13.1 binding for the grid now exists, all 10 §16.1 errors
+and all 14 §16.2 warnings fire, and the journey is drivable end to end through
+`window.seneca.post()` with no DOM interaction.
+
+**Stage 3 (§19.5) is next**, and most of it is unblocked: ejection (§12), the rest of the keyboard
+model (`/` instant search, bulk selection), embed breadth (all views, `::part()`, server-side
+theming, the size budget in CI), `clone:fixture`, agent skills, `llms.txt`, and the calendar
+breadth that can be proven offline (CalDAV with its §10.2 presets, the ICS-by-email fallback, RSVP
+tracking, the calendar console, C6 to C9). Microsoft and Zoho wait on OAuth with Google.
 
 | Done | |
 |---|---|
@@ -158,11 +170,23 @@ the resolved subtree — where it could never have fired at all.
 test went vacuously green once already. Two later tests (`grid-keys`, `calendar-sync`) were
 confirmed to bite by reintroducing the bug on purpose — worth doing for anything safety-shaped.
 
+**The `openspec` CLI is borrowed, not installed.** `npm install` cannot reach the registry from
+this machine (see the trap above), so `~/.local/bin/openspec` is a **symlink into
+`~/cp_rocket/node_modules/.bin/openspec`**, version 1.12.0, pinned for the record in the root
+`package.json`. It disappears if cp_rocket is cleaned or reinstalled. The symptom is every
+`/opsx:*` command failing with `openspec: not found`; the fix is to recreate the symlink, or to
+run `npm install` at the repo root from a machine that can reach the registry.
+
+**`openspec validate --all --strict` does not parse `config.yaml`.** A colon followed by a space
+inside an unquoted YAML scalar makes the file unparseable, and the CLI then drops **every rule**
+with only a warning on stderr. Validation still passes. The real check is
+`openspec instructions proposal --change <id> --json`, which must come back with a non-empty
+`context` and `rules`.
+
 ---
 
 ## Open, and Jose's to do
 
-- **Merge PR #18** (the editable grid) when reviewed.
 - **Disconnect Workers Builds until Stage 4.** The `Workers Builds: conf-agenda` check is red on
   every PR and on `main`, and always has been - it first appears on `a789a5b` (PR #15); PR #14 has
   no checks at all, so the Cloudflare GitHub App was connected between them. It is **not** a

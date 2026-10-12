@@ -1,0 +1,12 @@
+{
+  "name": "conf-agenda-root",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Root tooling only: pins the OpenSpec CLI that serves the openspec/ store. The four parts (backend, web, embed, sdk) install and run independently; this is not an npm workspace.",
+  "scripts": {
+    "openspec": "openspec"
+  },
+  "devDependencies": {
+    "@fission-ai/openspec": "1.12.0"
+  }
+}
