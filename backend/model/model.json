@@ -831,6 +831,20 @@
       },
       {
         "params": {
+          "fixture_id": "String",
+          "mode": "Skip(String)"
+        },
+        "pat": [
+          {
+            "aim": "cag"
+          },
+          {
+            "eject": "fixture"
+          }
+        ]
+      },
+      {
+        "params": {
           "fixture_id": "Skip(String)"
         },
         "pat": [

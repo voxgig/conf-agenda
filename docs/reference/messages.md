@@ -94,6 +94,7 @@ flowchart LR
 |---|---|
 | `aim:cag,validate:fixture` | `src/srv/cag/validate_fixture.ts` |
 | `aim:cag,publish:fixture` | `src/srv/cag/publish_fixture.ts` |
+| `aim:cag,eject:fixture` | `src/srv/cag/eject_fixture.ts` |
 | `aim:cag,load:tree` | `src/srv/cag/load_tree.ts` |
 | `aim:cag,plan:sync` | `src/srv/cag/plan_sync.ts` |
 | `aim:cag,plan:publish` | `src/srv/cag/plan_publish.ts` |

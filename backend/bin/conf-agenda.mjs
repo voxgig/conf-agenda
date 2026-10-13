@@ -9,6 +9,7 @@
  *
  *   conf-agenda validate <fixture.json> [--json]
  *   conf-agenda publish  <fixture.json> [--json]
+ *   conf-agenda eject    <fixture.json> --out <dir> [--mode snapshot|detached]
  *
  * A fixture file is a canon-keyed bundle of rows (test/fixtures/tiny/tiny.json
  * is the worked example). It is loaded into an in-memory store, so the command
@@ -26,10 +27,13 @@ const USAGE = `Usage: conf-agenda <command> [options]
   validate <fixture.json>   run the validation rules; exit 1 if any ERROR
   publish  <fixture.json>   validate, then build the published snapshot
   feed     <fixture.json>   publish, then emit a feed (--format ics|csv)
+  eject    <fixture.json>   publish, then write the self-contained bundle to --out
 
 Options:
   --fixture <id>   top fixture to act on (default: the first conference found)
   --format <fmt>   feed: ics (default) or csv
+  --out <dir>      eject: where to write the bundle (must be absent or empty)
+  --mode <mode>    eject: snapshot (default) or detached
   --json           machine-readable output
   -h, --help
 `
@@ -50,7 +54,7 @@ if (0 === rest.length || flags.has('-h') || flags.has('--help')) {
 const [cmd, file] = rest
 const asJson = flags.has('--json')
 
-if (!['validate', 'publish', 'feed'].includes(cmd)) {
+if (!['validate', 'publish', 'feed', 'eject'].includes(cmd)) {
   console.error('conf-agenda: unknown command "' + cmd + '"\n')
   console.error(USAGE)
   process.exit(1)
@@ -62,6 +66,20 @@ if (!file) {
 if (!Fs.existsSync(file)) {
   console.error('conf-agenda: no such file: ' + file)
   process.exit(1)
+}
+
+// Checked before anything loads: eject never merges into an existing bundle,
+// because a stale file left beside a fresh one is a bundle nobody ejected.
+const out_dir = opt('out')
+if ('eject' === cmd) {
+  if (null == out_dir || out_dir.startsWith('-')) {
+    console.error('conf-agenda: eject needs --out <dir>\n')
+    process.exit(1)
+  }
+  if (Fs.existsSync(out_dir) && 0 < Fs.readdirSync(out_dir).length) {
+    console.error('conf-agenda: --out is not empty, refusing to merge into it: ' + out_dir)
+    process.exit(1)
+  }
 }
 
 const Seneca = require('seneca')
@@ -180,5 +198,47 @@ if ('feed' === cmd) {
   }
   // The feed itself on stdout, so it can be redirected straight to a file.
   process.stdout.write(out.body)
+  process.exit(0)
+}
+
+if ('eject' === cmd) {
+  // The CLI's store is in memory and starts empty, so the conference is
+  // published here first, exactly as `feed` does. That is this process's own
+  // copy; eject:fixture itself only ever reads a snapshot.
+  const pub = await seneca.post('aim:cag,publish:fixture', { fixture_id })
+  if (!pub.ok) {
+    if ('validation-failed' === pub.why) {
+      report(pub)
+      console.error(`FAIL  no bundle: ${pub.error_count} error(s) block publication`)
+    } else {
+      console.error('conf-agenda: ' + pub.why)
+    }
+    process.exit(1)
+  }
+
+  const out = await seneca.post('aim:cag,eject:fixture', { fixture_id, mode: opt('mode') })
+  if (!out.ok) {
+    console.error('conf-agenda: ' + out.why + (out.fix ? ' (' + out.fix + ')' : ''))
+    process.exit(1)
+  }
+
+  // The message returned the bundle as data; this is the one place it touches
+  // the disk. A key ending in `/` is a directory.
+  const paths = Object.keys(out.manifest).sort()
+  for (const rel of paths) {
+    const dest = Path.join(out_dir, rel)
+    if (rel.endsWith('/')) {
+      Fs.mkdirSync(dest, { recursive: true })
+      continue
+    }
+    Fs.mkdirSync(Path.dirname(dest), { recursive: true })
+    Fs.writeFileSync(dest, out.manifest[rel])
+  }
+
+  if (asJson) {
+    console.log(JSON.stringify({ ok: true, mode: out.mode, out: out_dir, files: paths }, null, 2))
+  } else {
+    console.log(`OK  ejected ${pub.slug} (${out.mode}) to ${out_dir}: ${paths.length} entries`)
+  }
   process.exit(0)
 }

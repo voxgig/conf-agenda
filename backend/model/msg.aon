@@ -26,6 +26,13 @@
   { pat: [{aim: cag}, {publish: fixture}]
     params: { fixture_id: 'String' } }
 
+  # Ejection (SPEC 12). Returns the bundle as a MANIFEST, relative path to
+  # content, and writes nothing: the CLI is the one piece that writes it to
+  # disk. Reads the stored snapshot only, so it never publishes on the
+  # organiser's behalf. `mode` is snapshot (the default) or detached.
+  { pat: [{aim: cag}, {eject: fixture}]
+    params: { fixture_id: 'String', mode: 'Skip(String)' } }
+
   # The organiser's read. NOT the public snapshot: the app must show drafts,
   # which agenda.json deliberately never contains.
   { pat: [{aim: cag}, {load: tree}]

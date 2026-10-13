@@ -5,6 +5,13 @@ import Fs from 'node:fs'
 import Path from 'node:path'
 import Os from 'node:os'
 
+import Seneca from 'seneca'
+import Model from '../../model/model.json'
+
+const { basic } = require('../../dist/env/shared/basic.js')
+const CagSrv = require('../../dist/srv/cag/cag-srv.js')
+const AgendaSrv = require('../../dist/srv/agenda/agenda-srv.js')
+
 // The CLI is a real surface (PLATFORM 4), so it gets real tests: run the
 // binary, check what it prints and what it EXITS WITH. The exit code is the
 // whole point of a validate command - it is what CI gates on.
@@ -30,6 +37,42 @@ function cleanFixture(): string {
   const p = Path.join(Fs.mkdtempSync(Path.join(Os.tmpdir(), 'ca-')), 'clean.json')
   Fs.writeFileSync(p, JSON.stringify(f))
   return p
+}
+
+/** The manifest eject:fixture returns for a fixture file, posted in-process. */
+async function manifestFor(file: string): Promise<Record<string, string>> {
+  const bundle = JSON.parse(Fs.readFileSync(file, 'utf8'))
+  const seneca = Seneca({ legacy: false, timeout: 5555, debug: { undead: true } })
+  seneca.context.model = Model
+  seneca.context.env = 'test'
+  seneca.context.srvname = 'all'
+  seneca.test()
+  basic(seneca)
+  seneca.use(CagSrv)
+  seneca.use(AgendaSrv)
+  await seneca.ready()
+  for (const canon of Object.keys(bundle)) {
+    if (canon.startsWith('_') || !Array.isArray(bundle[canon])) continue
+    for (const row of bundle[canon]) {
+      await seneca.entity(canon).data$({ ...row, id$: row.id }).save$()
+    }
+  }
+  assert.equal((await seneca.post('aim:cag,publish:fixture', { fixture_id: 'conf_tiny' })).ok, true)
+  const out = await seneca.post('aim:cag,eject:fixture', { fixture_id: 'conf_tiny' })
+  await seneca.close()
+  assert.equal(out.ok, true)
+  return out.manifest
+}
+
+/** Every path under a directory, relative, directories with a trailing `/`. */
+function walk(root: string, rel = ''): string[] {
+  const out: string[] = []
+  for (const e of Fs.readdirSync(Path.join(root, rel), { withFileTypes: true })) {
+    const p = rel + e.name
+    if (e.isDirectory()) out.push(p + '/', ...walk(root, p + '/'))
+    else out.push(p)
+  }
+  return out
 }
 
 describe('cli', () => {
@@ -80,5 +123,48 @@ describe('cli', () => {
     const unknown = run(['frobnicate', TINY])
     assert.equal(unknown.code, 1)
     assert.match(unknown.out, /unknown command/)
+  })
+
+  test('eject writes exactly the manifest the message returned, byte for byte', async () => {
+    const file = cleanFixture()
+    const dir = Path.join(Fs.mkdtempSync(Path.join(Os.tmpdir(), 'ca-eject-')), 'agenda')
+
+    const r = run(['eject', file, '--out', dir])
+    assert.equal(r.code, 0, r.out)
+    assert.match(r.out, /ejected tiny-conf-2027/)
+
+    const manifest = await manifestFor(file)
+    assert.ok(0 < Object.keys(manifest).length)
+    assert.deepEqual(walk(dir).sort(), Object.keys(manifest).sort())
+    for (const [rel, content] of Object.entries(manifest)) {
+      if (rel.endsWith('/')) continue
+      assert.equal(Fs.readFileSync(Path.join(dir, rel), 'utf8'), content, rel)
+    }
+  })
+
+  test('eject refuses a non-empty --out, naming it, and leaves it alone', () => {
+    const dir = Fs.mkdtempSync(Path.join(Os.tmpdir(), 'ca-eject-'))
+    Fs.writeFileSync(Path.join(dir, 'keep.txt'), 'mine')
+
+    const r = run(['eject', cleanFixture(), '--out', dir])
+    assert.notEqual(r.code, 0)
+    assert.ok(r.out.includes(dir), 'names the directory: ' + r.out)
+    assert.deepEqual(Fs.readdirSync(dir), ['keep.txt'], 'nothing merged in')
+  })
+
+  test('eject without --out, or blocked by validation, fails cleanly', () => {
+    const noOut = run(['eject', cleanFixture()])
+    assert.equal(noOut.code, 1)
+    assert.match(noOut.out, /needs --out/)
+
+    const dir = Path.join(Fs.mkdtempSync(Path.join(Os.tmpdir(), 'ca-eject-')), 'agenda')
+    const blocked = run(['eject', TINY, '--out', dir])
+    assert.equal(blocked.code, 1)
+    assert.match(blocked.out, /no bundle/)
+    assert.equal(Fs.existsSync(dir), false, 'nothing written')
+  })
+
+  test('--help lists eject', () => {
+    assert.match(run(['--help']).out, /^\s+eject\s+<fixture\.json>/m)
   })
 })
