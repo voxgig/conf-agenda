@@ -13,6 +13,7 @@ Requires a signed-in user (`user.required: true`).
 |---|---|
 | `aim:cag,validate:fixture` | `validate_fixture.ts` |
 | `aim:cag,publish:fixture` | `publish_fixture.ts` |
+| `aim:cag,eject:fixture` | `eject_fixture.ts` |
 | `aim:cag,load:tree` | `load_tree.ts` |
 | `aim:cag,plan:sync` | `plan_sync.ts` |
 | `aim:cag,plan:publish` | `plan_publish.ts` |
@@ -96,6 +97,7 @@ flowchart LR
   gateway{{gateway}} -->|validated msg| srv[srv cag]
   srv --> validate_fixture["aim:cag,validate:fixture<br>validate_fixture.ts"]
   srv --> publish_fixture["aim:cag,publish:fixture<br>publish_fixture.ts"]
+  srv --> eject_fixture["aim:cag,eject:fixture<br>eject_fixture.ts"]
   srv --> load_tree["aim:cag,load:tree<br>load_tree.ts"]
   srv --> plan_sync["aim:cag,plan:sync<br>plan_sync.ts"]
   srv --> plan_publish["aim:cag,plan:publish<br>plan_publish.ts"]

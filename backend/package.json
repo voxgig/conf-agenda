@@ -9,7 +9,7 @@
     "model": "voxgig-model model/model.aon --watch",
     "model-build": "voxgig-model model/model.aon",
     "watch": "tsc --build src test -w",
-    "build": "npm run model-build && tsc --build src && tsc --build test",
+    "build": "npm run model-build && node tool/copy-embed.mjs && tsc --build src && tsc --build test",
     "clean": "rm -rf dist dist-test node_modules yarn.lock package-lock.json",
     "reset": "npm run clean && npm install && npm run build && npm test",
     "local": "node dist/env/local/local.js --seneca.log.warn",
