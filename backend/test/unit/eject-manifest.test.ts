@@ -33,6 +33,24 @@ const AGENDA = JSON.stringify({
 const build = (mode = 'snapshot') =>
   buildManifest({ agenda: AGENDA, mode, component: '/* component */' })
 
+// A conference carrying its own website, which is the ordinary case: the
+// nodeconf fixture has `w_site: 'https://www.nodeconf.eu/'`. Content links are
+// not runtime references, and the checks below have to tell them apart.
+const AGENDA_WITH_SITE = JSON.stringify({
+  ...JSON.parse(AGENDA),
+  conference: { ...JSON.parse(AGENDA).conference, w_site: 'https://www.nodeconf.eu/' },
+})
+
+/** Every reference the PAGE resolves while rendering: scripts, styles, images,
+ *  CSS urls. An <a href> is a content link the reader clicks, not one of these. */
+function runtimeRefs(html: string): string[] {
+  const out: string[] = []
+  for (const m of html.matchAll(/<(?:script|img|iframe|source)\b[^>]*\bsrc="([^"]*)"/g)) out.push(m[1])
+  for (const m of html.matchAll(/<link\b[^>]*\bhref="([^"]*)"/g)) out.push(m[1])
+  for (const m of html.matchAll(/url\((['"]?)([^)'"]*)\1\)/g)) out.push(m[2])
+  return out
+}
+
 describe('eject-manifest', () => {
   test('eject-manifest: a snapshot has exactly the eight SPEC 12 entries', () => {
     assert.deepEqual([...build().keys()].sort(), SECTION_12)
@@ -74,12 +92,31 @@ describe('eject-manifest', () => {
     assert.match(String(build().get('LICENSE')), /^MIT License/)
   })
 
-  test('eject-manifest: index.html loads a classic script and references nothing absolute', () => {
+  test('eject-manifest: index.html loads a classic script and resolves nothing absolute', () => {
     const html = String(build().get('index.html'))
     // Known-present first, so the absence checks below cannot pass vacuously.
     assert.match(html, /<script src="conf-agenda\.js"><\/script>/)
     assert.ok(!html.includes('type="module"'), 'a module script cannot load from file://')
-    assert.ok(!/https?:\/\//.test(html), 'no absolute reference')
+
+    // A RUNTIME reference is one the page resolves while rendering, and every
+    // one of those must be relative or the file:// promise is void. The blanket
+    // "no https:// anywhere in the file" check this replaces was wrong AND
+    // vacuous: the agenda is inlined into this page, so a conference carrying
+    // its own website broke it, and `tiny` only passed by having none.
+    const refs = runtimeRefs(html)
+    assert.deepEqual(refs, ['conf-agenda.js'], 'the only runtime reference')
+  })
+
+  test('eject-manifest: a conference website is content, not a runtime reference', () => {
+    const html = String(buildManifest({
+      agenda: AGENDA_WITH_SITE, mode: 'snapshot', component: '/* component */',
+    }).get('index.html'))
+
+    // Known-present: the site survives into the page, because stripping the
+    // programme's own links would misrepresent the conference.
+    assert.ok(html.includes('https://www.nodeconf.eu/'), 'the site is carried')
+    // And it is still not something the page loads.
+    assert.deepEqual(runtimeRefs(html), ['conf-agenda.js'])
   })
 
   test('eject-manifest: the inlined agenda cannot close its script tag', () => {
