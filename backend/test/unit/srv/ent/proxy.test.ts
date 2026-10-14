@@ -1,108 +1,54 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert'
 
-import { makeSeneca, as } from './ent.setup'
+import Seneca from 'seneca'
+
+import Model from '../../../../model/model.json'
+
+const { basic } = require('../../../../dist/env/shared/basic.js')
+const CagSrv = require('../../../../dist/srv/cag/cag-srv.js')
 
 
-// The browser proxies: aim:web,on:ent,cmd:* -> aim:ent,cmd:*
+// THE GENERIC BROWSER ENTITY PROXIES ARE ABSENT.
 //
-// A browser may only send aim:web, so these four actions ARE the entity
-// surface. Two things matter: they forward faithfully, and they are not a
-// way around the rules the real commands enforce.
+// This file is create-once @voxgig/build output (env/web/web_gen.js). The
+// generated version tested aim:web,on:ent,cmd:*, the generic entity proxies
+// SPEC 9 replaced with named intents, so it was rewritten to pin that they
+// stay gone. Do not delete it: the next model-build writes the generic
+// version back, and that version fails.
 //
-// Forwarding is checked on the action functions directly - they are plain
-// modules, so a fake `this` records what they post. No boot, no store, and
-// nothing that depends on which entities this model happens to have.
+// browser-surface.test.ts walks the DECLARED messages. This asks a booted
+// service what it actually ANSWERS, which only a running seneca can say.
 
-const ALICE = { id: 'u-alice', email: 'alice@ex.com' }
+const SRV: any = (Model as any).main.srv
 
-const OPS = ['list', 'load', 'save', 'remove']
 
-function proxyAction(op: string) {
-  return require('../../../../dist/srv/ent/web_cmd_' + op + '.js')()
-}
-
-// A `this` that records posts instead of sending them.
-function recorder(result: any = { ok: true }) {
-  const posts: any[] = []
-  return {
-    posts,
-    ctx: {
-      post: async (pattern: string, msg: any) => {
-        posts.push({ pattern, msg })
-        return result
-      },
-    },
-  }
+async function makeSeneca() {
+  const seneca = Seneca({ legacy: false, timeout: 5555, debug: { undead: true } })
+  seneca.context.model = Model
+  seneca.context.env = 'test'
+  seneca.context.srvname = 'cag'
+  seneca.test()
+  basic(seneca)
+  seneca.use(CagSrv)
+  await seneca.ready()
+  return seneca
 }
 
 
 describe('entity browser proxies', () => {
 
-  test('each proxy forwards to its own entity command', async () => {
-    for (const op of OPS) {
-      const rec = recorder()
-      await proxyAction(op).call(rec.ctx, { ent: 'x/y' })
-      assert.strictEqual(rec.posts.length, 1, op)
-      assert.strictEqual(rec.posts[0].pattern, 'aim:ent,cmd:' + op, op)
-    }
-  })
-
-
-  test('arguments travel through unchanged', async () => {
-    const rec = recorder()
-
-    await proxyAction('list').call(rec.ctx, { ent: 'x/y', q: { a: 1 } })
-    assert.deepStrictEqual(rec.posts[0].msg.q, { a: 1 })
-    assert.strictEqual(rec.posts[0].msg.ent, 'x/y')
-
-    await proxyAction('load').call(rec.ctx, { ent: 'x/y', id: 'e01' })
-    assert.strictEqual(rec.posts[1].msg.id, 'e01')
-
-    await proxyAction('save').call(rec.ctx, { ent: 'x/y', item: { t: 'v' } })
-    assert.deepStrictEqual(rec.posts[2].msg.item, { t: 'v' })
-
-    await proxyAction('remove').call(rec.ctx, { ent: 'x/y', id: 'e01' })
-    assert.strictEqual(rec.posts[3].msg.id, 'e01')
-  })
-
-
-  test('the result is returned unchanged', async () => {
-    const rec = recorder({ ok: true, list: [{ id: 'e01' }] })
-    const out = await proxyAction('list').call(rec.ctx, { ent: 'x/y' })
-    assert.deepStrictEqual(out, { ok: true, list: [{ id: 'e01' }] })
-
-    const failed = recorder({ ok: false, why: 'forbidden' })
-    const bad = await proxyAction('load').call(failed.ctx, { ent: 'x/y', id: 'e01' })
-    assert.deepStrictEqual(bad, { ok: false, why: 'forbidden' })
-  })
-
-
-  test('proxies enforce the same rules, not weaker ones', async () => {
+  test('known-PRESENT: the grid read proxy is registered', async () => {
     const seneca = await makeSeneca()
+    assert.ok(seneca.has('aim:web,on:cag,load:tree'), 'aim:web,on:cag,load:tree has no action')
+    await seneca.close()
+  })
 
-    // Unauthenticated: refused, exactly like the real commands.
-    for (const cmd of OPS) {
-      const out = await seneca.post({
-        aim: 'web', on: 'ent', cmd, ent: 'sys/user', id: 'x', item: {},
-      })
-      assert.strictEqual(out.ok, false, cmd)
-      assert.strictEqual(out.why, 'not-authenticated', cmd)
-    }
 
-    // The sys zone stays unreachable through the proxy.
-    const sys = await as(seneca, ALICE,
-      { aim: 'web', on: 'ent', cmd: 'list', ent: 'sys/apikey' })
-    assert.strictEqual(sys.ok, false)
-    assert.strictEqual(sys.why, 'unknown-entity')
-
-    // sys/user remains read-only through it too.
-    const write = await as(seneca, ALICE, {
-      aim: 'web', on: 'ent', cmd: 'save', ent: 'sys/user', item: { name: 'Hacked' },
-    })
-    assert.strictEqual(write.ok, false)
-    assert.strictEqual(write.why, 'read-only')
-
+  test('known-ABSENT: no generic entity proxy is registered or declared', async () => {
+    const seneca = await makeSeneca()
+    assert.ok(!seneca.has('aim:web,on:ent,cmd:list'), 'aim:web,on:ent,cmd:list has an action')
+    assert.strictEqual(SRV.ent, undefined, 'ent is declared in main.srv')
     await seneca.close()
   })
 })
