@@ -10,6 +10,7 @@ no memory.
 | Record | What it settles |
 |---|---|
 | [cloudflare-spike.md](cloudflare-spike.md) | Seneca 4 **does** run on Cloudflare Workers — per-request construction with `close()` in a `finally`. Reverses an earlier wrong verdict; PLATFORM.md §6 points here. Repro included. |
+| | Its recommendation 6 said to talk to the night-sky-logbook author first. That happened on 2026-10-14, and the answer is [../reference/cloudflare-workers-deployment.md](../reference/cloudflare-workers-deployment.md): the failure modes, with the fix for each. Read it before writing any Worker. |
 | [fixture-model-inheritance.md](fixture-model-inheritance.md) | Where `cag/fixture` comes from — the field-by-field mapping from `fixture-srv`'s `core/fixture`, and every deliberate departure (epoch ms, no `t_tzo`, `public` inverted to `private`, the `kind` code set, venue on the fixture). |
 | [ontology-mechanism.md](ontology-mechanism.md) | How `ontology.aon` actually works: `@"std/system"` is served from the engine, and relation edges come from **data**, not type declarations — declaring `cag/fixture contains cag/fixture` is a self-loop that `acyclic` correctly rejects. |
 | [calendar-ledger.md](calendar-ledger.md) | Where the sync ledger lives while `@seneca/calendar` catches up, why it answers `sys:calendar,*` rather than `concern:*`, why the fake provider is built **first**, and the two orderings that are load-bearing (cancellation before the hash; links scoped by `top_id`). |

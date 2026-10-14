@@ -63,7 +63,11 @@ operations:
       - Structure, convention or layout changes update AGENTS.md (and HANDOFF.md if the map shifts) in the same PR.
       - Never hand-edit .agents/skills/openspec-*, .claude/skills/openspec-* or .claude/commands/opsx/*; regenerate with `openspec update`.
       - Run `openspec validate --all --strict` before any PR touching openspec/, and quote any rule whose text contains a colon followed by a space.
+      - After editing config.yaml, check that every rule parses as a STRING, not merely that the file parses; an unquoted colon turns one rule into a map, the count stays the same, and the CLI then drops every rule in that operation.
       - Never read or write ~/.npmrc, .claude/settings.local.json or any local-env file.
+      - 'One apply session per working tree: a second chat on this repo waits, because two sessions share one checkout, one HEAD and one index.'
+      - Stage explicit paths, never `git add -A` or a bare `.`; on 2026-10-14 an `-A` swept another session's finished-but-uncommitted group 1 into an unrelated docs commit.
+      - Never reset or rebase a working tree another session is using; pause that session first.
       - Report the real result; a failing suite is a finding, not a reason to open the PR anyway.
       # PR and commit
       - Subject is Conventional Commits (feat:, fix:, chore:, ...) and leads with intent in one sentence.
@@ -120,6 +124,15 @@ operations:
       - The safety chain (cap, then redaction, then the ledger gate) sits as prior-wraps ABOVE the provider dispatch, so no provider can skip it.
       - A change to the ledger's shape is read against docs/decisions/calendar-ledger.md first; the two orderings recorded there are load-bearing.
       - A provider is proven against the recording fake and the plugin's injectable clock before anything reaches a real account.
+      # cloudflare (docs/reference/cloudflare-workers-deployment.md has the evidence for each)
+      - Neither `wrangler dev --local` nor `--dry-run` proves a Worker deploys; Cloudflare validates an upload by EXECUTING it, so only a real deploy catches an upload-validation error.
+      - A dependency carrying a `browser` field pulls its browser build into a Worker and fails at deploy only; pin the node entry through wrangler's `alias` with a bare package subpath.
+      - Never let a Worker resolve a `require()` into a gitignored build directory; esbuild resolves every branch whether or not it runs.
+      - A Cloudflare secret is set by NAME and prompted for separately; pasting `NAME=value` stores the pair as the name and leaks the value, because names are not secret.
+      - Anything sensitive is a Cloudflare secret, never a wrangler `vars` entry, which is committed plaintext.
+      - Re-run `wrangler logout && wrangler login` after any Cloudflare role change; a wrangler token snapshots its permissions at issuance.
+      - A Worker that throws during Seneca plugin init hangs its Durable Object silently and permanently; return a stub action reporting failure as a value instead.
+      - A Worker loads handlers from a map of literal requires, generated from the model, never a computed `require()`; the map is also what keeps Node-only code out of the bundle.
   archive:
     guidance:
       - Archive after the PR has merged; the change id in the PR body stays the record of the decision.
