@@ -213,9 +213,11 @@ after(async () => {
     // to the hosted path.
     assert.deepEqual(requests.sort(), ['/dist/conf-agenda.umd.cjs', '/given.html'])
 
+    // EXACTLY one `ready` each, not merely at least one. The pre-upgrade
+    // handover drew through the accessor and then again from connectedCallback,
+    // so `early` fired twice; a match() assertion could not see it.
     const log = await page.evaluate(() => document.getElementById('log').textContent)
-    assert.match(log, /early:ready/)
-    assert.match(log, /late:ready/)
+    assert.deepEqual(log.trim().split('\n').sort(), ['early:ready', 'late:ready'])
     assert.ok(!/early:error/.test(log), 'an agenda given before upgrade is not a missing source')
     assert.deepEqual(errors, [], 'no page errors')
     await page.close()

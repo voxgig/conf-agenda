@@ -76,6 +76,7 @@ operations:
       - Always `npm run model-build` before expecting any generated artifact or the web UI to reflect a model change.
       - Read `npm run model-build` as a pair, exit 0 AND the expected content present, because model.json is written BEFORE the generators run.
       - A green suite is not a built suite; `npm run build` is model-build then tsc, so a model-build failure leaves `npm test` passing on a stale dist-test.
+      - An embed change does not reach an ejected bundle until the BACKEND is rebuilt; backend/asset/conf-agenda.js is copied by the backend build, so rebuild it before judging bundle behaviour.
       - Never hand-edit a generated artifact under backend/gen/ or model/model.json; edit the .aon and rebuild.
       - Application code (backend/src/, web/, embed/) is create-once and yours to edit freely.
       - Prefer `npx voxgig-system add entity|srv|msg|field|env` over hand-editing model files; it appends jsonic blocks and preserves formatting.

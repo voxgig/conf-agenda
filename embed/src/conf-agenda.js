@@ -103,7 +103,12 @@ class ConfAgenda extends HTMLElement {
     if (Object.prototype.hasOwnProperty.call(this, 'agenda')) {
       const given = this.agenda
       delete this.agenda
+      // The accessor draws and emits `ready`, so this returns rather than
+      // falling through to show() below: doing both fired `ready` TWICE on
+      // every ejected page, which a host page acting on the event would run
+      // through twice.
       this.agenda = given
+      return
     }
     // An agenda the host page handed over is drawn as it is: no request.
     // An ejected bundle opened from file:// depends on this, since fetch()
@@ -160,7 +165,22 @@ class ConfAgenda extends HTMLElement {
   async load() {
     const url = this.source
     if (null == url) {
-      return this.fail('needs an org and conference, or a src')
+      // NOT a failure yet. A page may hand over an agenda through `.agenda`
+      // in a later script tag, which is the ordinary pattern now that the
+      // property exists, and declaring failure synchronously fired a false
+      // `error` event at every such page.
+      //
+      // WHILE THE DOCUMENT IS STILL PARSING, the verdict waits for
+      // DOMContentLoaded. A timer is not enough: the parser yields to the
+      // event loop between script tags, so a 0ms task fires BEFORE the inline
+      // script that would have handed the agenda over. Measured, not assumed.
+      // Once the document is parsed, an element added by script is configured
+      // in the same task, so a task boundary is the right granularity there.
+      //
+      // Either way an embed that really was given nothing still says so once
+      // the page has had its chance (SPEC 11.2).
+      this.verdictWhenIdle()
+      return
     }
     try {
       // No credentials: the embed runs on a third-party page and cannot carry
@@ -174,6 +194,24 @@ class ConfAgenda extends HTMLElement {
       // Degrade honestly (SPEC 11.2): a plain message, never an empty box and
       // never a stack trace on a stranger's site.
       this.fail('could not be loaded')
+    }
+  }
+
+  /** Report "no source" only once the page has had its chance to configure
+   *  this element: at DOMContentLoaded while parsing, otherwise next task. */
+  verdictWhenIdle() {
+    if (this.verdictPending) return
+    this.verdictPending = true
+    const verdict = () => {
+      this.verdictPending = false
+      if (null == this._agenda && null == this.source) {
+        this.fail('needs an org and conference, or a src')
+      }
+    }
+    if ('loading' === document.readyState) {
+      document.addEventListener('DOMContentLoaded', verdict, { once: true })
+    } else {
+      setTimeout(verdict, 0)
     }
   }
 
