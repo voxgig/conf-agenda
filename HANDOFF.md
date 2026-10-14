@@ -81,7 +81,7 @@ cd embed   && npm test
 ```
 
 Sign in as `alice@example.com` / `alice-pass-01`. Current green:
-**378 backend · 61 e2e · 24 web unit · 7 embed**.
+**378 backend · 64 e2e · 24 web unit · 8 embed**.
 
 `web/` has a unit runner now — `cd web && npm test` (`node --test test/*.test.mjs`) — because
 `buildInverse` is pure and the path resolution, the falsy-value case and the undo stack semantics
