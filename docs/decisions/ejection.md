@@ -49,8 +49,9 @@ egress should vendor a conference with a remote photo and open the result offlin
 
 ## Detached ships a fixture file, not a seeded runner
 
-`detached` adds `backend/`: the compiled local runner and CLI, the compiled model, the component,
-and the conference's live rows as `backend/fixture.json`. The local runner on its own
+`detached` puts the snapshot's eight entries under `site/` and adds `backend/`: the compiled local
+runner and CLI, the compiled model, the component, and the conference's live rows as
+`backend/fixture.json`. The local runner on its own
 (`backend/gen/env/local`) is just a script that runs the backend's build, and the runner starts
 with an empty in-memory store, so neither is enough to keep editing. The CLI already validates,
 publishes and ejects a fixture file without a server, so editing that file and running the shipped
@@ -58,5 +59,22 @@ CLI is how an organiser keeps going. That needed no new code path.
 
 Speaker emails are blanked in that fixture, because C6 holds in every mode. The model allows an
 empty email, so the file still loads, and validate reports each speaker as `speaker-no-email`, a
-warning that does not block publication. The bundle's README says not to host `backend/`, since the
-fixture carries draft and private sessions.
+warning that does not block publication.
+
+## The hostable files and the data are separate directories
+
+The fixture carries draft and private sessions: a private one never reaches the published snapshot
+(`src/lib/agenda.ts:77`), and the whole point of shipping the rows is that the organiser keeps the
+ones the public never saw. The first version left `backend/` beside `index.html` with a bold README
+line saying not to host it, which is a warning rather than a guard: one `aws s3 sync .` publishes
+the drafts.
+
+So the hostable files live under `site/` and nothing else in the bundle is hostable. This repo
+already holds that standard elsewhere, which is the argument that settled it: `asset-escapes-root`
+exists so a build cannot copy a private file into public output, and containment is judged on the
+canonical path after resolving symlinks rather than documented as a rule for authors to follow.
+Prose was below the bar the rest of the project keeps.
+
+The README is in both places on purpose. `site/README.md` is the snapshot's, describing the bundle
+to whoever is handed it; the root one adds the detached section, where an organiser opening the
+directory finds it.

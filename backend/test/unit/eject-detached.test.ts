@@ -9,6 +9,7 @@ import { builtinModules } from 'node:module'
 
 const {
   buildDetached, exportFixture, detachedReadme, RUNNER_DIRS, RUNNER_FILES, RUNNER_DEPS, BACKEND_DIR,
+  SITE_DIR,
 } = require('../../dist/lib/eject/detached.js')
 
 const SNAPSHOT = new Map<string, string>([
@@ -34,25 +35,33 @@ const build = (over: any = {}) => buildDetached({
 })
 
 describe('eject-detached', () => {
-  test('eject-detached: the key set is a strict superset of the snapshot key set', () => {
+  test('eject-detached: every snapshot entry is under site/, byte for byte', () => {
     const out = build()
     const keys = [...out.keys()]
-    for (const k of SNAPSHOT.keys()) assert.ok(out.has(k), 'snapshot entry kept: ' + k)
     assert.ok(keys.length > SNAPSHOT.size, 'strictly more entries')
 
-    // Every snapshot entry but the README is carried byte for byte.
     for (const [k, v] of SNAPSHOT) {
-      if ('README.md' !== k) assert.equal(out.get(k), v, k)
+      assert.ok(out.has(SITE_DIR + k), 'snapshot entry kept: ' + SITE_DIR + k)
+      assert.equal(out.get(SITE_DIR + k), v, SITE_DIR + k)
     }
+  })
 
-    // The additions all live under backend/, so no new top-level entry
-    // lands beside the files an organiser hosts.
-    const added = keys.filter((k) => !SNAPSHOT.has(k))
-    assert.deepEqual(added.filter((k) => !k.startsWith(BACKEND_DIR)), [])
+  test('eject-detached: nothing but site/ is hostable, and the data is not in it', () => {
+    const keys = [...build().keys()]
+
+    // THE WHOLE POINT of the two directories: `backend/fixture.json` carries
+    // sessions the published agenda withholds, so an organiser who uploads
+    // site/ cannot publish them by accident. Prose cannot enforce that.
+    const outside = keys.filter((k) => !k.startsWith(SITE_DIR))
+    assert.deepEqual(outside.filter((k) => !k.startsWith(BACKEND_DIR) && 'README.md' !== k), [])
+    assert.ok(!keys.some((k) => k.startsWith(SITE_DIR) && k.includes('fixture.json')),
+      'the editable fixture is never under site/')
     for (const k of ['backend/dist/env/local/local.js', 'backend/fixture.json',
       'backend/package.json', 'backend/run.sh']) {
-      assert.ok(out.has(k), k)
+      assert.ok(keys.includes(k), k)
     }
+    // Known-present: site/ really did get the hostable files.
+    assert.ok(keys.includes('site/index.html') && keys.includes('site/agenda.json'))
   })
 
   test('eject-detached: the README section names the runtime and what to supply', () => {
@@ -60,7 +69,10 @@ describe('eject-detached', () => {
     assert.ok(readme.startsWith('# Tiny Conf\n'), 'the snapshot README comes first')
     assert.match(readme, /## Running it yourself \(detached mode\)/)
     assert.match(readme, /targets Node\.js v24\.19\.0 or later/)
-    assert.match(readme, /Do not host `backend\/`/)
+    // The instruction is positive and names the directory, because that is
+    // what the two-directory layout buys: not a warning to obey, a path to use.
+    assert.match(readme, /Publish `site\/`\. Nothing else here is for hosting\./)
+    assert.match(readme, /private sessions the published agenda leaves out/)
     assert.match(readme, /You supply:/)
     assert.equal(detachedReadme('v24.19.0'), readme.slice('# Tiny Conf\n'.length))
   })

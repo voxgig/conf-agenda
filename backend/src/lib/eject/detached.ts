@@ -3,12 +3,22 @@
  * Detached is the snapshot bundle plus what an organiser needs to keep
  * editing without us: the compiled local runner, the CLI, the compiled model,
  * the component the CLI ejects with, and the conference's rows as a fixture
- * file the CLI reads. All of it goes under `backend/`, so the snapshot entries
- * keep their paths and the detached manifest is a strict superset.
+ * file the CLI reads.
  *
- * `backend/` is NOT for hosting. The fixture holds the editable programme,
- * drafts and private sessions included, so the README says to publish
- * everything except it.
+ * THE HOSTABLE FILES AND THE DATA ARE IN SEPARATE DIRECTORIES, `site/` and
+ * `backend/`, and that separation is the point. `backend/fixture.json` is the
+ * editable programme, so it holds sessions `agenda.json` deliberately
+ * withholds: a private one never reaches the published snapshot
+ * (`src/lib/agenda.ts:77`). Left beside `index.html`, one `aws s3 sync .`
+ * publishes them, and a README warning is not a guard. This repo already
+ * treats "a private file becomes a published one" structurally: it is why
+ * `asset-escapes-root` exists and why containment is judged after resolving
+ * symlinks. "Upload `site/`" cannot go wrong the same way.
+ *
+ * The README is deliberately in both places: `site/README.md` is the
+ * snapshot's, describing the bundle to whoever is handed it, and the root one
+ * adds the detached section, where an organiser opening the directory finds
+ * it.
  *
  * Speaker emails are blanked in the fixture (C6 holds in every mode). The
  * model permits an empty email (`valid: 'Empty'`), so the fixture still
@@ -21,6 +31,10 @@
 import { ASSETS_DIR, Manifest } from './manifest'
 
 export const BACKEND_DIR = 'backend/'
+
+/** Everything an organiser hosts. Nothing else in a detached bundle is for
+ *  hosting, which is why it is a directory rather than a warning. */
+export const SITE_DIR = 'site/'
 
 /** What the runner and the CLI load, relative to the backend directory. A
  *  directory entry ships every `.js` file under it; source maps and the
@@ -89,7 +103,12 @@ export function buildDetached(input: {
 
   const major = (/^v?(\d+)/.exec(node) || [])[1]
 
-  const out: Manifest = new Map(snapshot)
+  //// Every snapshot entry moves under site/ unchanged, so the hostable
+  //// bundle stays exactly the eight entries SPEC 12 names.
+  const out: Manifest = new Map()
+  for (const [path, content] of snapshot) {
+    out.set(SITE_DIR + path, content)
+  }
   out.set('README.md', String(snapshot.get('README.md') || '') + detachedReadme(node))
 
   for (const [path, content] of runner) {
@@ -128,8 +147,9 @@ export function detachedReadme(node: string): string {
     'It targets Node.js ' + node + ' or later, the version this bundle was ejected with.',
     'It needs no account, no API key and no conf-agenda service.',
     '',
-    '**Do not host `backend/`.** Publish everything else in this directory. `backend/fixture.json`',
-    'is the editable programme, including draft and private sessions.',
+    '**Publish `site/`. Nothing else here is for hosting.** That is why they are separate',
+    'directories: `backend/fixture.json` is the editable programme, so it holds the draft and',
+    'private sessions the published agenda leaves out. `site/` holds only what is already public.',
     '',
     'You supply:',
     '',
@@ -140,12 +160,14 @@ export function detachedReadme(node: string): string {
     '- Somewhere to keep `backend/fixture.json`. It is the copy that matters: the runner',
     '  keeps everything in memory and forgets it when it stops.',
     '',
-    'To edit, change `backend/fixture.json` and run these from this directory (the',
-    'directory holding `index.html`), so speaker photos resolve against `assets/`:',
+    'To edit, change `backend/fixture.json` and run these from `site/`, so speaker photos',
+    'resolve against its `assets/`:',
     '',
     '```',
-    'node backend/bin/conf-agenda.mjs validate backend/fixture.json',
-    'node backend/bin/conf-agenda.mjs eject backend/fixture.json --out ../agenda-new --mode detached',
+    'cd site',
+    'node ../backend/bin/conf-agenda.mjs validate ../backend/fixture.json',
+    'node ../backend/bin/conf-agenda.mjs eject ../backend/fixture.json \\',
+    '  --out ../../agenda-new --mode detached',
     '```',
     '',
     'To start the services themselves, run `sh backend/run.sh`. It starts with an empty',

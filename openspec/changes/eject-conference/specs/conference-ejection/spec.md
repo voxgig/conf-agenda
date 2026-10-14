@@ -97,11 +97,16 @@ existing `src`, `org` and `conference` attributes SHALL keep working unchanged.
 - **PROVEN BY** `embed/tool/size-check.mjs`, run by `embed` `npm test`
 
 ### Requirement: Detached mode adds a runnable backend
-The system SHALL write, for `mode: detached`, the snapshot bundle plus the artefacts needed to run
-the organiser's own instance, and its `README.md` SHALL say which runtime those artefacts target
-and what the organiser must supply.
+The system SHALL write, for `mode: detached`, the snapshot bundle under a `site/` directory plus
+the artefacts needed to run the organiser's own instance, and its `README.md` SHALL say which
+runtime those artefacts target and what the organiser must supply.
 
 #### Scenario: The detached bundle is a superset
 - **WHEN** a fixture is ejected in detached mode
-- **THEN** the manifest contains every snapshot entry plus the runner artefacts, and the README names the runtime
+- **THEN** the manifest contains every snapshot entry under `site/`, byte for byte, plus the runner artefacts, and the README names the runtime
 - **PROVEN BY** `backend/test/unit/srv-cag-eject.test.ts`
+
+#### Scenario: The editable programme is not in the hostable directory
+- **WHEN** a fixture is ejected in detached mode
+- **THEN** the rows the organiser keeps editing are outside `site/`, so hosting `site/` cannot publish a session the published agenda withholds
+- **PROVEN BY** `backend/test/unit/eject-detached.test.ts`

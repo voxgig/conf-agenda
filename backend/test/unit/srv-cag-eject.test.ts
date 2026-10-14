@@ -196,11 +196,13 @@ describe('srv-cag-eject', () => {
     assert.equal(detached.mode, 'detached')
 
     const keys = Object.keys(detached.manifest)
-    for (const k of SECTION_12) assert.ok(keys.includes(k), 'snapshot entry kept: ' + k)
-    for (const k of SECTION_12.filter((k) => 'README.md' !== k)) {
-      assert.deepEqual(detached.manifest[k], snapshot.manifest[k], k)
+    for (const k of SECTION_12) {
+      assert.ok(keys.includes('site/' + k), 'snapshot entry kept: site/' + k)
+      assert.deepEqual(detached.manifest['site/' + k], snapshot.manifest[k], k)
     }
     assert.ok(keys.length > SECTION_12.length)
+    // The editable fixture is outside the hostable directory, on purpose.
+    assert.ok(!keys.some((k) => k.startsWith('site/') && k.includes('fixture.json')))
     for (const k of ['backend/dist/env/local/local.js', 'backend/dist/srv/cag/cag-srv.js',
       'backend/bin/conf-agenda.mjs', 'backend/model/model.json', 'backend/asset/conf-agenda.js',
       'backend/package.json', 'backend/run.sh', 'backend/fixture.json']) {
@@ -210,7 +212,7 @@ describe('srv-cag-eject', () => {
     assert.ok(!keys.some((k) => k.startsWith('backend/dist/env/web/') || k.endsWith('.map')))
     assert.match(detached.manifest['README.md'], /targets Node\.js v\d+/)
 
-    const agenda = JSON.parse(detached.manifest['agenda.json'])
+    const agenda = JSON.parse(detached.manifest['site/agenda.json'])
     assert.equal(agenda.sessions.find((s: any) => 'seg_d1edge' === s.id).t_start, published)
 
     const fixture = JSON.parse(detached.manifest['backend/fixture.json'])
