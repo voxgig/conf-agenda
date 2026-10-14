@@ -1,6 +1,6 @@
 # Handoff — start here
 
-**As of 2026-10-12.** Written to be read cold, by a person or an assistant, with no memory of how
+**As of 2026-10-14.** Written to be read cold, by a person or an assistant, with no memory of how
 any of this got here. The reasoning lives in `docs/decisions/`; this is the map.
 
 **The rules are in `openspec/config.yaml` and the work is planned in `openspec/changes/`.** Every
@@ -21,7 +21,7 @@ grid (PR #18) are both on `main`. Every §13.1 binding for the grid now exists, 
 and all 14 §16.2 warnings fire, and the journey is drivable end to end through
 `window.seneca.post()` with no DOM interaction.
 
-**Stage 3 (§19.5) is next**, and most of it is unblocked: ejection (§12), the rest of the keyboard
+**Stage 3 (§19.5) has started.** Ejection (§12) is done in both modes. The rest is unblocked: the rest of the keyboard
 model (`/` instant search, bulk selection), embed breadth (all views, `::part()`, server-side
 theming, the size budget in CI), `clone:fixture`, agent skills, `llms.txt`, and the calendar
 breadth that can be proven offline (CalDAV with its §10.2 presets, the ICS-by-email fallback, RSVP
@@ -48,10 +48,10 @@ tracking, the calendar console, C6 to C9). Microsoft and Zoho wait on OAuth with
 | `P` and the publish confirmation | `plan:publish` diffs the snapshot publishing would write against the stored one, so the screen states the changes with verbs rather than a count. **Every §13.1 binding for the grid now exists.** |
 | Deleting a session | command bar only, confirmed in the toast, and it names `t` as the alternative |
 | The second MCP tool | `conf_agenda_session_find`, plus the first tests the MCP surface has ever had |
+| Ejection (§12) | `aim:cag,eject:fixture` and `conf-agenda eject`, `snapshot` and `detached`. The bundle renders from `file://` with every request blocked (`web/e2e/eject-offline.spec.js`, the promise itself), assets are vendored or the eject refuses, and no speaker email reaches any mode. See `docs/decisions/ejection.md` |
 
 | Not done, in rough order | |
 |---|---|
-
 | `provider:google` | Needs OAuth credentials that do not exist yet. Last among the OAuth providers **on purpose** — the machinery it plugs into is already proven by two providers that can be tested offline. |
 | Content | The public Astro page — **blocked**, see below; the `go` SDK — blocked on the SDK chain. |
 | **A workshop fixture** | No fixture carries `wrk` or outdoor sessions — the real NodeConf EU 2026 edition has neither, and SPEC §2's description of a country-house edition no longer matches the conference. See `docs/decisions/nodeconf-fixture.md`; needs a programme somebody has a copy of. |
@@ -64,7 +64,7 @@ tracking, the calendar console, C6 to C9). Microsoft and Zoho wait on OAuth with
 | | |
 |---|---|
 | `docs/decisions/calendar-ledger.md` | **The most important file in the repo.** The whole calendar design: why the ledger is shaped as it is, the two orderings that are load-bearing, the safety chain's placement, the queue, and everything deliberately *not* built. |
-| `docs/decisions/README.md` | Index of the other five records. |
+| `docs/decisions/README.md` | Index of the other records. |
 | `DEMO.md` | How to show the thing. Nine minutes, six surfaces, and what to say when asked. |
 | `AGENTS.md` | Conventions. |
 | `metsitaba/project-specs` | The specs. **Read-only — never open a PR against it.** Spec corrections get written up in `docs/decisions/` here and raised with the maintainer verbally. |
