@@ -57,7 +57,7 @@ operations:
       - A typo, a dependency bump or a one-line fix skips OpenSpec; its PR body says so.
       - Run `/opsx:verify <change-id>` once a group's tasks are done and fix every CRITICAL finding before opening the PR.
       - Verify's completeness dimension covers the current task group only; a later group's unchecked tasks are expected mid-stack and are not CRITICAL findings.
-      - A new test file goes at the top level of its test directory; the backend gate globs one level deep, so a test in a subdirectory never runs.
+      - The generated suites under backend/test/unit/srv/ and backend/test/unit/env/web/ are create-once @voxgig/build output, so edit one and never delete it; a deleted suite comes back in its generic, failing form on the next model-build.
       - Never write a PLAN-*.md, an ADR or any planning document outside openspec/; never cite one.
       - A decision record in docs/decisions/ explains WHY a design is shaped as it is and outlives the change; a proposal is the change. Neither replaces the other.
       - Structure, convention or layout changes update AGENTS.md (and HANDOFF.md if the map shifts) in the same PR.

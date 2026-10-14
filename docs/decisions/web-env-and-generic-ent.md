@@ -28,23 +28,27 @@ goes "directly through the concern". So the spec is not diverging from todo-app 
 is behind both. Closing that properly is a `@voxgig/build` change, which PLATFORM.md §1.2 already
 anticipates ("that admin-generation change is a `@voxgig/build` delta").
 
-## Generated test suites are excluded from the run
+## Generated test suites are rewritten, not excluded
 
 `model-build` also emits `test/unit/srv/{ent,api,auth}` and `test/unit/env/web`, which test the
-generated services against the generic-ent architecture. They fail here because those services are
-not declared.
+generated services against the generic-ent architecture. The emission is **create-once**:
+`web_gen.js:104-116` lists the six suites and `:191` skips any file that already exists. So a suite
+can be edited and stays edited, but a deleted one comes back in its generic form on the next build.
 
-`npm test` therefore globs `dist-test/unit/*.test.js` — this project's own suites — rather than
-`**`. This is scoping, not silencing: the one genuinely valuable test among them, the `aim:web`
-surface test PLATFORM.md §10 names by name, was **rewritten for the surface we actually have** and
-runs on every build, including the known-absent assertions.
+They used to be scoped out by a one-level glob, with `api-router` named by hand. That hid two
+suites that pass against the live `auth` service, and it meant any new test in a subdirectory never
+ran. Change `run-the-nested-test-suites` replaced the scoping with a recursive glob and rewrote the
+three suites that tested the removed surface:
 
-**One generated suite is worth keeping, and is named explicitly** in the test script:
-`dist-test/unit/env/web/api-router.test.js`. It passes 9/9 against our real `env/web/api.js`,
-covering the REST routing, key auth, status codes and result shaping with mock messages, and the
-one-level glob was scoping it out alongside the twelve that legitimately fail. Regenerated
-byte-identically on every `model-build` (verified by deleting it and rebuilding), so listing it is
-stable rather than a hostage to the generator.
+- `srv/auth/apikey` and `srv/auth/session` run as generated.
+- `srv/api/api` and `srv/ent/proxy` assert the generic surface is **absent** (no `api` or `ent` in
+  `main.srv`, no `aim:api` pattern, no registered `aim:web,on:ent,cmd:list`), each with a
+  known-present case so it cannot pass over an empty model. A suite that asserts the absence is
+  better than a deleted one: deletion is impossible, and the absence is the thing worth pinning.
+- `env/web/surface` keeps only its gateway allow-list test. Its model walk is done properly in
+  `browser-surface.test.ts`, which PLATFORM.md §10 names.
+- `env/web/api-router` passes 9/9 against our real `env/web/api.js` with mock messages. The mock
+  is the catch: the real `aim:api,on:ent` it stands in for is not declared (see HANDOFF.md).
 
 ## Vendored browser bundles
 
