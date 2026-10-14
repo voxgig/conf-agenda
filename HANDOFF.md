@@ -194,8 +194,15 @@ this machine (see the trap above), so `~/.local/bin/openspec` is a **symlink int
 `/opsx:*` command failing with `openspec: not found`; the fix is to recreate the symlink, or to
 run `npm install` at the repo root from a machine that can reach the registry.
 
-**`openspec validate --all --strict` does not parse `config.yaml`.** A colon followed by a space
-inside an unquoted YAML scalar makes the file unparseable, and the CLI then drops **every rule**
+**`openspec validate --all --strict` does not parse `config.yaml`,** and the failure is quieter
+than it looks. An unquoted colon followed by a space does **not** make the file unparseable: YAML
+reads that list item as a *map* instead of a string, the rule count stays identical, and the CLI
+drops **every rule in that operation** with one line on stderr while `validate` still passes.
+Counting the entries is therefore not a check. Assert every entry is a string, and read
+`openspec instructions apply --change <id> --json` for the real verdict: it prints
+`Guidance for operation 'apply' must be an array of strings, ignoring this operation's guidance`.
+Cost a live break on 2026-10-14, caught by that command and nothing else. The older wording below
+is kept because the fix is the same: quote the rule.
 with only a warning on stderr. Validation still passes. The real check is
 `openspec instructions proposal --change <id> --json`, which must come back with a non-empty
 `context` and `rules`.
@@ -203,6 +210,16 @@ with only a warning on stderr. Validation still passes. The real check is
 ---
 
 ## Open, and Jose's to do
+
+- **Workers Builds: the 0-second failure may be a PERMISSIONS artefact, not an empty build.** A
+  plain member role on the Cloudflare account hides the Builds section entirely and reports "No
+  builds exist yet", which is indistinguishable from no integration
+  (`docs/reference/cloudflare-workers-deployment.md` §0, §3.1). Richard has now granted Admin, so
+  re-check before acting on the theory below. Two things in this repo will break a Workers build
+  whatever the cause: the root `package.json` has **no `package-lock.json`** (so the build image
+  picks `bun install`, §3.3) and **no `build` or `deploy` script** (so the dashboard's command
+  fields fail with `Missing script`, §3.4). Both are consequences of adding a tooling-only root
+  package for the openspec CLI, and both need fixing before the integration is reconnected.
 
 - **Disconnect Workers Builds until Stage 4.** The `Workers Builds: conf-agenda` check is red on
   every PR and on `main`, and always has been - it first appears on `a789a5b` (PR #15); PR #14 has
