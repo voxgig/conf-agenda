@@ -1,11 +1,15 @@
 import { describe, test } from 'node:test'
 import assert from 'node:assert'
+import Fs from 'node:fs'
+import Path from 'node:path'
 
 // Top-level on purpose: `npm test` globs dist-test/unit/*.test.js one level
 // only, so a test under unit/lib/ would never run in the gate.
 
 const { buildManifest, MODES } = require('../../dist/lib/eject/manifest.js')
-const { GUARANTEES } = require('../../dist/lib/eject/readme.js')
+const { GUARANTEES, DORMANT_DEFAULT } = require('../../dist/lib/eject/readme.js')
+// The one definition of a runtime reference, shared with web/e2e/eject-offline.
+const { runtimeRefs } = require('../../dist/lib/eject/index_html.js')
 
 /** The eight entries SPEC 12 names for a snapshot bundle. */
 const SECTION_12 = [
@@ -41,15 +45,6 @@ const AGENDA_WITH_SITE = JSON.stringify({
   conference: { ...JSON.parse(AGENDA).conference, w_site: 'https://www.nodeconf.eu/' },
 })
 
-/** Every reference the PAGE resolves while rendering: scripts, styles, images,
- *  CSS urls. An <a href> is a content link the reader clicks, not one of these. */
-function runtimeRefs(html: string): string[] {
-  const out: string[] = []
-  for (const m of html.matchAll(/<(?:script|img|iframe|source)\b[^>]*\bsrc="([^"]*)"/g)) out.push(m[1])
-  for (const m of html.matchAll(/<link\b[^>]*\bhref="([^"]*)"/g)) out.push(m[1])
-  for (const m of html.matchAll(/url\((['"]?)([^)'"]*)\1\)/g)) out.push(m[2])
-  return out
-}
 
 describe('eject-manifest', () => {
   test('eject-manifest: a snapshot has exactly the eight SPEC 12 entries', () => {
@@ -90,6 +85,18 @@ describe('eject-manifest', () => {
       assert.ok(readme.includes(h), 'missing section: ' + h)
     }
     assert.match(String(build().get('LICENSE')), /^MIT License/)
+  })
+
+  test('eject-manifest: the README names the component\'s dormant hosted-path default', () => {
+    const readme = String(build().get('README.md'))
+    const section = readme.split('## What it does not do')[1]
+    assert.ok(section, 'the section exists')
+    assert.ok(section.includes(DORMANT_DEFAULT), 'the sentence is in that section')
+    // The URL it names is the one the component really carries.
+    const component = Fs.readFileSync(Path.join(process.cwd(), 'asset/conf-agenda.js'), 'utf8')
+    const url = DORMANT_DEFAULT.match(/https:\/\/[^`]+/)[0]
+    assert.ok(component.includes(url), 'the component carries ' + url)
+    assert.match(DORMANT_DEFAULT, /never does/)
   })
 
   test('eject-manifest: index.html loads a classic script and resolves nothing absolute', () => {

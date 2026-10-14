@@ -166,6 +166,61 @@ after(async () => {
     await page.close()
   })
 
+  // SPEC 12: an ejected bundle opened from file:// cannot fetch, so its page
+  // hands the component the agenda it already holds. The page is built here
+  // with agenda.json inlined, and loads the UMD build with a plain <script>,
+  // which is exactly how the ejected index.html does it.
+  test('a host page can supply the agenda, and no data request is made', async () => {
+    const agenda = readFileSync(join(ROOT, 'test/agenda.json'), 'utf8')
+    const html = [
+      '<!doctype html><meta charset="utf-8">',
+      '<conf-agenda id="early" view="grid"></conf-agenda>',
+      '<conf-agenda id="late" view="list"></conf-agenda>',
+      '<pre id="log"></pre>',
+      '<script id="data" type="application/json">' + agenda.replace(/</g, '\\u003c') + '</script>',
+      '<script>',
+      "  for (const k of ['ready', 'error']) document.addEventListener('conf-agenda:' + k,",
+      "    (e) => { document.getElementById('log').textContent += e.target.id + ':' + k + '\\n' })",
+      "  const data = () => JSON.parse(document.getElementById('data').textContent)",
+      // Before the component exists: lands on the un-upgraded element.
+      "  document.getElementById('early').agenda = data()",
+      '</script>',
+      '<script src="/dist/conf-agenda.umd.cjs"></script>',
+      // After it exists: goes through the accessor.
+      "<script>document.getElementById('late').agenda = data()</script>",
+    ].join('\n')
+
+    const page = await browser.newPage()
+    const errors = []
+    const requests = []
+    page.on('pageerror', (e) => errors.push(String(e)))
+    page.on('request', (r) => requests.push(new URL(r.url()).pathname))
+    await page.route(base + '/given.html', (r) =>
+      r.fulfill({ status: 200, contentType: 'text/html', body: html }))
+
+    await page.goto(base + '/given.html')
+    await page.waitForFunction(() =>
+      document.querySelector('#early')?.shadowRoot?.querySelector('table') &&
+      document.querySelector('#late')?.shadowRoot?.querySelector('.session'),
+    null, { timeout: 10000 })
+
+    const titles = await page.evaluate(() =>
+      [...document.querySelector('#early').shadowRoot.querySelectorAll('.session .title')]
+        .map((n) => n.textContent))
+    assert.ok(titles.includes('Opening Keynote'))
+
+    // The page and the component, nothing else: no agenda.json, and nothing
+    // to the hosted path.
+    assert.deepEqual(requests.sort(), ['/dist/conf-agenda.umd.cjs', '/given.html'])
+
+    const log = await page.evaluate(() => document.getElementById('log').textContent)
+    assert.match(log, /early:ready/)
+    assert.match(log, /late:ready/)
+    assert.ok(!/early:error/.test(log), 'an agenda given before upgrade is not a missing source')
+    assert.deepEqual(errors, [], 'no page errors')
+    await page.close()
+  })
+
   test('emits conf-agenda:ready', async () => {
     const { page } = await open()
     const log = await page.evaluate(() => document.getElementById('log').textContent)

@@ -11,6 +11,16 @@ export const GUARANTEES = [
   'This bundle is MIT licensed; see LICENSE.',
 ]
 
+/** The one absolute URL inside conf-agenda.js, explained. The component can
+ *  also fetch an agenda from the hosted service when a page names an org and
+ *  a conference, so it carries that address; the offline test's allowlist
+ *  cites this sentence as the reason the URL may appear in the bundle. */
+export const DORMANT_DEFAULT =
+  '`conf-agenda.js` contains the address of the hosted conf-agenda service ' +
+  '(`https://conf-agenda.voxgig.com/agenda/`), which it would fetch from only if a page ' +
+  'gave it an `org` and a `conference` instead of an agenda. `index.html` never does, ' +
+  'so nothing in this bundle is ever requested from it.'
+
 export function buildReadme(input: { title: string; slug: string }): string {
   const { title, slug } = input
   return [
@@ -58,6 +68,7 @@ export function buildReadme(input: { title: string; slug: string }): string {
     '- It does not change. Edits made after ejection are not in it.',
     '- It does not contact anything. No request leaves the page, so there is no live',
     '  "happening now" data from a server and no usage statistics.',
+    '- ' + DORMANT_DEFAULT,
     '- It does not contain speaker contact details. Email addresses are never published.',
     '- It does not edit. Editing needs a running backend (`--mode detached`).',
     '',

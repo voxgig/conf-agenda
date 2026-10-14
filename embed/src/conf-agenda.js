@@ -97,7 +97,37 @@ class ConfAgenda extends HTMLElement {
   connectedCallback() {
     if (!this.shadow) this.shadow = this.attachShadow({ mode: 'open' })
     this.mark = this.getAttribute('mark') || Math.random().toString(36).slice(2, 8)
-    this.load()
+    // A host page may set `.agenda` before this script has loaded. That lands
+    // as a plain own property on the not-yet-upgraded element and hides the
+    // accessor below, so lift it out and set it again through the accessor.
+    if (Object.prototype.hasOwnProperty.call(this, 'agenda')) {
+      const given = this.agenda
+      delete this.agenda
+      this.agenda = given
+    }
+    // An agenda the host page handed over is drawn as it is: no request.
+    // An ejected bundle opened from file:// depends on this, since fetch()
+    // is blocked there (SPEC 12).
+    if (null != this._agenda) this.show()
+    else this.load()
+  }
+
+  /**
+   * The published agenda. Set by load() from `src`, or by the host page
+   * directly with one it already has. Either way in, it is drawn the same.
+   */
+  get agenda() {
+    return this._agenda
+  }
+
+  set agenda(value) {
+    this._agenda = value
+    if (this.shadow && null != value) this.show()
+  }
+
+  show() {
+    this.draw()
+    this.emit('ready', { sessions: (this._agenda.sessions || []).length })
   }
 
   attributeChangedCallback(name, before, after) {
@@ -139,8 +169,6 @@ class ConfAgenda extends HTMLElement {
       if (!res.ok) throw new Error('HTTP ' + res.status)
       const body = await res.json()
       this.agenda = body && body.agenda ? body.agenda : body
-      this.draw()
-      this.emit('ready', { sessions: (this.agenda.sessions || []).length })
     } catch (err) {
       if (this.debug) console.error(TAG, err)
       // Degrade honestly (SPEC 11.2): a plain message, never an empty box and

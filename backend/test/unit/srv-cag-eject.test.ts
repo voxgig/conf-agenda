@@ -1,6 +1,7 @@
 import { describe, test } from 'node:test'
 import assert from 'node:assert'
 import Fs from 'node:fs'
+import Os from 'node:os'
 import Path from 'node:path'
 
 import Seneca from 'seneca'
@@ -22,20 +23,24 @@ const SECTION_12 = [
   'assets/', 'conf-agenda.js', 'index.html',
 ]
 
-async function makeSeneca() {
+async function makeSeneca(opts: { root?: string, fetch?: any, photos?: string[] } = {}) {
   const seneca = Seneca({ legacy: false, timeout: 5555, debug: { undead: true } })
-  seneca.context.model = Model
+  // The assets root is a model value; a test points it at its own directory.
+  const model = opts.root ? JSON.parse(JSON.stringify(Model)) : Model
+  if (opts.root) model.main.conf.assets.root = opts.root
+  seneca.context.model = model
   seneca.context.env = 'test'
   seneca.context.srvname = 'all'
   seneca.test()
   basic(seneca)
-  seneca.use(CagSrv)
+  seneca.use(CagSrv, opts.fetch ? { eject: { fetch: opts.fetch } } : {})
   seneca.use(AgendaSrv)
   await seneca.ready()
 
   for (const canon of CANONS) {
-    for (const row of TINY[canon]) {
-      await seneca.entity(canon).data$({ ...row, id$: row.id }).save$()
+    for (const [i, row] of TINY[canon].entries()) {
+      const photo = 'cag/speaker' === canon && opts.photos ? opts.photos[i] : undefined
+      await seneca.entity(canon).data$({ ...row, id$: row.id, ...(photo ? { photo } : {}) }).save$()
     }
   }
 
@@ -157,4 +162,85 @@ describe('srv-cag-eject', () => {
 
     await seneca.close()
   })
+
+  // tiny carries no photos, so these give its speakers one local and one
+  // remote, which is the shape a real programme has.
+  const root = Fs.mkdtempSync(Path.join(Os.tmpdir(), 'cag-eject-srv-'))
+  Fs.writeFileSync(Path.join(root, 'ada.jpg'), 'ada-bytes')
+  const REMOTE = 'https://cdn.example.test/grace.png'
+  const fakeFetch = (bodies: Record<string, string>) => {
+    const calls: string[] = []
+    const fetch = async (url: string) => {
+      calls.push(url)
+      if (null == bodies[url]) throw new Error('ENOTFOUND ' + url)
+      return { ok: true, status: 200, arrayBuffer: async () => new TextEncoder().encode(bodies[url]).buffer }
+    }
+    return { fetch, calls }
+  }
+
+  test('srv-cag-eject: assets are vendored and agenda.json points only at them', async () => {
+    assert.ok(2 <= TINY['cag/speaker'].length, 'two speakers to carry two photos')
+    const fake = fakeFetch({ [REMOTE]: 'grace-bytes' })
+    const seneca = await makeSeneca({ root, fetch: fake.fetch, photos: ['ada.jpg', REMOTE] })
+    await publish(seneca)
+
+    const out = await seneca.post('aim:cag,eject:fixture', { fixture_id: 'conf_tiny' })
+    assert.equal(out.ok, true, JSON.stringify(out))
+    assert.deepEqual(fake.calls, [REMOTE], 'the remote photo came through the injected fetcher')
+
+    const agenda = JSON.parse(out.manifest['agenda.json'])
+    const photos = agenda.speakers.map((s: any) => s.photo).filter(Boolean)
+    // Known-present: both photos made it to the published agenda at all.
+    assert.equal(photos.length, 2)
+    for (const p of photos) {
+      assert.match(p, /^assets\/[0-9a-f]{16}\.(jpg|png)$/, 'relative, under assets/: ' + p)
+      assert.ok(p in out.manifest, 'a matching assets/ entry for ' + p)
+    }
+    assert.ok(!out.manifest['agenda.json'].includes(REMOTE), 'no absolute asset URL survives')
+    assert.ok(!out.manifest['index.html'].includes(REMOTE), 'nor in the inlined copy')
+
+    const bytes = photos.map((p: string) => Buffer.from(out.manifest[p]).toString())
+    assert.deepEqual(bytes.sort(), ['ada-bytes', 'grace-bytes'])
+
+    await seneca.close()
+  })
+
+  test('srv-cag-eject: an asset that cannot be downloaded refuses, naming it, with no manifest', async () => {
+    const fake = fakeFetch({})
+    const seneca = await makeSeneca({ root, fetch: fake.fetch, photos: ['ada.jpg', REMOTE] })
+    await publish(seneca)
+
+    const out = await seneca.post('aim:cag,eject:fixture', { fixture_id: 'conf_tiny' })
+    assert.equal(out.ok, false)
+    assert.equal(out.why, 'asset-unavailable')
+    assert.equal(out.asset, REMOTE)
+    assert.equal(out.manifest, undefined)
+
+    await seneca.close()
+  })
+
+  test('srv-cag-eject: an asset symlinked out of the assets root refuses, uncopied', async () => {
+    const outside = Fs.mkdtempSync(Path.join(Os.tmpdir(), 'cag-eject-srv-out-'))
+    Fs.writeFileSync(Path.join(outside, 'secret.txt'), 'secret-bytes')
+    Fs.symlinkSync(Path.join(outside, 'secret.txt'), Path.join(root, 'sneaky.jpg'))
+    assert.ok(Fs.lstatSync(Path.join(root, 'sneaky.jpg')).isSymbolicLink())
+
+    // Publish with a contained photo, then point it through the symlink in
+    // the stored snapshot: publish refuses the escape itself, so this is the
+    // only way to reach eject with one, which is exactly what it must catch.
+    const seneca = await makeSeneca({ root, photos: ['ada.jpg'] })
+    await publish(seneca)
+    const snap = (await seneca.entity('cag/snapshot').list$({}))[0]
+    snap.agenda_json = snap.agenda_json.split('"ada.jpg"').join('"sneaky.jpg"')
+    await snap.save$()
+
+    const out = await seneca.post('aim:cag,eject:fixture', { fixture_id: 'conf_tiny' })
+    assert.equal(out.ok, false)
+    assert.equal(out.why, 'asset-escapes-root')
+    assert.equal(out.asset, 'sneaky.jpg')
+    assert.equal(out.manifest, undefined, 'nothing copied into a bundle')
+
+    await seneca.close()
+  })
 })
+

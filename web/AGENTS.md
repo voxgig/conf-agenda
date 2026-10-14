@@ -15,7 +15,10 @@ npm run e2e        # playwright e2e (headless; starts its own backend)
 
 E2e tests run headless Chromium with workers=1 against a shared backend —
 keep new specs independent of execution order but tolerant of shared seed
-data.
+data. The exception is `e2e/eject-offline.spec.js`, which runs in its own
+`offline` project: it ejects a bundle through the backend CLI into a temp
+directory and opens it from `file://` with every request outside the bundle
+aborted, so it uses no backend and no seeded row.
 
 ## Architecture in one paragraph
 
