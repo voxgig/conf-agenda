@@ -16,6 +16,7 @@ no memory.
 | [to-raise-upstream.md](to-raise-upstream.md) | **The running list of things that are not this project's to fix** — seven of them, each already worked around, ordered by what they unblock. Start here before a conversation with the maintainer. |
 | [nodeconf-fixture.md](nodeconf-fixture.md) | Why the realistic fixture is NodeConf EU **2026** even though SPEC §2 describes a multi-room country-house edition that no longer exists, what it deliberately does not carry about real people, and the two over-eager validation rules the real programme found. |
 | [editable-grid.md](editable-grid.md) | The segment intents and the undo contract: why `inverse` breaks `@voxgig/build` **as a false green**, why the browser store cannot invalidate the grid whatever is in its write list, save-time guards versus the publish gate, and the six rules an app-local undo log needs. |
+| [ejection.md](ejection.md) | Why an ejected bundle ships the embed's **UMD** build and inlines the agenda (a `file://` page can load neither a module script nor `fetch`), why the real remote-asset download is untested on this machine, and why detached mode ships a fixture file rather than a seeded runner. |
 | [web-env-and-generic-ent.md](web-env-and-generic-ent.md) | Why the generated generic `ent` service is never declared, why the generated test suites are out of the run, the vendored browser-store, and the still-open generic-admin gap. |
 
 Two of these record a mistake as well as a decision — the Cloudflare verdict that was wrong for a

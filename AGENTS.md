@@ -31,6 +31,8 @@ npm test              # unit tests (in-memory store, no externals)
 npm run model-check   # model consistency checks
 npm run local         # boot the backend locally
 npm run web           # boot backend + SPA on :50500, seeds itself
+node bin/conf-agenda.mjs eject <fixture.json> --out <dir> [--mode snapshot|detached]
+                      # write the SPEC 12 bundle; detached adds backend/ (runner, CLI, fixture)
 # dev REPL on conf.port.repl (default 50502) in local+web runners:
 #   npx seneca-repl telnet://localhost:50502   (REPL=false disables)
 

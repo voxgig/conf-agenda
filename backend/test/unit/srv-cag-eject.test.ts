@@ -148,17 +148,78 @@ describe('srv-cag-eject', () => {
     assert.ok(0 < emails.length)
     for (const e of emails) assert.match(e, /@/)
 
-    const out = await seneca.post('aim:cag,eject:fixture', { fixture_id: 'conf_tiny' })
-    assert.equal(out.ok, true)
-
-    // EVERY entry, not a named list: a file added later is swept too.
+    // EVERY entry of EVERY mode, not a named list: a file added later is
+    // swept too, and detached carries the speaker rows themselves.
     const leaks: string[] = []
-    for (const [path, content] of Object.entries(out.manifest)) {
-      for (const e of emails) {
-        if (String(content).includes(e)) leaks.push(path + ': ' + e)
+    for (const mode of ['snapshot', 'detached']) {
+      const out = await seneca.post('aim:cag,eject:fixture', { fixture_id: 'conf_tiny', mode })
+      assert.equal(out.ok, true, mode)
+      for (const [path, content] of Object.entries(out.manifest)) {
+        for (const e of emails) {
+          if (String(content).includes(e)) leaks.push(mode + ' ' + path + ': ' + e)
+        }
       }
     }
     assert.deepEqual(leaks, [], 'speaker email in the bundle')
+
+    await seneca.close()
+  })
+
+  test('srv-cag-eject: an absent mode is exactly snapshot', async () => {
+    const seneca = await makeSeneca()
+    await publish(seneca)
+
+    const absent = await seneca.post('aim:cag,eject:fixture', { fixture_id: 'conf_tiny' })
+    const snapshot = await seneca.post('aim:cag,eject:fixture', { fixture_id: 'conf_tiny', mode: 'snapshot' })
+    assert.equal(absent.ok, true)
+    assert.equal(absent.mode, 'snapshot')
+    assert.deepEqual(absent, snapshot)
+
+    await seneca.close()
+  })
+
+  test('srv-cag-eject: detached is a superset carrying the runner and the live tree', async () => {
+    const seneca = await makeSeneca()
+    await publish(seneca)
+
+    // Edit after publishing: the snapshot entries keep the published time,
+    // the fixture carries the edit, because that is what the organiser edits.
+    const seg = await seneca.entity('cag/fixture').load$('seg_d1edge')
+    const published = seg.t_start
+    seg.t_start = published + 3600000
+    seg.t_end = seg.t_start + 3600000
+    await seg.save$()
+
+    const snapshot = await seneca.post('aim:cag,eject:fixture', { fixture_id: 'conf_tiny' })
+    const detached = await seneca.post('aim:cag,eject:fixture', { fixture_id: 'conf_tiny', mode: 'detached' })
+    assert.equal(detached.ok, true, JSON.stringify(detached.why))
+    assert.equal(detached.mode, 'detached')
+
+    const keys = Object.keys(detached.manifest)
+    for (const k of SECTION_12) assert.ok(keys.includes(k), 'snapshot entry kept: ' + k)
+    for (const k of SECTION_12.filter((k) => 'README.md' !== k)) {
+      assert.deepEqual(detached.manifest[k], snapshot.manifest[k], k)
+    }
+    assert.ok(keys.length > SECTION_12.length)
+    for (const k of ['backend/dist/env/local/local.js', 'backend/dist/srv/cag/cag-srv.js',
+      'backend/bin/conf-agenda.mjs', 'backend/model/model.json', 'backend/asset/conf-agenda.js',
+      'backend/package.json', 'backend/run.sh', 'backend/fixture.json']) {
+      assert.ok(keys.includes(k), k)
+    }
+    // Known-absent: the web and lambda runners stay behind, and no source map.
+    assert.ok(!keys.some((k) => k.startsWith('backend/dist/env/web/') || k.endsWith('.map')))
+    assert.match(detached.manifest['README.md'], /targets Node\.js v\d+/)
+
+    const agenda = JSON.parse(detached.manifest['agenda.json'])
+    assert.equal(agenda.sessions.find((s: any) => 'seg_d1edge' === s.id).t_start, published)
+
+    const fixture = JSON.parse(detached.manifest['backend/fixture.json'])
+    assert.deepEqual(Object.keys(fixture).sort(), [...CANONS].sort())
+    assert.deepEqual(fixture['cag/fixture'].map((f: any) => f.id).sort(),
+      TINY['cag/fixture'].map((f: any) => f.id).sort())
+    assert.equal(fixture['cag/fixture'].find((f: any) => 'seg_d1edge' === f.id).t_start,
+      published + 3600000)
+    assert.equal(fixture['cag/speaker'].length, TINY['cag/speaker'].length)
 
     await seneca.close()
   })
