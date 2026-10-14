@@ -48,7 +48,7 @@ tracking, the calendar console, C6 to C9). Microsoft and Zoho wait on OAuth with
 | `P` and the publish confirmation | `plan:publish` diffs the snapshot publishing would write against the stored one, so the screen states the changes with verbs rather than a count. **Every §13.1 binding for the grid now exists.** |
 | Deleting a session | command bar only, confirmed in the toast, and it names `t` as the alternative |
 | The second MCP tool | `conf_agenda_session_find`, plus the first tests the MCP surface has ever had |
-| Ejection (§12) | `aim:cag,eject:fixture` and `conf-agenda eject`, `snapshot` and `detached`. The bundle renders from `file://` with every request blocked (`web/e2e/eject-offline.spec.js`, the promise itself), assets are vendored or the eject refuses, and no speaker email reaches any mode. See `docs/decisions/ejection.md` |
+| Ejection (§12) | `aim:cag,eject:fixture` and `conf-agenda eject`, `snapshot` and `detached`. Detached keeps the hostable `site/` and the editable `backend/` apart, because the fixture holds the drafts the published agenda withholds. The bundle renders from `file://` with every request blocked (`web/e2e/eject-offline.spec.js`, the promise itself), assets are vendored or the eject refuses, and no speaker email reaches any mode. See `docs/decisions/ejection.md` |
 
 | Not done, in rough order | |
 |---|---|
