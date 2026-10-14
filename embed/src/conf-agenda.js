@@ -97,7 +97,42 @@ class ConfAgenda extends HTMLElement {
   connectedCallback() {
     if (!this.shadow) this.shadow = this.attachShadow({ mode: 'open' })
     this.mark = this.getAttribute('mark') || Math.random().toString(36).slice(2, 8)
-    this.load()
+    // A host page may set `.agenda` before this script has loaded. That lands
+    // as a plain own property on the not-yet-upgraded element and hides the
+    // accessor below, so lift it out and set it again through the accessor.
+    if (Object.prototype.hasOwnProperty.call(this, 'agenda')) {
+      const given = this.agenda
+      delete this.agenda
+      // The accessor draws and emits `ready`, so this returns rather than
+      // falling through to show() below: doing both fired `ready` TWICE on
+      // every ejected page, which a host page acting on the event would run
+      // through twice.
+      this.agenda = given
+      return
+    }
+    // An agenda the host page handed over is drawn as it is: no request.
+    // An ejected bundle opened from file:// depends on this, since fetch()
+    // is blocked there (SPEC 12).
+    if (null != this._agenda) this.show()
+    else this.load()
+  }
+
+  /**
+   * The published agenda. Set by load() from `src`, or by the host page
+   * directly with one it already has. Either way in, it is drawn the same.
+   */
+  get agenda() {
+    return this._agenda
+  }
+
+  set agenda(value) {
+    this._agenda = value
+    if (this.shadow && null != value) this.show()
+  }
+
+  show() {
+    this.draw()
+    this.emit('ready', { sessions: (this._agenda.sessions || []).length })
   }
 
   attributeChangedCallback(name, before, after) {
@@ -130,7 +165,22 @@ class ConfAgenda extends HTMLElement {
   async load() {
     const url = this.source
     if (null == url) {
-      return this.fail('needs an org and conference, or a src')
+      // NOT a failure yet. A page may hand over an agenda through `.agenda`
+      // in a later script tag, which is the ordinary pattern now that the
+      // property exists, and declaring failure synchronously fired a false
+      // `error` event at every such page.
+      //
+      // WHILE THE DOCUMENT IS STILL PARSING, the verdict waits for
+      // DOMContentLoaded. A timer is not enough: the parser yields to the
+      // event loop between script tags, so a 0ms task fires BEFORE the inline
+      // script that would have handed the agenda over. Measured, not assumed.
+      // Once the document is parsed, an element added by script is configured
+      // in the same task, so a task boundary is the right granularity there.
+      //
+      // Either way an embed that really was given nothing still says so once
+      // the page has had its chance (SPEC 11.2).
+      this.verdictWhenIdle()
+      return
     }
     try {
       // No credentials: the embed runs on a third-party page and cannot carry
@@ -139,13 +189,29 @@ class ConfAgenda extends HTMLElement {
       if (!res.ok) throw new Error('HTTP ' + res.status)
       const body = await res.json()
       this.agenda = body && body.agenda ? body.agenda : body
-      this.draw()
-      this.emit('ready', { sessions: (this.agenda.sessions || []).length })
     } catch (err) {
       if (this.debug) console.error(TAG, err)
       // Degrade honestly (SPEC 11.2): a plain message, never an empty box and
       // never a stack trace on a stranger's site.
       this.fail('could not be loaded')
+    }
+  }
+
+  /** Report "no source" only once the page has had its chance to configure
+   *  this element: at DOMContentLoaded while parsing, otherwise next task. */
+  verdictWhenIdle() {
+    if (this.verdictPending) return
+    this.verdictPending = true
+    const verdict = () => {
+      this.verdictPending = false
+      if (null == this._agenda && null == this.source) {
+        this.fail('needs an org and conference, or a src')
+      }
+    }
+    if ('loading' === document.readyState) {
+      document.addEventListener('DOMContentLoaded', verdict, { once: true })
+    } else {
+      setTimeout(verdict, 0)
     }
   }
 

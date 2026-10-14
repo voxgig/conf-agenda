@@ -33,17 +33,18 @@ function surfacesOf(model: any): Record<string, string> {
   return out
 }
 
-//// One checker per call, bound to the configured assets root. The rules stay
-//// pure - the filesystem work happens here and reaches them as facts.
-let assetCheck: any = null
+//// One checker per configured assets root. The rules stay pure - the
+//// filesystem work happens here and reaches them as facts. Cached BY ROOT:
+//// a single cached checker kept the first root it saw for the life of the
+//// process, so a second instance with another root was checked against the
+//// wrong directory.
+const assetChecks = new Map<string, any>()
 function assetCheckFor(seneca: any) {
-  if (null == assetCheck) {
-    const conf = seneca.context && seneca.context.model
-      && seneca.context.model.main && seneca.context.model.main.conf
-    const root = (conf && conf.assets && conf.assets.root) || 'assets'
-    assetCheck = makeAssetCheck(root)
-  }
-  return assetCheck
+  const conf = seneca.context && seneca.context.model
+    && seneca.context.model.main && seneca.context.model.main.conf
+  const root = (conf && conf.assets && conf.assets.root) || 'assets'
+  if (!assetChecks.has(root)) assetChecks.set(root, makeAssetCheck(root))
+  return assetChecks.get(root)
 }
 
 module.exports = function make_validate_fixture() {

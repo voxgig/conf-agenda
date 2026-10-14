@@ -218,7 +218,8 @@ if ('eject' === cmd) {
 
   const out = await seneca.post('aim:cag,eject:fixture', { fixture_id, mode: opt('mode') })
   if (!out.ok) {
-    console.error('conf-agenda: ' + out.why + (out.fix ? ' (' + out.fix + ')' : ''))
+    console.error('conf-agenda: ' + out.why + (out.asset ? ': ' + out.asset : '') +
+      (out.fix ? ' (' + out.fix + ')' : ''))
     process.exit(1)
   }
 

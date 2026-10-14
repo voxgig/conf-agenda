@@ -9,6 +9,8 @@
  *   the embed's UMD build.
  * - fetch(). So the agenda is inlined into a JSON script block and handed to
  *   the element as a property, rather than named by a `src` it would fetch.
+ *   The property is set before the component script runs; the component
+ *   picks it up when it upgrades the element.
  *
  * Every reference is relative: the page works from any directory.
  */
@@ -20,6 +22,21 @@ function escapeHtml(s: string): string {
 /** JSON safe inside a <script> block: nothing in it can close the tag. */
 function inlineJson(json: string): string {
   return json.replace(/</g, '\\u003c')
+}
+
+/**
+ * Every reference a page RESOLVES while rendering: script, image, iframe and
+ * source `src`, `<link href>`, and CSS `url()`. An `<a href>` is a content
+ * link the reader clicks, not one of these. The bundle's file:// promise is
+ * that every one of these is relative; the unit suite and the offline e2e
+ * test both judge it with this one definition.
+ */
+export function runtimeRefs(html: string): string[] {
+  const out: string[] = []
+  for (const m of html.matchAll(/<(?:script|img|iframe|source)\b[^>]*\bsrc="([^"]*)"/g)) out.push(m[1])
+  for (const m of html.matchAll(/<link\b[^>]*\bhref="([^"]*)"/g)) out.push(m[1])
+  for (const m of html.matchAll(/url\((['"]?)([^)'"]*)\1\)/g)) out.push(m[2])
+  return out
 }
 
 export function buildIndexHtml(input: { title: string; agenda_json: string }): string {
@@ -37,11 +54,13 @@ export function buildIndexHtml(input: { title: string; agenda_json: string }): s
     '<h1>' + title + '</h1>',
     '<conf-agenda id="agenda"></conf-agenda>',
     '<script id="agenda-data" type="application/json">' + inlineJson(input.agenda_json) + '</script>',
-    '<script src="conf-agenda.js"></script>',
+    // Handed over BEFORE the component loads, so the element is never seen
+    // without data: set after, it would first report a missing source.
     '<script>',
     "document.getElementById('agenda').agenda =",
     "  JSON.parse(document.getElementById('agenda-data').textContent)",
     '</script>',
+    '<script src="conf-agenda.js"></script>',
     '</body>',
     '</html>',
     '',

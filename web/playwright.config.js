@@ -21,6 +21,9 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      // The offline bundle test runs in its own project: it is the one spec
+      // that must run with all network blocked, and it uses no backend.
+      testIgnore: /eject-offline\.spec\.js/,
       use: {
         ...devices['Desktop Chrome'],
         // Self-contained chromium (no system chrome / no desktop): install
@@ -30,6 +33,18 @@ export default defineConfig({
         // cached browser build does not match the npm package's expected
         // revision (WSL, where the download is slow enough to be worth
         // reusing). Unset everywhere else, so CI is unaffected.
+        launchOptions: {
+          args: ['--no-sandbox'],
+          executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || undefined,
+        },
+      },
+    },
+    {
+      name: 'offline',
+      testMatch: /eject-offline\.spec\.js/,
+      use: {
+        ...devices['Desktop Chrome'],
+        offline: true,
         launchOptions: {
           args: ['--no-sandbox'],
           executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || undefined,
