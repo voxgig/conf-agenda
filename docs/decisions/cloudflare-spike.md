@@ -139,3 +139,58 @@ flag the mixed module form.
 6. **Talk to the night-sky-logbook author before starting.** They have solved every one of these
    problems already and the handler-map issue (fix 3) is unsolved for `@voxgig/build`-generated
    apps generally, which is a shared platform concern rather than a conf-agenda one.
+
+---
+
+## Addendum, 2026-10-16: the public read path, running
+
+The spike proved Seneca runs on Workers. The first thing actually built on that proof does not use
+it, and the numbers are why.
+
+**What runs.** `backend/src/env/cloudflare/worker.ts` serves `/agenda/<org>/<slug>.{json,ics,csv}`
+from a Workers KV namespace holding the exact `agenda_json` string `publish:fixture` froze, under
+the same `org_id:slug` key `cag/snapshot` uses. Verified end to end under `wrangler dev --local`
+against a seeded `tiny` snapshot: all three formats answer, an unknown extension is 404 naming the
+format, an unseeded slug is 404 `not-published`, and an off-route path is 404 with no KV read.
+
+**The measurement, and the point of the whole design.**
+
+| | TTFB |
+|---|---|
+| min | 8.9ms |
+| median | **13.3ms** |
+| p95 | 16.6ms |
+| max | 27.3ms |
+
+Twenty requests, local, against SPEC §17's **200ms** budget. Compare the 135 to 155ms this file
+measured for constructing Seneca, loading plugins and reaching `ready()`: a Seneca instance in
+front of this path would have spent **roughly ten times the entire cost of serving the request**,
+to compose nothing. The published agenda is a frozen string and a key lookup, so the Worker
+contains no Seneca, no gateway, no store and no auth, and
+`test/unit/worker-agenda.test.ts` holds the module graph to that with a known-present and a
+known-absent case.
+
+This is a local figure. `wrangler dev --local` simulates KV, so it is a floor rather than a
+real-world number, and edge cache behaviour cannot be observed at all. Those land with the first
+real deploy, which §19.6 expects.
+
+**It also pays off in CI.** The repo-root build is `wrangler deploy --dry-run`, and it needs no
+backend or embed install, because the Worker's only project import is `src/lib/ics.ts` and that
+has no dependencies. The bundle is 8.66 KiB, 3.15 KiB gzipped.
+
+**One implementation of the feeds, proven rather than asserted.** The Worker's `.ics` and `.csv`
+came back byte-identical to the CLI's `feed` command, which goes through `aim:agenda,get:feed`.
+Both call the same `buildIcs`/`buildCsv`. The unit suite asserts it; this confirmed it through the
+real Worker runtime.
+
+**The KV binding is declared in the model.** `model/env.aon` carries `kv_binding` and `kv_id`, and
+`backend/tm/env/cloudflare/wrangler.toml.frag` renders them, because `gen/` is rewritten by every
+`model-build` and `@voxgig/build`'s own fragment has no binding slot. Nothing hand-edits a
+generated file. `kv_id` is the placeholder `agenda-local`: fine for local dev, and a real namespace
+id is needed before anything deploys.
+
+**What is still missing before a deploy means anything.** Nothing writes a published snapshot into
+KV. Publishing writes `cag/snapshot` through the entity store, and the KV write is its own design
+question (a `sys:provider` writer, `@seneca/kv-store` from `SenecaCloudflareKVStore`, or an
+explicit push command). Deployed today, the Worker would answer `not-published` for everything.
+That, not any Cloudflare permission, is the real blocker on a useful deployment.
