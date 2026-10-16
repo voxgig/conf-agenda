@@ -45,6 +45,7 @@ npm run build && npm test     # test = build + size budget + render suite
 npm run size                  # the size budget on its own (tool/size-check.mjs)
 
 # repo root (tooling only)
+npm run build                 # wrangler dry-run of the Worker: what Cloudflare Workers Builds runs
 openspec validate --all --strict
 ```
 
