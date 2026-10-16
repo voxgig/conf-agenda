@@ -59,10 +59,11 @@ flowchart TB
 ```mermaid
 flowchart LR
   model[(model.json)]
+  model --> env_cloudflare[env cloudflare]
   model --> env_local[env local]
   model --> env_web[env web]
 ```
 
-Active environments: `local`, `web`.
+Active environments: `cloudflare`, `local`, `web`.
 
 See also: [entities](entities.md) · [messages](messages.md).

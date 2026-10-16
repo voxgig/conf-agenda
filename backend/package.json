@@ -51,7 +51,8 @@
     "@types/express": "5.0.6",
     "@types/node": "^26.1.1",
     "@voxgig/build": "4.16.0",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "wrangler": "4.130.0"
   },
   "bin": {
     "conf-agenda": "bin/conf-agenda.mjs"

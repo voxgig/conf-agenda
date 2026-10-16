@@ -795,6 +795,11 @@
       }
     },
     "env": {
+      "cloudflare": {
+        "active": true,
+        "kv_binding": "AGENDA",
+        "kv_id": "agenda-local"
+      },
       "local": {
         "active": true
       },
