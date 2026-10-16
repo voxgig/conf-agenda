@@ -211,35 +211,42 @@ with only a warning on stderr. Validation still passes. The real check is
 
 ## Open, and Jose's to do
 
-- **Workers Builds: the 0-second failure may be a PERMISSIONS artefact, not an empty build.** A
-  plain member role on the Cloudflare account hides the Builds section entirely and reports "No
-  builds exist yet", which is indistinguishable from no integration
-  (`docs/reference/cloudflare-workers-deployment.md` §0, §3.1). Richard has now granted Admin, so
-  re-check before acting on the theory below. Two things in this repo will break a Workers build
-  whatever the cause: the root `package.json` has **no `package-lock.json`** (so the build image
-  picks `bun install`, §3.3) and **no `build` or `deploy` script** (so the dashboard's command
-  fields fail with `Missing script`, §3.4). Both are consequences of adding a tooling-only root
-  package for the openspec CLI, and both need fixing before the integration is reconnected.
+- **Workers Builds: DIAGNOSED on 2026-10-16, and the old advice below was wrong twice over.**
+  The integration is live and has been all along. It runs on every push, branches included, and it
+  is connected from **Richard's** Cloudflare account (`7bfad364890d882de616c187873a3aee`), not
+  Jose's (`0eea17179e115954177ae5bd5aa2383e`). Jose is a member of both and can switch accounts in
+  the dashboard, but an account-owned API token is bound to the account that created it, so a token
+  made in Jose's account gets `Authentication error [code: 10000]` against the Worker. A token for
+  it has to be created while switched to Richard's account, or be a User API token covering both.
 
-- **Disconnect Workers Builds until Stage 4.** The `Workers Builds: conf-agenda` check is red on
-  every PR and on `main`, and always has been - it first appears on `a789a5b` (PR #15); PR #14 has
-  no checks at all, so the Cloudflare GitHub App was connected between them. It is **not** a
-  regression and it does not block a merge: #15 and #16 both merged with it red, and GitHub still
-  reports `MERGEABLE`.
+  **The build log says exactly why it fails**, and it is the two things
+  `docs/reference/cloudflare-workers-deployment.md` predicted, both confirmed:
 
-  It fails in **0 seconds** with no log and creates no deployment, because there is nothing to
-  build: no root `wrangler.toml`, `cloudflare:` is commented out in `model/env.aon`, and
-  `gen/env/` holds only `local` and `aws`. The one `wrangler.toml` in the repo is the `cf-spike`
-  worker under `docs/decisions/cloudflare-spike/`. Cloudflare deployment is Stage 4 (§19.6); the
-  integration was simply connected ahead of the work.
+  ```
+  Detected the following tools from environment: bun@1.2.15, nodejs@24.18.0
+  Installing project dependencies: bun install
+  Saved lockfile
+  + @fission-ai/openspec@1.12.0
+  71 packages installed
+  Executing user build command: npm run build
+  npm error Missing script: "build"
+  Failed: error occurred while running build command
+  ```
 
-  Fix: **Cloudflare dashboard -> Workers & Pages -> `conf-agenda` -> Settings -> Build ->
-  disconnect the Git repository.** Do it there, not in GitHub, so the app stays installed for any
-  other voxgig repo. Reconnect at Stage 4, when `docs/decisions/cloudflare-spike.md`'s blockers
-  are dealt with - the gateway is not on npm, `cookie` needs pinning to 0.6.0, `@seneca/reload`
-  must be off for Workers, and the handler-map problem is unsolved for `@voxgig/build` apps.
+  `bun` because the root has no `package-lock.json` (§3.3), and `Missing script` because the root
+  `package.json` has no `build` script (§3.4). Note that `bun install` **succeeded**: the lockfile
+  is a determinism problem, not the failure. The failure is the missing script, and the root
+  `package.json` exists at all only because the openspec CLI is pinned there.
 
-  A red check that means nothing on every PR is how a red check that means something gets missed.
+  **Do NOT just add a `build` script to make it green.** The Worker is wired to
+  `agenda.voxgig.com` with "Automatic deployment on upload", and the dashboard's **Deploy command**
+  field is not visible from here. If it runs `wrangler deploy`, the first successful build
+  publishes. Read the Build command and Deploy command values off
+  `Settings -> Build` in Richard's account before touching the scripts. That is the one piece of
+  information blocking this, and it is in a dashboard rather than the repo.
+
+  Nothing is deployed today: Invocations, CPU time and Errors are all 0 over 24 hours.
+
 - **Seven things to raise with Richard verbally** — all of them written up, with the evidence, in
   **`docs/decisions/to-raise-upstream.md`**. Read that rather than this line. In short:
   `inverse: Skip({})` in `@voxgig/build` (it breaks `model-build` as a *false green*, and we carry
