@@ -2,11 +2,13 @@
   "name": "conf-agenda-root",
   "private": true,
   "version": "0.0.0",
-  "description": "Root tooling only: pins the OpenSpec CLI that serves the openspec/ store. The four parts (backend, web, embed, sdk) install and run independently; this is not an npm workspace.",
+  "description": "Root tooling only: pins the OpenSpec CLI that serves the openspec/ store, and carries the build Cloudflare Workers Builds runs from the repo root. The four parts (backend, web, embed, sdk) install and run independently; this is not an npm workspace.",
   "scripts": {
-    "openspec": "openspec"
+    "openspec": "openspec",
+    "build": "wrangler deploy --dry-run --config backend/gen/env/cloudflare/wrangler.toml"
   },
   "devDependencies": {
-    "@fission-ai/openspec": "1.12.0"
+    "@fission-ai/openspec": "1.12.0",
+    "wrangler": "4.130.0"
   }
 }

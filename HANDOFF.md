@@ -187,6 +187,13 @@ real REST request finds no action. `env/web/api-router.test.ts` passes 9/9 only 
 that message. Open for José: route REST onto the named intents, or drop the REST layer until it
 has a design.
 
+**A documentary dependency pin desynchronises a committed lockfile.** `wrangler` was added to
+`backend/package.json` as a record of the intended version, with no way to regenerate
+`backend/package-lock.json` (npm cannot reach the registry here). That alone breaks `npm ci`
+("package.json and package-lock.json are not in sync") and makes `npm install` in `backend/` try
+to fetch it and time out. It is removed; the pin lives in the root `package.json`, where wrangler
+is genuinely installed and used by the build. **Never add a dependency you cannot also lock.**
+
 **The `openspec` CLI is borrowed, not installed.** `npm install` cannot reach the registry from
 this machine (see the trap above), so `~/.local/bin/openspec` is a **symlink into
 `~/cp_rocket/node_modules/.bin/openspec`**, version 1.12.0, pinned for the record in the root
@@ -238,12 +245,26 @@ with only a warning on stderr. Validation still passes. The real check is
   is a determinism problem, not the failure. The failure is the missing script, and the root
   `package.json` exists at all only because the openspec CLI is pinned there.
 
-  **Do NOT just add a `build` script to make it green.** The Worker is wired to
-  `agenda.voxgig.com` with "Automatic deployment on upload", and the dashboard's **Deploy command**
-  field is not visible from here. If it runs `wrangler deploy`, the first successful build
-  publishes. Read the Build command and Deploy command values off
-  `Settings -> Build` in Richard's account before touching the scripts. That is the one piece of
-  information blocking this, and it is in a dashboard rather than the repo.
+  **The dashboard settings, read on 2026-10-16:** Build command `npm run build`, **Deploy command
+  `npm run build`**, Root directory `/`, build token `agenda01`, no build variables. The Deploy
+  command is a copy of the build, so **Workers Builds cannot deploy anything today** and simply
+  runs the build twice. Accidental, and for now exactly what is wanted.
+
+  **The repo side is fixed** (root `npm run build` is `wrangler deploy --dry-run` over
+  `backend/gen/env/cloudflare/wrangler.toml`). It needs no backend or embed install, because the
+  Worker imports only `src/lib/ics.ts` and that has no dependencies: a payoff of keeping Seneca out
+  of the Worker that shows up in CI.
+
+  **A green check here means the Worker BUNDLES, not that it deploys.** Cloudflare validates an
+  upload by executing it, and `--dry-run` never uploads
+  (`docs/reference/cloudflare-workers-deployment.md` §0). An unused import is also elided by
+  TypeScript before esbuild sees it, so a dependency that is imported and never used cannot fail
+  this check. Verified both ways on 2026-10-16: a used import of a missing module exits 1 with
+  `Could not resolve`, an unused one does not.
+
+  **When deployment is actually wanted**, add a root `deploy` script running `wrangler deploy`, and
+  ask Richard to change the dashboard's Deploy command to `npm run deploy`. Not before: there is no
+  KV write path yet, so a deployed Worker would serve a hand-seeded snapshot.
 
   Nothing is deployed today: Invocations, CPU time and Errors are all 0 over 24 hours.
 
