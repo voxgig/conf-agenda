@@ -21,6 +21,20 @@ grid (PR #18) are both on `main`. Every §13.1 binding for the grid now exists, 
 and all 14 §16.2 warnings fire, and the journey is drivable end to end through
 `window.seneca.post()` with no DOM interaction.
 
+**Stage 4 (§19.6) has started too, ahead of Stage 3 finishing, because deployment was asked for.**
+The public read path runs on a Cloudflare Worker: `/agenda/<org>/<slug>.{json,ics,csv}` served from
+a KV namespace, no Seneca in the request path. Verified under `wrangler dev --local` with TTFB at a
+**13.3ms median and 27.3ms max** against §17's 200ms budget, and the feeds byte-identical to
+`aim:agenda,get:feed`. **Nothing is deployed**: the Workers Builds deploy command is a
+`wrangler deploy --dry-run`, so CI proves the Worker bundles and uploads nothing. Numbers and
+reasoning in `docs/decisions/cloudflare-spike.md`'s 2026-10-16 addendum.
+
+Three things stand between that and a useful deployment, and only one is ours: **the KV write
+path** (nothing puts a published snapshot into KV, so a deployed Worker answers `not-published` for
+everything). The other two are Richard's: a **real KV namespace id** in his account to replace the
+`agenda-local` placeholder, and **Cloudflare Access** in front of `agenda.voxgig.com`, which bounces
+anonymous requests to SSO and would make the public agenda unreadable by the embed (§9.1, §11.2).
+
 **Stage 3 (§19.5) has started.** Ejection (§12) is done in both modes. The rest is unblocked: the rest of the keyboard
 model (`/` instant search, bulk selection), embed breadth (all views, `::part()`, server-side
 theming, the size budget in CI), `clone:fixture`, agent skills, `llms.txt`, and the calendar

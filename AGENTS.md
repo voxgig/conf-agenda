@@ -47,6 +47,13 @@ npm run size                  # the size budget on its own (tool/size-check.mjs)
 # repo root (tooling only)
 npm run build                 # wrangler dry-run of the Worker: what Cloudflare Workers Builds runs
 openspec validate --all --strict
+
+# the Worker, locally (nothing is deployed; --local simulates KV)
+P=.wrangler-local; C=backend/gen/env/cloudflare/wrangler.toml
+wrangler kv key put --local --persist-to $P --binding AGENDA --config $C \
+  "<org_id>:<slug>" --path <snapshot.json>      # seed: publish --json writes that file
+wrangler dev --local --persist-to $P --config $C --port 8799
+# BOTH need the same --persist-to, or dev cannot see what the put wrote.
 ```
 
 ## Layout
@@ -57,7 +64,9 @@ openspec validate --all --strict
 | `backend/src/srv/<srv>/` | service actions; a model message maps to the file named after its LAST pattern pair (`save:item` → `save_item.ts`) |
 | `backend/src/concern/` | cross-service concerns (`CalendarSync/`, `FixtureTree/`) |
 | `backend/src/lib/` | pure helpers (`publish_diff.ts`, `contrast.ts`, `assets.ts`, `eventspec.ts`) |
-| `backend/src/env/` | runtime entries (`shared`/`local`/`lambda`/`web`) |
+| `backend/src/env/` | runtime entries (`shared`/`local`/`lambda`/`web`/`cloudflare`) |
+| `backend/src/env/cloudflare/worker.ts` | the public read path at the edge. **Create-once**: edit it, never delete it, or model-build writes the generic 501 stub back |
+| `backend/tm/env/cloudflare/` | project template fragments shadowing `@voxgig/build`'s, so `gen/env/cloudflare/wrangler.toml` can carry a KV binding without being hand-edited |
 | `backend/build/` | local model-build generators, including `msg_meta.js` |
 | `backend/bin/conf-agenda.mjs` | the CLI (`validate`, `publish`, `feed`, `eject`) |
 | `backend/mcp/server.mjs` | the read-only MCP server, four §14 tools |
