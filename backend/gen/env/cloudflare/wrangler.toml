@@ -4,7 +4,10 @@
 # no KV namespace binding. gen/env/cloudflare/wrangler.toml is rewritten by
 # every model-build, so the binding is declared in model/env.aon (kv_binding,
 # kv_id) and rendered here rather than hand-added to the generated file.
-name = "conf-agenda-backend"
+# The name must match the dashboard Worker exactly (cloudflare-workers-
+# deployment.md 3.6). It is `conf-agenda`: a mismatch makes Workers Builds
+# override it and offer a PR to "fix" the config.
+name = "conf-agenda"
 main = "../../../src/env/cloudflare/worker.ts"
 compatibility_date = "2026-01-01"
 

@@ -245,10 +245,21 @@ with only a warning on stderr. Validation still passes. The real check is
   is a determinism problem, not the failure. The failure is the missing script, and the root
   `package.json` exists at all only because the openspec CLI is pinned there.
 
-  **The dashboard settings, read on 2026-10-16:** Build command `npm run build`, **Deploy command
-  `npm run build`**, Root directory `/`, build token `agenda01`, no build variables. The Deploy
-  command is a copy of the build, so **Workers Builds cannot deploy anything today** and simply
-  runs the build twice. Accidental, and for now exactly what is wanted.
+  **The dashboard settings, read on 2026-10-16:** Build command `npm run build`, Deploy command
+  `npm run build`, Root directory `/`, build token `agenda01`, no build variables.
+
+  **There is a THIRD command the settings page does not show**, and it is what actually fails on a
+  branch. Build and Deploy run for the production branch; a **Version command** runs for every
+  other branch, and ours is Cloudflare's default `npx wrangler versions upload`
+  (`docs/reference/cloudflare-workers-deployment.md` §3.4, §3.5). It runs from the repo root with
+  no `--config`, finds no wrangler config there, and dies with `Missing entry-point to Worker
+  script`. So a branch build now reads: build **succeeds**, version upload fails. On `main` the
+  Deploy command is a copy of the build, so both steps pass.
+
+  Fixing the branch case is Richard's dashboard, not the repo: blank the Version command, or point
+  it at a script that passes `--config`. Do not make a root wrangler config just to satisfy it:
+  that would start uploading a version on every branch push, against a KV namespace id that is
+  still a placeholder.
 
   **The repo side is fixed** (root `npm run build` is `wrangler deploy --dry-run` over
   `backend/gen/env/cloudflare/wrangler.toml`). It needs no backend or embed install, because the
@@ -265,6 +276,16 @@ with only a warning on stderr. Validation still passes. The real check is
   **When deployment is actually wanted**, add a root `deploy` script running `wrangler deploy`, and
   ask Richard to change the dashboard's Deploy command to `npm run deploy`. Not before: there is no
   KV write path yet, so a deployed Worker would serve a hand-seeded snapshot.
+
+  **The Worker name must match the dashboard Worker.** The generated config said
+  `conf-agenda-backend` while CI expected `conf-agenda`, and Workers Builds overrode it with a
+  warning that it "will attempt to open a pull request to resolve this config name mismatch"
+  (§3.6). Fixed in `backend/tm/env/cloudflare/wrangler.toml.frag`: the name is `$$name$$`, with no
+  suffix.
+
+  One harmless warning stays in the CI log: `Cannot find base config file
+  "@tsconfig/node16/tsconfig.json"`, because the root build installs no backend dependencies and
+  does not need to. esbuild warns and carries on. Do not chase it.
 
   Nothing is deployed today: Invocations, CPU time and Errors are all 0 over 24 hours.
 
