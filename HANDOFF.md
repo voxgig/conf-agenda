@@ -29,6 +29,26 @@ a KV namespace, no Seneca in the request path. Verified under `wrangler dev --lo
 `wrangler deploy --dry-run`, so CI proves the Worker bundles and uploads nothing. Numbers and
 reasoning in `docs/decisions/cloudflare-spike.md`'s 2026-10-16 addendum.
 
+**There are two routes to a deployed Worker, and only one of them needs anybody's permission.**
+
+| | Jose's own Cloudflare account | The voxgig account (`7bfad364...`) |
+|---|---|---|
+| Needs | nothing: create a KV namespace, a token and a Worker, deploy from a laptop | a real KV namespace id, Access turned off or bypassed, and the dashboard Deploy command changed |
+| URL | a `workers.dev` subdomain | `agenda.voxgig.com`, which already exists |
+| Blocked on | nobody | Richard |
+| Good for | proving the whole chain for real, including the edge TTFB and cache numbers §19.6 says can only be measured deployed | the actual product URL |
+
+The own-account route is also what `docs/reference/cloudflare-workers-deployment.md` §0 recommends
+for testing: deploy to a throwaway Worker on another account rather than the real one. Moving to
+the voxgig account afterwards is a config change, not a rebuild.
+
+**The questions for Richard, when the voxgig account is wanted:** a KV namespace id; whether
+Cloudflare Access can come off `agenda.voxgig.com` or needs a bypass policy for `/agenda/*` (§9.1
+makes `get:agenda` the one unauthenticated message and §11.2 has the embed reading it anonymously
+from third-party pages, so SSO in front of it defeats both); the dashboard Deploy command, which is
+a copy of the build and so can never publish; and the Version command, which is Cloudflare's
+default `npx wrangler versions upload` and fails on every branch.
+
 Three things stand between that and a useful deployment, and only one is ours: **the KV write
 path** (nothing puts a published snapshot into KV, so a deployed Worker answers `not-published` for
 everything). The other two are Richard's: a **real KV namespace id** in his account to replace the
