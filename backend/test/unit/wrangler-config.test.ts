@@ -16,7 +16,7 @@ const CF: any = (Model as any).main.env.cloudflare
 
 // Splits a wrangler.toml into its tables, keyed by header ('' is the top
 // level). An array-of-tables header ([[x]]) keys as 'x' too; this file has at
-// most one of each.
+// most one of each. A bare boolean is kept as its text.
 function tables(text: string): Record<string, Record<string, string>> {
   const out: Record<string, Record<string, string>> = { '': {} }
   let cur = out['']
@@ -28,8 +28,8 @@ function tables(text: string): Record<string, Record<string, string>> {
       cur = out[head[1]] = {}
       continue
     }
-    const kv = /^([A-Za-z_]+)\s*=\s*"([^"]*)"$/.exec(line)
-    if (kv) cur[kv[1]] = kv[2]
+    const kv = /^([A-Za-z_]+)\s*=\s*(?:"([^"]*)"|(true|false))$/.exec(line)
+    if (kv) cur[kv[1]] = kv[2] ?? kv[3]
   }
   return out
 }
@@ -60,6 +60,18 @@ describe('wrangler-config', () => {
       T['env.own.kv_namespaces'].id,
       T['env.voxgig.kv_namespaces'].id,
     )
+  })
+
+  test('[env.voxgig] keeps agenda.voxgig.com as a Custom Domain', () => {
+    const route = T['env.voxgig.routes']
+    assert.ok(route, `no [[env.voxgig.routes]] in ${CONFIG}`)
+    assert.equal(route.pattern, CF.voxgig_domain)
+    assert.equal(route.pattern, 'agenda.voxgig.com')
+    assert.equal(route.custom_domain, 'true')
+    assert.equal(T['env.voxgig'].workers_dev, 'false')
+
+    // Known absent: the scratch target serves on workers.dev, with no domain.
+    assert.equal(T['env.own.routes'], undefined)
   })
 
   test('the top level names no account and keeps the local namespace', () => {

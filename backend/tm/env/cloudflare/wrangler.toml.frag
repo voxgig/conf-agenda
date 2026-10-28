@@ -43,6 +43,8 @@ id = "$$own_kv_id$$"
 [env.voxgig]
 name = "$$name$$"
 account_id = "$$voxgig_account_id$$"
+# The dashboard has workers.dev disabled on this Worker; keep it that way.
+workers_dev = false
 
 [env.voxgig.vars]
 NODE_ENV = "production"
@@ -50,3 +52,9 @@ NODE_ENV = "production"
 [[env.voxgig.kv_namespaces]]
 binding = "$$kv_binding$$"
 id = "$$voxgig_kv_id$$"
+
+# A Custom Domain, not a route, as the dashboard shows it. Declared here so a
+# deploy keeps it attached rather than relying on dashboard state.
+[[env.voxgig.routes]]
+pattern = "$$voxgig_domain$$"
+custom_domain = true
