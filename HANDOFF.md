@@ -284,10 +284,11 @@ with only a warning on stderr. Validation still passes. The real check is
   script`. So a branch build now reads: build **succeeds**, version upload fails. On `main` the
   Deploy command is a copy of the build, so both steps pass.
 
-  Fixing the branch case is the dashboard, not the repo (the deploy change's group 2): blank the Version command, or point
-  it at a script that passes `--config`. Do not make a root wrangler config just to satisfy it:
-  that would start uploading a version on every branch push, against a KV namespace id that is
-  still a placeholder.
+  **Fixed in the dashboard on 2026-10-28: the Version command is `npm run build`**, the same
+  dry-run as the Build command, so a branch build proves the Worker bundles and uploads nothing.
+  The field cannot be left blank. Do not make a root wrangler config to satisfy the default
+  instead: that would upload a version of the production Worker, bound to the live namespace, on
+  every branch push.
 
   **The repo side is fixed** (root `npm run build` is `wrangler deploy --dry-run` over
   `backend/gen/env/cloudflare/wrangler.toml`). It needs no backend or embed install, because the
