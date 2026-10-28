@@ -2,9 +2,10 @@
 //
 //   node tool/edge-smoke.mjs <base-url> [--expect <snapshot.json>] [--key <org>/<slug>]
 //
-// Always: an unpublished slug answers 404 not-published, an off-route path
-// answers 404, and no response is a redirect (an Access login in front of
-// /agenda/* breaks SPEC 9.1 and 11.2). With --expect, the seeded agenda too:
+// Always: an unpublished slug answers 404 not-published, an off-route path is
+// refused (404 from the Worker, or an Access login where the host keeps one),
+// and nothing under /agenda/ is a redirect or an Access login (SPEC 9.1 and
+// 11.2 need it anonymous). With --expect, the seeded agenda too:
 // json byte for byte against the file, ics and csv served inline, and the
 // TTFB median against SPEC 17's 200ms. --key defaults to the nodeconf
 // fixture's org_id:slug. Exits 1 if any check fails.
@@ -42,19 +43,32 @@ function check(ok, what, detail = '') {
   if (!ok) failed++
 }
 
+function accessLogin(res) {
+  const loc = res.headers.get('location') || ''
+  const auth = res.headers.get('www-authenticate') || ''
+  return /cloudflareaccess\.com/.test(loc) || /cloudflare-access/i.test(auth)
+}
+
 // No cookies, and redirects seen rather than followed, so a login redirect
-// fails the check instead of quietly landing on the login page.
+// fails the check instead of quietly landing on the login page. Only /agenda/
+// must be anonymous: the rest of a host may keep its login.
 async function get(path) {
   const t0 = performance.now()
   const res = await fetch(origin + path, { redirect: 'manual' })
   const ttfb = performance.now() - t0
   const body = Buffer.from(await res.arrayBuffer())
+  if (!path.startsWith('/agenda/')) return { res, body, ttfb }
+
   const loc = res.headers.get('location') || ''
   check(
     !(300 <= res.status && res.status < 400),
     'no redirect on ' + path,
     loc ? res.status + ' to ' + new URL(loc, origin).host : '',
   )
+  // Access can also refuse in place, without a redirect.
+  const auth = res.headers.get('www-authenticate') || ''
+  check(!/cloudflare-access/i.test(auth), 'no Access login on ' + path,
+    auth ? res.status + ' ' + auth.slice(0, 40) : '')
   return { res, body, ttfb }
 }
 
@@ -67,7 +81,7 @@ check(
 )
 
 const off = await get('/not-an-agenda')
-check(404 === off.res.status, 'off-route path is 404', String(off.res.status))
+check(404 === off.res.status || accessLogin(off.res), 'off-route path is refused', String(off.res.status))
 
 if (null != expectFile) {
   const want = Fs.readFileSync(expectFile)

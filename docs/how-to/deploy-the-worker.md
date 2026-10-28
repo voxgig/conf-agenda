@@ -84,8 +84,9 @@ node backend/tool/edge-smoke.mjs https://conf-agenda-own.jose-perigolo.workers.d
   --expect /tmp/nodeconf.json
 ```
 
-It checks that an unpublished slug answers `404 not-published`, an off-route path answers `404`,
-and nothing redirects (an Access login in front of `/agenda/*` would). With `--expect`, it also
+It checks that an unpublished slug answers `404 not-published`, an off-route path is refused (a
+`404`, or the Access login on a host that keeps one), and nothing under `/agenda/` redirects or
+asks for an Access login. With `--expect`, it also
 checks that the agenda comes back byte for byte, the `.ics` and `.csv` feeds are served inline,
 and the TTFB median is under SPEC §17's 200ms. It exits 1 if any check fails.
 

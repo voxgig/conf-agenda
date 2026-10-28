@@ -1,6 +1,6 @@
 # Handoff — start here
 
-**As of 2026-10-14.** Written to be read cold, by a person or an assistant, with no memory of how
+**As of 2026-10-28.** Written to be read cold, by a person or an assistant, with no memory of how
 any of this got here. The reasoning lives in `docs/decisions/`; this is the map.
 
 **The rules are in `openspec/config.yaml` and the work is planned in `openspec/changes/`.** Every

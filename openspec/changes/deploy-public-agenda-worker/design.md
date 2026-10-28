@@ -88,6 +88,8 @@ every branch).
 **5. Hand-seed `nodeconf`, written as a how-to.** (User's choice.) The runbook in
 `docs/how-to/deploy-the-worker.md` is: `node backend/bin/conf-agenda.mjs publish
 backend/test/fixtures/nodeconf/nodeconf.json --json > <snapshot.json>`, then
+`truncate -s -1 <snapshot.json>` to drop the newline `console.log` adds (KV must hold the exact
+bytes publishing froze), then
 `wrangler kv key put --remote --env own --binding AGENDA --config <C>
 "org_nearform:nodeconf-eu-2026" --path <snapshot.json>`. The key is `org_id:slug` from the
 fixture's root row (`id: nceu2026, org_id: org_nearform, slug: nodeconf-eu-2026`), the same key
@@ -151,11 +153,13 @@ which confirms Jose's role on Richard's account.
 - Known-absent half: add `account_id = "$$own_account_id$$"` to the fragment's top level, rebuild,
   watch it fail, then restore.
 - Script assertion: remove `--env voxgig` from the root `deploy` script, watch it fail, then restore.
-- `edge-smoke.mjs` byte comparison: run it with `--expect` pointing at the `tiny` snapshot instead
-  of `nodeconf`, and watch it exit non-zero.
-- `edge-smoke.mjs` redirect check: point it at a one-line local `node:http` server that answers
+- `edge-smoke.mjs` byte comparison: run it with `--expect` pointing at a file that is not the
+  seeded snapshot, and watch it exit non-zero. (`tiny` cannot be that file: its deliberate room
+  clash blocks publishing, so it prints an error, not a snapshot.)
+- `edge-smoke.mjs` login check: point it at a one-line local `node:http` server that answers
   every request with a 302 to `https://x.cloudflareaccess.com/`, and watch it exit non-zero naming
-  the redirect. Local, so nothing leaves the machine.
+  the redirect. Then again with a server answering 401 and a `www-authenticate: Cloudflare-Access`
+  header, and watch it name Access. Local, so nothing leaves the machine.
 - The bare-deploy refusal is itself the bite check for Decision 3.
 
 ## Risks / Trade-offs
