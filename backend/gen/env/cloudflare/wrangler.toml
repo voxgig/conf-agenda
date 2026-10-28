@@ -18,3 +18,35 @@ NODE_ENV = "production"
 [[kv_namespaces]]
 binding = "AGENDA"
 id = "agenda-local"
+
+# Deploy targets, one per Cloudflare account. A deploy names one with
+# --env (the root deploy scripts do); a bare deploy uses the top level above,
+# whose placeholder namespace Cloudflare refuses at upload.
+#
+# [vars] and kv_namespaces are not inherited by an environment, so each
+# restates them. `name` is stated too: without it wrangler appends the env
+# name, and voxgig must deploy as the dashboard Worker's exact name (3.6).
+
+# Jose's account: a scratch Worker on workers.dev.
+[env.own]
+name = "conf-agenda-own"
+account_id = "0eea17179e115954177ae5bd5aa2383e"
+
+[env.own.vars]
+NODE_ENV = "production"
+
+[[env.own.kv_namespaces]]
+binding = "AGENDA"
+id = "e3ca06e60bde4048a41917ea9d1e135e"
+
+# The voxgig account: the product, agenda.voxgig.com.
+[env.voxgig]
+name = "conf-agenda"
+account_id = "7bfad364890d882de616c187873a3aee"
+
+[env.voxgig.vars]
+NODE_ENV = "production"
+
+[[env.voxgig.kv_namespaces]]
+binding = "AGENDA"
+id = "agenda-voxgig-pending"

@@ -798,7 +798,11 @@
       "cloudflare": {
         "active": true,
         "kv_binding": "AGENDA",
-        "kv_id": "agenda-local"
+        "kv_id": "agenda-local",
+        "own_account_id": "0eea17179e115954177ae5bd5aa2383e",
+        "own_kv_id": "e3ca06e60bde4048a41917ea9d1e135e",
+        "voxgig_account_id": "7bfad364890d882de616c187873a3aee",
+        "voxgig_kv_id": "agenda-voxgig-pending"
       },
       "local": {
         "active": true

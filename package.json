@@ -5,7 +5,9 @@
   "description": "Root tooling only: pins the OpenSpec CLI that serves the openspec/ store, and carries the build Cloudflare Workers Builds runs from the repo root. The four parts (backend, web, embed, sdk) install and run independently; this is not an npm workspace.",
   "scripts": {
     "openspec": "openspec",
-    "build": "wrangler deploy --dry-run --config backend/gen/env/cloudflare/wrangler.toml"
+    "build": "wrangler deploy --dry-run --config backend/gen/env/cloudflare/wrangler.toml",
+    "deploy:own": "wrangler deploy --env own --config backend/gen/env/cloudflare/wrangler.toml",
+    "deploy": "wrangler deploy --env voxgig --config backend/gen/env/cloudflare/wrangler.toml"
   },
   "devDependencies": {
     "@fission-ai/openspec": "1.12.0",

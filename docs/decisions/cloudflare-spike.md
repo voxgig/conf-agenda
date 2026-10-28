@@ -194,3 +194,41 @@ KV. Publishing writes `cag/snapshot` through the entity store, and the KV write 
 question (a `sys:provider` writer, `@seneca/kv-store` from `SenecaCloudflareKVStore`, or an
 explicit push command). Deployed today, the Worker would answer `not-published` for everything.
 That, not any Cloudflare permission, is the real blocker on a useful deployment.
+
+## Addendum, 2026-10-28: the public read path, deployed
+
+The Worker is deployed to Jose's account as `conf-agenda-own`, at
+`https://conf-agenda-own.jose-perigolo.workers.dev`, serving the NodeConf EU 2026 snapshot,
+seeded into KV by hand (`docs/how-to/deploy-the-worker.md`). Measured with
+`backend/tool/edge-smoke.mjs` from WSL in Thailand. Every request was served by Cloudflare's
+Bangkok location (`cf-ray: ...-BKK`).
+
+| Run | First request | Median of the next 20 | Max of the next 20 |
+|---|---|---|---|
+| Right after the first deploy | 233.8ms | 19.7ms | 38.4ms |
+| Same Worker, new process | 71.3ms | 19.7ms | 39.3ms |
+| Same Worker, new process | 20.2ms | 18.8ms | 25.4ms |
+| Right after a redeploy | 198.8ms | 21.6ms | 36.7ms |
+
+A cold `curl` (its own DNS, TCP and TLS) reached its first byte in 94ms.
+
+**The steady state is a tenth of §17's 200ms budget**, and close to the local figure above
+(13.3ms). The edge adds about 6ms here.
+
+**The first request after a deploy is not.** It took 199 to 234ms both times, at or over the
+budget. That is the Worker starting cold at that location, plus the first KV read there. It
+happened only right after a deploy: a fresh connection to a warm Worker took 20 to 94ms. A
+real visitor would hit this only if they were the first one at a location after a deploy, or after
+the Worker went idle there long enough to be evicted. This is worth knowing before §17's budgets
+are asserted in CI: a check that measures only the first request would flap.
+
+**One location is not every reader.** These are figures from Bangkok to Bangkok. They are not a
+global number.
+
+**A deploy that names no target is refused, and that is proven.** A bare `wrangler deploy`
+fails twice over. Without an account, wrangler refuses to choose between the two:
+`More than one account available but unable to select one in non-interactive mode`. With one,
+Cloudflare refuses the upload: `KV namespace 'agenda-local' is not valid [code: 10042]`. Nothing
+landed (`This Worker does not exist on your account [code: 10007]`).
+
+Edge caching is still not measured, because the Worker has no cache layer in front of KV.

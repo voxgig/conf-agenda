@@ -46,6 +46,11 @@ npm run size                  # the size budget on its own (tool/size-check.mjs)
 
 # repo root (tooling only)
 npm run build                 # wrangler dry-run of the Worker: what Cloudflare Workers Builds runs
+npm run deploy:own            # deploy the Worker to Jose's account (conf-agenda-own, workers.dev)
+npm run deploy                # deploy it to the voxgig account (agenda.voxgig.com)
+                              # a bare `wrangler deploy` is refused on purpose: docs/how-to/deploy-the-worker.md
+node backend/tool/edge-smoke.mjs <url> [--expect <snapshot.json>]
+                              # smoke-check a deployed Worker: status, bytes, headers, no login, TTFB
 openspec validate --all --strict
 
 # the Worker, locally (nothing is deployed; --local simulates KV)

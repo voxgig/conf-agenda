@@ -23,37 +23,30 @@ and all 14 §16.2 warnings fire, and the journey is drivable end to end through
 
 **Stage 4 (§19.6) has started too, ahead of Stage 3 finishing, because deployment was asked for.**
 The public read path runs on a Cloudflare Worker: `/agenda/<org>/<slug>.{json,ics,csv}` served from
-a KV namespace, no Seneca in the request path. Verified under `wrangler dev --local` with TTFB at a
-**13.3ms median and 27.3ms max** against §17's 200ms budget, and the feeds byte-identical to
-`aim:agenda,get:feed`. **Nothing is deployed**: the Workers Builds deploy command is a
-`wrangler deploy --dry-run`, so CI proves the Worker bundles and uploads nothing. Numbers and
-reasoning in `docs/decisions/cloudflare-spike.md`'s 2026-10-16 addendum.
+a KV namespace, no Seneca in the request path. **It is deployed on Jose's account** as
+`conf-agenda-own`, at `https://conf-agenda-own.jose-perigolo.workers.dev`, serving the NodeConf EU
+2026 snapshot. Measured there: a **19.7ms median TTFB** against §17's 200ms, but about 200 to
+234ms on the first request after a deploy, while the Worker starts cold. Figures and caveats in
+`docs/decisions/cloudflare-spike.md`'s 2026-10-28 addendum, steps in
+`docs/how-to/deploy-the-worker.md`. Change: `openspec/changes/deploy-public-agenda-worker`.
 
-**There are two routes to a deployed Worker, and only one of them needs anybody's permission.**
+**The KV is seeded by hand.** Nothing writes a published snapshot into KV yet. Until the KV write
+path change lands, `nodeconf` is put there with `wrangler kv key put` (the how-to, step 4).
+
+**Two deploy targets, one per account,** rendered from `backend/model/env.aon` into
+`[env.own]` and `[env.voxgig]`, and deployed with `npm run deploy:own` and `npm run deploy` at the
+root. A bare `wrangler deploy` is refused by Cloudflare (`agenda-local` is not a real namespace),
+on purpose.
 
 | | Jose's own Cloudflare account | The voxgig account (`7bfad364...`) |
 |---|---|---|
-| Needs | nothing: create a KV namespace, a token and a Worker, deploy from a laptop | a real KV namespace id, Access turned off or bypassed, and the dashboard Deploy command changed |
-| URL | a `workers.dev` subdomain | `agenda.voxgig.com`, which already exists |
-| Blocked on | nobody | Richard |
-| Good for | proving the whole chain for real, including the edge TTFB and cache numbers §19.6 says can only be measured deployed | the actual product URL |
+| Worker | `conf-agenda-own` on `workers.dev` | `conf-agenda` on `agenda.voxgig.com` |
+| State | **deployed and seeded** | not deployed: a hello-world placeholder answers today |
+| Cloudflare Access | none | bypassed for `/agenda/` only, since 2026-10-28; the rest of the host keeps SSO |
+| Next | nothing; it stays as the scratch target | the change's group 2: Jose confirms his role, creates the namespace, declares the domain, and switches the dashboard Deploy and Version commands |
 
-The own-account route is also what `docs/reference/cloudflare-workers-deployment.md` §0 recommends
-for testing: deploy to a throwaway Worker on another account rather than the real one. Moving to
-the voxgig account afterwards is a config change, not a rebuild.
-
-**The questions for Richard, when the voxgig account is wanted:** a KV namespace id; whether
-Cloudflare Access can come off `agenda.voxgig.com` or needs a bypass policy for `/agenda/*` (§9.1
-makes `get:agenda` the one unauthenticated message and §11.2 has the embed reading it anonymously
-from third-party pages, so SSO in front of it defeats both); the dashboard Deploy command, which is
-a copy of the build and so can never publish; and the Version command, which is Cloudflare's
-default `npx wrangler versions upload` and fails on every branch.
-
-Three things stand between that and a useful deployment, and only one is ours: **the KV write
-path** (nothing puts a published snapshot into KV, so a deployed Worker answers `not-published` for
-everything). The other two are Richard's: a **real KV namespace id** in his account to replace the
-`agenda-local` placeholder, and **Cloudflare Access** in front of `agenda.voxgig.com`, which bounces
-anonymous requests to SSO and would make the public agenda unreadable by the embed (§9.1, §11.2).
+The questions HANDOFF used to list for Richard are settled without him, recorded in
+`docs/decisions/to-raise-upstream.md` item 8. Richard is told, not asked.
 
 **Stage 3 (§19.5) has started.** Ejection (§12) is done in both modes. The rest is unblocked: the rest of the keyboard
 model (`/` instant search, bulk selection), embed breadth (all views, `::part()`, server-side
@@ -290,7 +283,7 @@ with only a warning on stderr. Validation still passes. The real check is
   script`. So a branch build now reads: build **succeeds**, version upload fails. On `main` the
   Deploy command is a copy of the build, so both steps pass.
 
-  Fixing the branch case is Richard's dashboard, not the repo: blank the Version command, or point
+  Fixing the branch case is the dashboard, not the repo (the deploy change's group 2): blank the Version command, or point
   it at a script that passes `--config`. Do not make a root wrangler config just to satisfy it:
   that would start uploading a version on every branch push, against a KV namespace id that is
   still a placeholder.
@@ -307,9 +300,9 @@ with only a warning on stderr. Validation still passes. The real check is
   this check. Verified both ways on 2026-10-16: a used import of a missing module exits 1 with
   `Could not resolve`, an unused one does not.
 
-  **When deployment is actually wanted**, add a root `deploy` script running `wrangler deploy`, and
-  ask Richard to change the dashboard's Deploy command to `npm run deploy`. Not before: there is no
-  KV write path yet, so a deployed Worker would serve a hand-seeded snapshot.
+  **The root `deploy` script exists** (`wrangler deploy --env voxgig`). The dashboard's Deploy
+  command becomes `npm run deploy` in the deploy change's group 2, after the voxgig namespace is
+  seeded, so `main` never deploys a Worker with nothing to serve.
 
   **The Worker name must match the dashboard Worker.** The generated config said
   `conf-agenda-backend` while CI expected `conf-agenda`, and Workers Builds overrode it with a
@@ -321,7 +314,7 @@ with only a warning on stderr. Validation still passes. The real check is
   "@tsconfig/node16/tsconfig.json"`, because the root build installs no backend dependencies and
   does not need to. esbuild warns and carries on. Do not chase it.
 
-  Nothing is deployed today: Invocations, CPU time and Errors are all 0 over 24 hours.
+  Nothing is deployed on Richard's account yet; the deployed Worker is on Jose's (Stage 4, above).
 
 - **Seven things to raise with Richard verbally** — all of them written up, with the evidence, in
   **`docs/decisions/to-raise-upstream.md`**. Read that rather than this line. In short:
