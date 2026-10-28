@@ -1,6 +1,6 @@
 # To raise upstream — the running list
 
-**As of 2026-09-21.** Seven things this project has found that are not this project's to fix.
+**As of 2026-09-21.** Seven things this project has found that are not this project's to fix. Item 8 (2026-10-28) is not a defect: it records the voxgig deploy settings, settled without waiting on the maintainer.
 
 Two standing constraints shape how they get raised. `metsitaba/project-specs` is **read-only** —
 spec corrections are written up here and raised with the maintainer **verbally**, never as a PR
@@ -177,3 +177,39 @@ the Wayback snapshot is a Wix page that renders client-side, the archive.org API
 no public repo carries the schedule. Somebody needs a copy.
 
 Full write-up in `nodeconf-fixture.md`.
+
+---
+
+## 8. Deploying to `agenda.voxgig.com`: settled, Richard told
+
+**Ask:** nothing. Tell Richard what was done. Unlike 1 to 7 this is not a defect: it is the six
+things the voxgig deploy needed (`openspec/changes/deploy-public-agenda-worker`), all settled on
+2026-10-28 without waiting on him.
+
+1. **Cloudflare Access.** `agenda.voxgig.com` sat behind Access for every path, which breaks the
+   anonymous read §9.1 and §11.2 depend on. Jose added a second self-hosted Access app for
+   `agenda.voxgig.com/agenda/` with a Bypass policy for Everyone. The existing `conf-agenda` app
+   is untouched: a policy covers every destination of its app, so a Bypass there would have opened
+   the whole host, and the narrower app keeps anything added later behind login. Checked with curl
+   on 2026-10-28:
+
+   | URL | Result |
+   |---|---|
+   | `/agenda/x/y.json` | `200`, no login |
+   | `/agenda/x/y.ics` | `200`, no login |
+   | `/` | `302` to `voxgig01.cloudflareaccess.com` |
+   | `/admin` | `302` to `voxgig01.cloudflareaccess.com` |
+
+   The `200` body is `Hello world`: the Worker on that domain today is a placeholder, not ours.
+2. **Serving NodeConf EU 2026** on the product URL until the KV write path exists: yes, decided by
+   Jose. It is a finished, already-public programme.
+3. **A KV namespace** in the voxgig account: Jose creates it.
+4. **The Deploy command** (`npm run build`, so it never publishes): Jose changes it to
+   `npm run deploy` after the voxgig target merges.
+5. **The Version command** (Cloudflare's default `npx wrangler versions upload`, which fails on
+   every branch with `Missing entry-point to Worker script`): Jose blanks it.
+6. **Custom Domain or route** for `agenda.voxgig.com`: Jose reads it from the Worker's Settings,
+   Domains & Routes, and the config declares it.
+
+Items 3 to 6 assume Jose is Administrator on Richard's account. If he is not, they go back to
+Richard.

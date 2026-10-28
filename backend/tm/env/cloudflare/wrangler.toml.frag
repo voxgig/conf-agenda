@@ -18,3 +18,35 @@ NODE_ENV = "production"
 [[kv_namespaces]]
 binding = "$$kv_binding$$"
 id = "$$kv_id$$"
+
+# Deploy targets, one per Cloudflare account. A deploy names one with
+# --env (the root deploy scripts do); a bare deploy uses the top level above,
+# whose placeholder namespace Cloudflare refuses at upload.
+#
+# [vars] and kv_namespaces are not inherited by an environment, so each
+# restates them. `name` is stated too: without it wrangler appends the env
+# name, and voxgig must deploy as the dashboard Worker's exact name (3.6).
+
+# Jose's account: a scratch Worker on workers.dev.
+[env.own]
+name = "$$name$$-own"
+account_id = "$$own_account_id$$"
+
+[env.own.vars]
+NODE_ENV = "production"
+
+[[env.own.kv_namespaces]]
+binding = "$$kv_binding$$"
+id = "$$own_kv_id$$"
+
+# The voxgig account: the product, agenda.voxgig.com.
+[env.voxgig]
+name = "$$name$$"
+account_id = "$$voxgig_account_id$$"
+
+[env.voxgig.vars]
+NODE_ENV = "production"
+
+[[env.voxgig.kv_namespaces]]
+binding = "$$kv_binding$$"
+id = "$$voxgig_kv_id$$"
