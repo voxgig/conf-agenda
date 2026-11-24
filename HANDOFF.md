@@ -1,6 +1,6 @@
 # Handoff — start here
 
-**As of 2026-10-28.** Written to be read cold, by a person or an assistant, with no memory of how
+**As of 2026-11-24.** Written to be read cold, by a person or an assistant, with no memory of how
 any of this got here. The reasoning lives in `docs/decisions/`; this is the map.
 
 **The rules are in `openspec/config.yaml` and the work is planned in `openspec/changes/`.** Every
@@ -30,7 +30,8 @@ snapshot. Measured: a **19.7ms median TTFB** on Jose's and **21.4ms** on `agenda
 against §17's 200ms, but about 200 to 234ms on the first request after a deploy, while the Worker
 starts cold. Figures and caveats in
 `docs/decisions/cloudflare-spike.md`'s 2026-10-28 addendum, steps in
-`docs/how-to/deploy-the-worker.md`. Change: `openspec/changes/deploy-public-agenda-worker`.
+`docs/how-to/deploy-the-worker.md`. Change: `openspec/changes/archive/2026-11-24-deploy-public-agenda-worker`
+(complete, archived on 2026-11-24). The next Stage 4 piece is the KV write path.
 
 **The KV is seeded by hand.** Nothing writes a published snapshot into KV yet. Until the KV write
 path change lands, `nodeconf` is put there with `wrangler kv key put` (the how-to, step 4).

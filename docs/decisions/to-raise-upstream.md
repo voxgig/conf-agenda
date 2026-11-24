@@ -183,7 +183,7 @@ Full write-up in `nodeconf-fixture.md`.
 ## 8. Deploying to `agenda.voxgig.com`: settled, Richard told
 
 **Ask:** nothing. Tell Richard what was done. Unlike 1 to 7 this is not a defect: it is the six
-things the voxgig deploy needed (`openspec/changes/deploy-public-agenda-worker`), all settled on
+things the voxgig deploy needed (`openspec/changes/archive/2026-11-24-deploy-public-agenda-worker`), all settled on
 2026-10-28 without waiting on him.
 
 1. **Cloudflare Access.** `agenda.voxgig.com` sat behind Access for every path, which breaks the
