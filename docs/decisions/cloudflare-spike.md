@@ -232,3 +232,22 @@ Cloudflare refuses the upload: `KV namespace 'agenda-local' is not valid [code: 
 landed (`This Worker does not exist on your account [code: 10007]`).
 
 Edge caching is still not measured, because the Worker has no cache layer in front of KV.
+
+### The product URL, same day
+
+Later on 2026-10-28 the Worker went live on the voxgig account as `conf-agenda`, at
+`https://agenda.voxgig.com`, deployed by Workers Builds from `main` (`npm run deploy`) and serving
+the same `nodeconf` snapshot from that account's own namespace. Measured the same way, from the
+same machine, again served by Bangkok (`cf-ray: ...-BKK`):
+
+| Run | First request | Median of the next 20 | Max of the next 20 |
+|---|---|---|---|
+| About a minute after the deploy | 227.3ms | 21.4ms | 54.8ms |
+
+A cold `curl` (its own DNS, TCP and TLS) reached its first byte in 281ms, against 94ms on
+`workers.dev`. One sample, and not investigated: the warm figures above say the Worker is not
+where the time goes.
+
+The figures match Jose's account: a steady state about a tenth of the budget, and a first request
+after a deploy at the budget. Every smoke check passed, including the one this host exists for:
+no `/agenda/` URL redirects to the Access login, while `/admin` still does.
